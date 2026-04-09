@@ -1,36 +1,30 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Poly-SD
 
-## Getting Started
+> A visual sandbox game for learning distributed systems design — inspired by Poly Bridge.
 
-First, run the development server:
+You're given a system design challenge: handle 50K RPS, hit p99 < 200ms, stay under $800/mo, survive an AZ outage. You have a palette of cloud components — load balancers, caches, databases, queues — to drag, drop, connect, and configure. Hit simulate. Watch traffic flow. Watch things break. Iterate.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Design Documents
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Document | Description |
+|----------|-------------|
+| [Game Design](docs/game-design.md) | Core game loop, mechanics, modes, scoring |
+| [Tech Architecture](docs/tech-architecture.md) | Stack choices, system design, key decisions |
+| [Simulation Design](docs/simulation-design.md) | How the sim engine models distributed system behavior |
+| [Components Catalog](docs/components-catalog.md) | Every building block, its properties, and behavior |
+| [Level Design](docs/level-design.md) | Campaign levels, win conditions, concepts taught |
+| [Roadmap](docs/roadmap.md) | Phased delivery plan with estimates |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## Vision in One Paragraph
 
-To learn more about Next.js, take a look at the following resources:
+Poly Bridge works because the physics simulation is honest — your bridge fails in physically plausible ways, teaching structural intuition through failure. Poly-SD applies this to distributed systems: traffic flows honestly through your architecture. Queues back up. Databases saturate. Caches go cold. Cascades happen. The simulation can't be fooled — you either hit SLA or you don't. Every level has a single honest judge and multiple valid solutions, just like Poly Bridge.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Status
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Design phase. See [Roadmap](docs/roadmap.md).

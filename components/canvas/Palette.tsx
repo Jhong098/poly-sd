@@ -1,0 +1,95 @@
+'use client'
+
+import { Users, Server, Database, Zap } from 'lucide-react'
+import { COMPONENT_META, type ComponentType } from '@/lib/components/definitions'
+
+type PaletteItem = {
+  type: ComponentType
+  icon: React.ReactNode
+  shortDesc: string
+}
+
+const ITEMS: PaletteItem[] = [
+  { type: 'client',   icon: <Users size={18} />,    shortDesc: 'Traffic source'  },
+  { type: 'server',   icon: <Server size={18} />,   shortDesc: 'App server'      },
+  { type: 'database', icon: <Database size={18} />, shortDesc: 'Relational DB'   },
+  { type: 'cache',    icon: <Zap size={18} />,      shortDesc: 'In-memory cache' },
+]
+
+const ACCENT_CLASSES: Record<string, { card: string; icon: string }> = {
+  amber: {
+    card: 'border-amber-500/30 hover:border-amber-400/60 hover:bg-amber-500/5',
+    icon: 'text-amber-400 bg-amber-500/10',
+  },
+  blue: {
+    card: 'border-blue-500/30 hover:border-blue-400/60 hover:bg-blue-500/5',
+    icon: 'text-blue-400 bg-blue-500/10',
+  },
+  violet: {
+    card: 'border-violet-500/30 hover:border-violet-400/60 hover:bg-violet-500/5',
+    icon: 'text-violet-400 bg-violet-500/10',
+  },
+  emerald: {
+    card: 'border-emerald-500/30 hover:border-emerald-400/60 hover:bg-emerald-500/5',
+    icon: 'text-emerald-400 bg-emerald-500/10',
+  },
+}
+
+function PaletteCard({ item }: { item: PaletteItem }) {
+  const meta = COMPONENT_META[item.type]
+  const accent = ACCENT_CLASSES[meta.accentColor] ?? ACCENT_CLASSES.blue
+
+  function onDragStart(e: React.DragEvent) {
+    e.dataTransfer.setData('componentType', item.type)
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  return (
+    <div
+      draggable
+      onDragStart={onDragStart}
+      className={`
+        flex items-center gap-3 px-3 py-2.5 rounded-lg border
+        bg-gray-900/50 cursor-grab active:cursor-grabbing
+        transition-all duration-150 select-none
+        ${accent.card}
+      `}
+    >
+      <div className={`p-1.5 rounded-md flex-shrink-0 ${accent.icon}`}>
+        {item.icon}
+      </div>
+      <div className="min-w-0">
+        <p className="text-[13px] font-semibold text-gray-200">{meta.label}</p>
+        <p className="text-[11px] text-gray-500 truncate">{item.shortDesc}</p>
+      </div>
+    </div>
+  )
+}
+
+export function Palette() {
+  return (
+    <aside className="w-56 flex-shrink-0 h-full bg-gray-900/80 border-r border-gray-800/60 flex flex-col">
+      <div className="px-4 pt-4 pb-3 border-b border-gray-800/60">
+        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Components</p>
+        <p className="text-[11px] text-gray-600 mt-0.5">Drag onto canvas</p>
+      </div>
+
+      <div className="px-3 py-3">
+        <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-2 px-1">
+          Tier 1 — Foundations
+        </p>
+        <div className="space-y-1.5">
+          {ITEMS.map((item) => (
+            <PaletteCard key={item.type} item={item} />
+          ))}
+        </div>
+      </div>
+
+      <div className="px-3 py-3 border-t border-gray-800/40 mt-auto">
+        <p className="text-[11px] text-gray-700 text-center">
+          More components unlock as you progress
+        </p>
+      </div>
+    </aside>
+  )
+}

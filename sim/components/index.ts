@@ -1,0 +1,129 @@
+import type { SimNode, NodeSnapshot, NodeStatus } from '../types'
+import type { ClientConfig, ServerConfig, DatabaseConfig, CacheConfig } from '@/lib/components/definitions'
+import { SERVER_INSTANCES, DATABASE_INSTANCES, CACHE_INSTANCES } from '@/lib/components/definitions'
+
+export type ComponentState = { queuedRequests: number }
+
+/**
+ * Compute one component's output snapshot for a given inputRps.
+ * clientRps is only used for 'client' nodes (pre-computed by engine).
+ */
+export function computeNode(
+  node: SimNode,
+  inputRps: number,
+  _state: ComponentState,
+  clientRps?: number,
+): NodeSnapshot {
+  switch (node.componentType) {
+    case 'client':   return computeClient(node, clientRps ?? 0)
+    case 'server':   return computeServer(node, inputRps)
+    case 'database': return computeDatabase(node, inputRps)
+    case 'cache':    return computeCache(node, inputRps)
+    default:         return idleSnapshot((node as SimNode).id)
+  }
+}
+
+// ── M/M/1 helpers ────────────────────────────────────────────────────────────
+
+function mm1Latency(baseMs: number, rho: number): number {
+  return baseMs / (1 - Math.min(rho, 0.98))
+}
+
+function statusFromRho(rho: number, inputRps: number): NodeStatus {
+  if (inputRps === 0) return 'idle'
+  if (rho < 0.5)  return 'healthy'
+  if (rho < 0.8)  return 'warm'
+  if (rho < 0.95) return 'hot'
+  return 'saturated'
+}
+
+// ── Client ────────────────────────────────────────────────────────────────────
+
+function computeClient(node: SimNode, currentRps: number): NodeSnapshot {
+  return {
+    id: node.id,
+    inputRps: 0,
+    outputRps: currentRps,
+    utilization: 0,
+    latencyMs: 0,
+    errorRate: 0,
+    costPerHour: 0,
+    status: currentRps > 0 ? 'healthy' : 'idle',
+  }
+}
+
+// ── Server ───────────────────────────────────────────────────────────────────
+
+function computeServer(node: SimNode, inputRps: number): NodeSnapshot {
+  const cfg = node.config as ServerConfig
+  const inst = SERVER_INSTANCES[cfg.instanceType]
+  const maxRps = inst.maxRps * cfg.instanceCount
+  const costPerHour = inst.costPerHour * cfg.instanceCount
+
+  if (inputRps === 0) return idleSnapshot(node.id, costPerHour)
+
+  const rho = inputRps / maxRps
+  const latencyMs = mm1Latency(cfg.baseLatencyMs, rho)
+
+  let errorRate: number, outputRps: number
+  if (rho <= 1) {
+    errorRate = 0.001 + (rho > 0.8 ? Math.pow((rho - 0.8) * 5, 3) * 0.05 : 0)
+    outputRps = inputRps * (1 - errorRate)
+  } else {
+    errorRate = Math.min((inputRps - maxRps) / inputRps + 0.001, 1)
+    outputRps = maxRps * 0.999
+  }
+
+  return { id: node.id, inputRps, outputRps, utilization: rho, latencyMs, errorRate, costPerHour, status: statusFromRho(rho, inputRps) }
+}
+
+// ── Database ─────────────────────────────────────────────────────────────────
+
+function computeDatabase(node: SimNode, inputRps: number): NodeSnapshot {
+  const cfg = node.config as DatabaseConfig
+  const inst = DATABASE_INSTANCES[cfg.instanceType]
+  const maxRps = cfg.maxConnections * 5
+  const costPerHour = inst.costPerHour * (1 + cfg.readReplicas) * (cfg.multiAz ? 2 : 1)
+
+  if (inputRps === 0) return idleSnapshot(node.id, costPerHour)
+
+  const rho = inputRps / maxRps
+  const latencyMs = mm1Latency(10, rho)
+
+  let errorRate: number, outputRps: number
+  if (rho <= 1) {
+    errorRate = 0.0001 + (rho > 0.8 ? Math.pow((rho - 0.8) * 5, 4) * 0.3 : 0)
+    outputRps = inputRps * (1 - errorRate)
+  } else {
+    errorRate = Math.min((inputRps - maxRps) / inputRps + 0.001, 1)
+    outputRps = maxRps * 0.999
+  }
+
+  return { id: node.id, inputRps, outputRps, utilization: rho, latencyMs, errorRate, costPerHour, status: statusFromRho(rho, inputRps) }
+}
+
+// ── Cache ─────────────────────────────────────────────────────────────────────
+
+function computeCache(node: SimNode, inputRps: number): NodeSnapshot {
+  const cfg = node.config as CacheConfig
+  const inst = CACHE_INSTANCES[cfg.instanceType]
+
+  if (inputRps === 0) return idleSnapshot(node.id, inst.costPerHour)
+
+  return {
+    id: node.id,
+    inputRps,
+    outputRps: inputRps * (1 - cfg.hitRate),
+    utilization: 0.05,
+    latencyMs: 1,
+    errorRate: 0.0001,
+    costPerHour: inst.costPerHour,
+    status: 'healthy',
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function idleSnapshot(id: string, costPerHour = 0): NodeSnapshot {
+  return { id, inputRps: 0, outputRps: 0, utilization: 0, latencyMs: 0, errorRate: 0, costPerHour, status: 'idle' }
+}
