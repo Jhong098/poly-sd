@@ -57,11 +57,12 @@ export function presetToWaypoints(
 // ── Worker message protocol ──────────────────────────────────────────────────
 
 export type WorkerInbound =
-  | { type: 'START'; graph: SimGraph; traffic: TrafficConfig; speedMultiplier: number }
+  | { type: 'START'; graph: SimGraph; traffic: TrafficConfig; speedMultiplier: number; chaosSchedule?: ChaosEvent[] }
   | { type: 'PAUSE' }
   | { type: 'RESUME' }
   | { type: 'STOP' }
   | { type: 'SET_SPEED'; multiplier: number }
+  | { type: 'INJECT_CHAOS'; event: ChaosEvent }
 
 export type WorkerOutbound =
   | { type: 'TICK'; snapshot: SimSnapshot }
@@ -90,7 +91,20 @@ export type SimEdge = {
 
 // ── Snapshots ────────────────────────────────────────────────────────────────
 
-export type NodeStatus = 'idle' | 'healthy' | 'warm' | 'hot' | 'saturated'
+export type NodeStatus = 'idle' | 'healthy' | 'warm' | 'hot' | 'saturated' | 'failed'
+
+// ── Chaos ────────────────────────────────────────────────────────────────────
+
+export type ChaosType = 'node-failure' | 'latency-spike' | 'traffic-surge'
+
+export type ChaosEvent = {
+  id: string
+  nodeId: string
+  type: ChaosType
+  startSimMs: number
+  durationMs: number
+  magnitude: number   // node-failure: unused; latency-spike: latency multiplier; traffic-surge: RPS multiplier
+}
 
 export type NodeSnapshot = {
   id: string

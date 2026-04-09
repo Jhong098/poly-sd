@@ -7,6 +7,7 @@ import type { TrafficPreset } from '@/lib/components/definitions'
 import { useArchitectureStore } from './architectureStore'
 import { useChallengeStore } from './challengeStore'
 import { evaluateChallenge } from '@/lib/challenges/evaluator'
+import { recordCompletion } from '@/lib/actions/completions'
 
 export type SimStatus = 'idle' | 'running' | 'paused' | 'complete'
 
@@ -110,6 +111,9 @@ export const useSimStore = create<SimState>((set, get) => ({
           const componentCount = Object.keys(nodeSnapshots).length
           const result = evaluateChallenge(activeChallenge, history, componentCount)
           setEvalResult(result)
+          // Persist completion (fire-and-forget — UI already has the result)
+          const { nodes, edges } = useArchitectureStore.getState()
+          recordCompletion(activeChallenge.id, result, nodes, edges).catch(console.error)
         }
       } else if (msg.type === 'ERROR') {
         console.error('Sim worker error:', msg.message)

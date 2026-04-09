@@ -1,9 +1,11 @@
 'use client'
 
-import { useState } from 'react'
-import { Play, Pause, Square, LayoutGrid, ChevronDown, Plus, X } from 'lucide-react'
+import { useState, useTransition } from 'react'
+import { Play, Pause, Square, LayoutGrid, ChevronDown, Plus, X, Save, Check } from 'lucide-react'
+import { UserButton, SignInButton, useAuth } from '@clerk/nextjs'
 import { useSimStore } from '@/lib/store/simStore'
 import { useArchitectureStore } from '@/lib/store/architectureStore'
+import { saveArchitecture } from '@/lib/actions/architectures'
 import { presetToWaypoints } from '@/sim/types'
 import type { TrafficPreset } from '@/lib/components/definitions'
 
@@ -179,11 +181,54 @@ function TrafficPopover({ onClose }: { onClose: () => void }) {
   )
 }
 
+// ── Save dialog ───────────────────────────────────────────────────────────────
+
+function SaveDialog({ onClose }: { onClose: () => void }) {
+  const { nodes, edges } = useArchitectureStore()
+  const [name, setName] = useState('My Architecture')
+  const [saved, setSaved] = useState(false)
+  const [isPending, startTransition] = useTransition()
+
+  function handleSave() {
+    startTransition(async () => {
+      await saveArchitecture(name, nodes, edges)
+      setSaved(true)
+      setTimeout(onClose, 800)
+    })
+  }
+
+  return (
+    <div className="absolute top-full right-0 mt-1 z-50 w-72 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl shadow-black/60 p-4">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[12px] font-semibold text-gray-200">Save Architecture</p>
+        <button onClick={onClose} className="text-gray-600 hover:text-gray-400"><X size={14} /></button>
+      </div>
+      <input
+        autoFocus
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+        placeholder="Architecture name"
+        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-[13px] text-gray-200 focus:outline-none focus:border-gray-500 mb-3"
+      />
+      <button
+        onClick={handleSave}
+        disabled={isPending || !name.trim()}
+        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 text-white text-[12px] font-medium transition-colors"
+      >
+        {saved ? <><Check size={13} /> Saved!</> : isPending ? 'Saving…' : <><Save size={13} /> Save</>}
+      </button>
+    </div>
+  )
+}
+
 // ── TopBar ────────────────────────────────────────────────────────────────────
 
 export function TopBar() {
   const [showTraffic, setShowTraffic] = useState(false)
+  const [showSave, setShowSave] = useState(false)
 
+  const { isSignedIn } = useAuth()
   const { nodes } = useArchitectureStore()
   const { status, speed, trafficConfig, setSpeed, startSimulation, pauseSimulation, resumeSimulation, stopSimulation } = useSimStore()
 
@@ -284,10 +329,34 @@ export function TopBar() {
         </div>
       </div>
 
-      {/* Hint */}
-      <div className="ml-auto">
+      {/* Right side: hint / save / user */}
+      <div className="ml-auto flex items-center gap-3">
         {nodes.length === 0 && status === 'idle' && (
           <span className="text-[11px] text-gray-700">← drag a Client + components onto the canvas</span>
+        )}
+
+        {/* Save button (only in sandbox, only when signed in) */}
+        {isSignedIn && nodes.length > 0 && (
+          <div className="relative">
+            <button
+              onClick={() => setShowSave((v) => !v)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-gray-700/60 bg-gray-800/50 hover:bg-gray-800 text-gray-400 hover:text-gray-200 text-[12px] transition-colors"
+            >
+              <Save size={12} /> Save
+            </button>
+            {showSave && <SaveDialog onClose={() => setShowSave(false)} />}
+          </div>
+        )}
+
+        {/* Auth */}
+        {isSignedIn ? (
+          <UserButton />
+        ) : (
+          <SignInButton mode="modal">
+            <button className="px-3 py-1.5 rounded-lg border border-gray-700/60 bg-gray-800/50 hover:bg-gray-800 text-gray-400 hover:text-gray-200 text-[12px] transition-colors">
+              Sign in
+            </button>
+          </SignInButton>
         )}
       </div>
     </header>
