@@ -74,7 +74,21 @@ function PaletteCard({ item }: { item: PaletteItem }) {
   )
 }
 
-export function Palette() {
+const ALL_TIERS = [
+  { label: 'Tier 1 — Foundations', items: TIER1_ITEMS },
+  { label: 'Tier 2 — Scaling',     items: TIER2_ITEMS },
+]
+
+export function Palette({ allowedTypes }: { allowedTypes?: ComponentType[] | 'all' }) {
+  const allow = allowedTypes === 'all' || allowedTypes === undefined
+    ? null
+    : new Set(allowedTypes)
+
+  const visibleTiers = ALL_TIERS.map((tier) => ({
+    ...tier,
+    items: allow ? tier.items.filter((i) => allow.has(i.type)) : tier.items,
+  })).filter((tier) => tier.items.length > 0)
+
   return (
     <aside className="w-56 flex-shrink-0 h-full bg-gray-900/80 border-r border-gray-800/60 flex flex-col overflow-y-auto">
       <div className="px-4 pt-4 pb-3 border-b border-gray-800/60">
@@ -82,27 +96,18 @@ export function Palette() {
         <p className="text-[11px] text-gray-600 mt-0.5">Drag onto canvas</p>
       </div>
 
-      <div className="px-3 py-3">
-        <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-2 px-1">
-          Tier 1 — Foundations
-        </p>
-        <div className="space-y-1.5">
-          {TIER1_ITEMS.map((item) => (
-            <PaletteCard key={item.type} item={item} />
-          ))}
+      {visibleTiers.map((tier) => (
+        <div key={tier.label} className="px-3 py-3 border-t border-gray-800/40 first:border-t-0">
+          <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-2 px-1">
+            {tier.label}
+          </p>
+          <div className="space-y-1.5">
+            {tier.items.map((item) => (
+              <PaletteCard key={item.type} item={item} />
+            ))}
+          </div>
         </div>
-      </div>
-
-      <div className="px-3 py-3 border-t border-gray-800/40">
-        <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-2 px-1">
-          Tier 2 — Scaling
-        </p>
-        <div className="space-y-1.5">
-          {TIER2_ITEMS.map((item) => (
-            <PaletteCard key={item.type} item={item} />
-          ))}
-        </div>
-      </div>
+      ))}
 
       <div className="px-3 py-3 border-t border-gray-800/40 mt-auto">
         <p className="text-[11px] text-gray-700 text-center">

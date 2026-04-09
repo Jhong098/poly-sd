@@ -47,12 +47,13 @@ export function ResultsModal() {
   if (!evalResult || simStatus !== 'complete' || !activeChallenge) return null
 
   const result: EvalResult = evalResult
+  const challenge = activeChallenge
 
   function handleRetry() {
     stopSimulation()
     setEvalResult(null)
-    if (activeChallenge.starterNodes || activeChallenge.starterEdges) {
-      initFromStarterGraph(activeChallenge.starterNodes ?? [], activeChallenge.starterEdges ?? [])
+    if (challenge.starterNodes || challenge.starterEdges) {
+      initFromStarterGraph(challenge.starterNodes ?? [], challenge.starterEdges ?? [])
     }
   }
 
@@ -75,7 +76,7 @@ export function ResultsModal() {
               <p className={`text-[18px] font-bold ${result.passed ? 'text-emerald-300' : 'text-red-300'}`}>
                 {result.passed ? 'Challenge Passed!' : 'Not Quite'}
               </p>
-              <p className="text-[12px] text-gray-500">{activeChallenge.title}</p>
+              <p className="text-[12px] text-gray-500">{challenge.title}</p>
             </div>
             {result.passed && (
               <div className="ml-auto text-right">
@@ -91,17 +92,17 @@ export function ResultsModal() {
           <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-2">Results</p>
           <MetricRow
             label="p99 Latency"
-            value={`${Math.round(result.metrics.p99LatencyMs)}ms  ≤ ${activeChallenge.slaTargets.p99LatencyMs}ms`}
+            value={`${Math.round(result.metrics.p99LatencyMs)}ms  ≤ ${challenge.slaTargets.p99LatencyMs}ms`}
             passed={result.passedLatency}
           />
           <MetricRow
             label="Error Rate"
-            value={`${(result.metrics.errorRate * 100).toFixed(2)}%  ≤ ${(activeChallenge.slaTargets.errorRate * 100).toFixed(1)}%`}
+            value={`${(result.metrics.errorRate * 100).toFixed(2)}%  ≤ ${(challenge.slaTargets.errorRate * 100).toFixed(1)}%`}
             passed={result.passedErrors}
           />
           <MetricRow
             label="Cost / hr"
-            value={`$${result.metrics.costPerHour.toFixed(3)}  ≤ $${activeChallenge.budgetPerHour.toFixed(2)}`}
+            value={`$${result.metrics.costPerHour.toFixed(3)}  ≤ $${challenge.budgetPerHour.toFixed(2)}`}
             passed={result.passedBudget}
           />
         </div>

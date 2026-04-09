@@ -72,7 +72,7 @@ export const CHALLENGES: Challenge[] = [
     title: 'The Spike',
     narrative:
       'Your blog post went viral. Traffic is mostly steady but spikes to 5× ' +
-      'at noon. Your server handles the baseline fine — it's the spike that kills you.',
+      "at noon. Your server handles the baseline fine — it's the spike that kills you.",
     objective:
       'Survive a 5× traffic spike without exceeding 300ms p99 or 2% error rate.',
     trafficConfig: {
