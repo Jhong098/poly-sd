@@ -1,4 +1,5 @@
-import { presetToWaypoints, DEFAULT_TRAFFIC } from '@/sim/types'
+import { presetToWaypoints } from '@/sim/types'
+import { makeChaosEvent } from '@/sim/chaos'
 import type { Challenge } from './types'
 
 export const CHALLENGES: Challenge[] = [
@@ -240,6 +241,74 @@ export const CHALLENGES: Challenge[] = [
     ],
     starterNodes: [
       { id: 'client-1', type: 'client', position: { x: 60, y: 250 }, label: 'Users', config: { rps: 150, preset: 'spike', peakMultiplier: 7 } },
+    ],
+  },
+
+  // ── Tier 2 ──────────────────────────────────────────────────────────────────
+
+  {
+    id: '2-1',
+    tier: 2,
+    order: 0,
+    title: 'Buffer the Storm',
+    narrative:
+      'Your database is getting hammered during traffic spikes. Every spike causes ' +
+      'connection exhaustion and cascading errors. A queue can absorb the burst and ' +
+      'feed the database at a steady rate.',
+    objective:
+      'Use a Queue to smooth out a 6× traffic spike. Keep errors under 1% and p99 under 800ms.',
+    trafficConfig: {
+      durationMs: 90_000,
+      waypoints: presetToWaypoints('spike', 100, 6, 90_000),
+    },
+    slaTargets: { p99LatencyMs: 800, errorRate: 0.01 },
+    budgetPerHour: 0.40,
+    allowedComponents: ['client', 'server', 'database', 'cache', 'queue'],
+    conceptsTaught: ['message queues', 'backpressure', 'decoupling', 'spike smoothing'],
+    hints: [
+      'Route: Client → Server → Queue → Database.',
+      'Set the Queue drain rate to match what the DB can handle (not the peak RPS).',
+      'The Queue adds latency but prevents DB connection exhaustion.',
+      'A cache before the queue can reduce the write load entirely.',
+    ],
+    starterNodes: [
+      { id: 'client-1', type: 'client', position: { x: 60, y: 250 }, label: 'Users', config: { rps: 100, preset: 'spike', peakMultiplier: 6 } },
+    ],
+  },
+
+  {
+    id: '2-2',
+    tier: 2,
+    order: 1,
+    title: 'No Single Point of Failure',
+    narrative:
+      "It's 2am. Your on-call phone rings. The primary app server just died. " +
+      "Traffic is piling up and users are seeing errors. You swore you'd add redundancy " +
+      "last quarter. Now it's too late — or is it?",
+    objective:
+      'Design an architecture that survives an automatic node failure at t=40s. ' +
+      'Keep errors under 5% across the full 90s simulation.',
+    trafficConfig: {
+      durationMs: 90_000,
+      waypoints: presetToWaypoints('steady', 300, 1, 90_000),
+    },
+    slaTargets: { p99LatencyMs: 300, errorRate: 0.05 },
+    budgetPerHour: 0.60,
+    allowedComponents: ['client', 'server', 'database', 'load-balancer'],
+    conceptsTaught: ['redundancy', 'failover', 'single point of failure', 'load balancing'],
+    hints: [
+      'A single server that fails = 100% error rate. You need at least 2.',
+      'A Load Balancer distributes traffic so one server failure is non-fatal.',
+      'The failure happens at t=40s for 15s — size your remaining capacity to handle full load.',
+      'Watch the "Node Failed" overlay appear on the server during the chaos window.',
+    ],
+    starterNodes: [
+      { id: 'client-1', type: 'client', position: { x: 60, y: 250 }, label: 'Users', config: { rps: 300, preset: 'steady', peakMultiplier: 1 } },
+      { id: 'server-1', type: 'server', position: { x: 400, y: 150 }, label: 'App Server A', config: { instanceType: 'm5.large', instanceCount: 1, baseLatencyMs: 20 } },
+    ],
+    // Automatically kill server-1 at t=40s for 15s
+    chaosSchedule: [
+      makeChaosEvent('server-1', 'node-failure', 40_000, 15_000),
     ],
   },
 ]

@@ -1,7 +1,7 @@
 'use client'
 
 import { Handle, Position, type NodeProps } from '@xyflow/react'
-import { Trash2 } from 'lucide-react'
+import { Trash2, XCircle } from 'lucide-react'
 import { useArchitectureStore, type ComponentNodeData } from '@/lib/store/architectureStore'
 import { useSimStore } from '@/lib/store/simStore'
 import { COMPONENT_META } from '@/lib/components/definitions'
@@ -38,6 +38,13 @@ const ACCENT: Record<string, { border: string; header: string; handle: string; i
     icon:    'text-sky-400',
     badge:   'bg-sky-500/20 text-sky-300',
   },
+  orange: {
+    border:  'border-orange-500/40 hover:border-orange-400/70',
+    header:  'bg-orange-500/10 border-b border-orange-500/20',
+    handle:  '!bg-orange-500 !border-orange-300',
+    icon:    'text-orange-400',
+    badge:   'bg-orange-500/20 text-orange-300',
+  },
 }
 
 // ── Simulation heat overlay ──────────────────────────────────────────────────
@@ -48,6 +55,7 @@ const HEAT: Record<NodeStatus, string> = {
   warm:      'ring-1 ring-yellow-400/40',
   hot:       'ring-2 ring-orange-400/60 shadow-orange-500/20',
   saturated: 'ring-2 ring-red-500/80 shadow-red-500/30 animate-pulse',
+  failed:    'ring-2 ring-red-600/90 shadow-red-600/40 opacity-60',
 }
 
 const UTIL_BAR: Record<NodeStatus, string> = {
@@ -56,6 +64,7 @@ const UTIL_BAR: Record<NodeStatus, string> = {
   warm:      'bg-yellow-400',
   hot:       'bg-orange-400',
   saturated: 'bg-red-500',
+  failed:    'bg-red-700',
 }
 
 // ── Props ────────────────────────────────────────────────────────────────────
@@ -142,6 +151,16 @@ export function BaseNode({ id, data, selected, icon, stats }: BaseNodeProps) {
           </>
         )}
       </div>
+
+      {/* Failed overlay */}
+      {status === 'failed' && (
+        <div className="absolute inset-0 rounded-xl bg-red-950/60 flex items-center justify-center pointer-events-none z-10">
+          <div className="flex flex-col items-center gap-1">
+            <XCircle size={22} className="text-red-400 animate-pulse" />
+            <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider">Node Failed</span>
+          </div>
+        </div>
+      )}
 
       {/* Delete button — visible when selected */}
       {selected && (

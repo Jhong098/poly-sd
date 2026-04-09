@@ -1,6 +1,6 @@
 'use client'
 
-import { Users, Server, Database, Zap, Shuffle } from 'lucide-react'
+import { Users, Server, Database, Zap, Shuffle, List } from 'lucide-react'
 import { COMPONENT_META, type ComponentType } from '@/lib/components/definitions'
 
 type PaletteItem = {
@@ -17,7 +17,8 @@ const TIER1_ITEMS: PaletteItem[] = [
 ]
 
 const TIER2_ITEMS: PaletteItem[] = [
-  { type: 'load-balancer', icon: <Shuffle size={18} />, shortDesc: 'Distribute traffic' },
+  { type: 'load-balancer', icon: <Shuffle size={18} />, shortDesc: 'Distribute traffic'  },
+  { type: 'queue',         icon: <List size={18} />,    shortDesc: 'Buffer & decouple'   },
 ]
 
 const ACCENT_CLASSES: Record<string, { card: string; icon: string }> = {
@@ -40,6 +41,10 @@ const ACCENT_CLASSES: Record<string, { card: string; icon: string }> = {
   sky: {
     card: 'border-sky-500/30 hover:border-sky-400/60 hover:bg-sky-500/5',
     icon: 'text-sky-400 bg-sky-500/10',
+  },
+  orange: {
+    card: 'border-orange-500/30 hover:border-orange-400/60 hover:bg-orange-500/5',
+    icon: 'text-orange-400 bg-orange-500/10',
   },
 }
 

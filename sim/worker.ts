@@ -22,6 +22,7 @@ addEventListener('message', (e: MessageEvent<WorkerInbound>) => {
           onTick: (snapshot: SimSnapshot) => postMessage({ type: 'TICK', snapshot }),
           onComplete: () => postMessage({ type: 'COMPLETE' }),
         },
+        msg.chaosSchedule ?? [],
       )
       engine.start()
       break
@@ -42,6 +43,10 @@ addEventListener('message', (e: MessageEvent<WorkerInbound>) => {
 
     case 'SET_SPEED':
       engine?.setSpeed(msg.multiplier)
+      break
+
+    case 'INJECT_CHAOS':
+      engine?.injectChaos(msg.event)
       break
   }
 })

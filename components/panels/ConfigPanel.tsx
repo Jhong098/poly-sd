@@ -8,11 +8,13 @@ import {
   type DatabaseConfig,
   type CacheConfig,
   type LoadBalancerConfig,
+  type QueueConfig,
   type TrafficPreset,
   SERVER_INSTANCES,
   DATABASE_INSTANCES,
   CACHE_INSTANCES,
   LB_COST_PER_HOUR,
+  QUEUE_COST_PER_HOUR,
   COMPONENT_META,
 } from '@/lib/components/definitions'
 import { ArrowRight } from 'lucide-react'
@@ -180,6 +182,25 @@ function CacheConfigEditor({ config, patch }: { config: CacheConfig; patch: (p: 
   )
 }
 
+function QueueConfigEditor({ config, patch }: { config: QueueConfig; patch: (p: Partial<QueueConfig>) => void }) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <Label>Drain Rate (RPS)</Label>
+        <NumberInput value={config.processingRatePerSec} onChange={(v) => patch({ processingRatePerSec: v })} min={1} max={10_000} step={50} />
+        <p className="text-[11px] text-gray-600 mt-1">Max requests/sec the downstream consumer receives.</p>
+      </div>
+      <div>
+        <Label>Max Depth</Label>
+        <NumberInput value={config.maxDepth} onChange={(v) => patch({ maxDepth: v })} min={100} max={1_000_000} step={1000} />
+        <p className="text-[11px] text-gray-600 mt-1">Requests beyond this limit are dropped.</p>
+      </div>
+      <Divider />
+      <Stat label="Cost per hour" value={`$${QUEUE_COST_PER_HOUR.toFixed(3)}`} />
+    </div>
+  )
+}
+
 function LoadBalancerConfigEditor({ config, patch }: { config: LoadBalancerConfig; patch: (p: Partial<LoadBalancerConfig>) => void }) {
   return (
     <div className="space-y-4">
@@ -327,6 +348,7 @@ export function ConfigPanel() {
         {data.componentType === 'database'      && <DatabaseConfigEditor     config={data.config as DatabaseConfig}     patch={patch} />}
         {data.componentType === 'cache'         && <CacheConfigEditor        config={data.config as CacheConfig}        patch={patch} />}
         {data.componentType === 'load-balancer' && <LoadBalancerConfigEditor config={data.config as LoadBalancerConfig} patch={patch} />}
+        {data.componentType === 'queue'         && <QueueConfigEditor        config={data.config as QueueConfig}        patch={patch} />}
       </div>
 
       <div className="px-4 py-3 border-t border-gray-800/60">

@@ -13,6 +13,7 @@ export function resolveGraph(
   globalIngressRps: number,
   simTimeMs: number,
   clientRpsMap: Record<string, number> = {},
+  chaosMap: Record<string, ChaosEvent> = {},
 ): SimSnapshot {
   if (graph.nodes.length === 0) {
     return emptySnapshot(simTimeMs, globalIngressRps)
@@ -45,11 +46,16 @@ export function resolveGraph(
     const fromEdges = incoming.reduce((sum, e) => sum + (edgeThroughput[e.id] ?? 0), 0)
     const inputRps = (nodeInputRps[nodeId] ?? 0) + fromEdges
 
+    // Apply traffic-surge chaos before compute
+    const surgeEvent = chaosMap[nodeId]?.type === 'traffic-surge' ? chaosMap[nodeId] : undefined
+    const effectiveInputRps = surgeEvent ? inputRps * surgeEvent.magnitude : inputRps
+
     const snap = computeNode(
       node,
-      inputRps,
+      effectiveInputRps,
       componentState[nodeId] ?? { queuedRequests: 0 },
       clientRpsMap[nodeId],
+      chaosMap[nodeId],
     )
     nodeSnaps[nodeId] = snap
 

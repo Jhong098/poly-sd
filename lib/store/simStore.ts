@@ -1,7 +1,8 @@
 'use client'
 
 import { create } from 'zustand'
-import type { SimSnapshot, TrafficConfig, TrafficWaypoint, WorkerInbound, WorkerOutbound } from '@/sim/types'
+import type { SimSnapshot, TrafficConfig, TrafficWaypoint, WorkerInbound, WorkerOutbound, ChaosEvent, ChaosType } from '@/sim/types'
+import { makeChaosEvent } from '@/sim/chaos'
 import { DEFAULT_TRAFFIC, presetToWaypoints } from '@/sim/types'
 import type { TrafficPreset } from '@/lib/components/definitions'
 import { useArchitectureStore } from './architectureStore'
@@ -34,6 +35,7 @@ type SimState = {
   pauseSimulation: () => void
   resumeSimulation: () => void
   stopSimulation: () => void
+  injectChaos: (nodeId: string, type: ChaosType, durationMs?: number, magnitude?: number) => void
 }
 
 export const useSimStore = create<SimState>((set, get) => ({
@@ -126,11 +128,13 @@ export const useSimStore = create<SimState>((set, get) => ({
       set({ status: 'idle', worker: null })
     }
 
+    const { activeChallenge } = useChallengeStore.getState()
     worker.postMessage({
       type: 'START',
       graph,
       traffic: trafficConfig,
       speedMultiplier: speed,
+      chaosSchedule: activeChallenge?.chaosSchedule ?? [],
     } satisfies WorkerInbound)
 
     set({ worker, status: 'running', history: [], currentSnapshot: null, nodeSnapshots: {}, edgeSnapshots: {} })
@@ -150,5 +154,12 @@ export const useSimStore = create<SimState>((set, get) => ({
     const { worker } = get()
     if (worker) { worker.postMessage({ type: 'STOP' } satisfies WorkerInbound); worker.terminate() }
     set({ status: 'idle', worker: null, currentSnapshot: null, history: [], nodeSnapshots: {}, edgeSnapshots: {} })
+  },
+
+  injectChaos: (nodeId, type, durationMs = 15_000, magnitude = 5) => {
+    const { worker, currentSnapshot } = get()
+    if (!worker || !currentSnapshot) return
+    const event = makeChaosEvent(nodeId, type, currentSnapshot.simTimeMs, durationMs, magnitude)
+    worker.postMessage({ type: 'INJECT_CHAOS', event } satisfies WorkerInbound)
   },
 }))

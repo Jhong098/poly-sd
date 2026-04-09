@@ -1,5 +1,5 @@
 import type { ComponentType, ComponentConfig } from '@/lib/components/definitions'
-import type { TrafficConfig } from '@/sim/types'
+import type { TrafficConfig, ChaosEvent } from '@/sim/types'
 
 export type SlaTargets = {
   p99LatencyMs: number
@@ -34,6 +34,7 @@ export type Challenge = {
   hints: string[]
   starterNodes?: StarterNode[]
   starterEdges?: StarterEdge[]
+  chaosSchedule?: ChaosEvent[]    // auto-injected events (for scripted challenges)
 }
 
 export type ScoreBreakdown = {

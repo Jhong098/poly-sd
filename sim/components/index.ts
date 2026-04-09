@@ -1,6 +1,6 @@
-import type { SimNode, NodeSnapshot, NodeStatus } from '../types'
-import type { ClientConfig, ServerConfig, DatabaseConfig, CacheConfig, LoadBalancerConfig } from '@/lib/components/definitions'
-import { SERVER_INSTANCES, DATABASE_INSTANCES, CACHE_INSTANCES, LB_COST_PER_HOUR, LB_MAX_RPS } from '@/lib/components/definitions'
+import type { SimNode, NodeSnapshot, NodeStatus, ChaosEvent } from '../types'
+import type { ClientConfig, ServerConfig, DatabaseConfig, CacheConfig, LoadBalancerConfig, QueueConfig } from '@/lib/components/definitions'
+import { SERVER_INSTANCES, DATABASE_INSTANCES, CACHE_INSTANCES, LB_COST_PER_HOUR, LB_MAX_RPS, QUEUE_COST_PER_HOUR } from '@/lib/components/definitions'
 
 export type ComponentState = { queuedRequests: number }
 
@@ -13,13 +13,32 @@ export function computeNode(
   inputRps: number,
   _state: ComponentState,
   clientRps?: number,
+  chaos?: ChaosEvent,
 ): NodeSnapshot {
+  // Node failure: zero output, full errors
+  if (chaos?.type === 'node-failure') {
+    return {
+      id: node.id,
+      inputRps,
+      outputRps: 0,
+      utilization: 0,
+      latencyMs: 0,
+      errorRate: 1,
+      costPerHour: 0,
+      status: 'failed',
+    }
+  }
+
+  // Latency spike: pass magnitude into compute as a multiplier
+  const latencyMult = chaos?.type === 'latency-spike' ? chaos.magnitude : 1
+
   switch (node.componentType) {
     case 'client':        return computeClient(node, clientRps ?? 0)
-    case 'server':        return computeServer(node, inputRps)
-    case 'database':      return computeDatabase(node, inputRps)
+    case 'server':        return computeServer(node, inputRps, latencyMult)
+    case 'database':      return computeDatabase(node, inputRps, latencyMult)
     case 'cache':         return computeCache(node, inputRps)
     case 'load-balancer': return computeLoadBalancer(node, inputRps)
+    case 'queue':         return computeQueue(node, inputRps, latencyMult)
     default:              return idleSnapshot((node as SimNode).id)
   }
 }
@@ -55,7 +74,7 @@ function computeClient(node: SimNode, currentRps: number): NodeSnapshot {
 
 // ── Server ───────────────────────────────────────────────────────────────────
 
-function computeServer(node: SimNode, inputRps: number): NodeSnapshot {
+function computeServer(node: SimNode, inputRps: number, latencyMult = 1): NodeSnapshot {
   const cfg = node.config as ServerConfig
   const inst = SERVER_INSTANCES[cfg.instanceType]
   const maxRps = inst.maxRps * cfg.instanceCount
@@ -64,7 +83,7 @@ function computeServer(node: SimNode, inputRps: number): NodeSnapshot {
   if (inputRps === 0) return idleSnapshot(node.id, costPerHour)
 
   const rho = inputRps / maxRps
-  const latencyMs = mm1Latency(cfg.baseLatencyMs, rho)
+  const latencyMs = mm1Latency(cfg.baseLatencyMs * latencyMult, rho)
 
   let errorRate: number, outputRps: number
   if (rho <= 1) {
@@ -80,7 +99,7 @@ function computeServer(node: SimNode, inputRps: number): NodeSnapshot {
 
 // ── Database ─────────────────────────────────────────────────────────────────
 
-function computeDatabase(node: SimNode, inputRps: number): NodeSnapshot {
+function computeDatabase(node: SimNode, inputRps: number, latencyMult = 1): NodeSnapshot {
   const cfg = node.config as DatabaseConfig
   const inst = DATABASE_INSTANCES[cfg.instanceType]
   const maxRps = cfg.maxConnections * 5
@@ -89,7 +108,7 @@ function computeDatabase(node: SimNode, inputRps: number): NodeSnapshot {
   if (inputRps === 0) return idleSnapshot(node.id, costPerHour)
 
   const rho = inputRps / maxRps
-  const latencyMs = mm1Latency(10, rho)
+  const latencyMs = mm1Latency(10 * latencyMult, rho)
 
   let errorRate: number, outputRps: number
   if (rho <= 1) {
@@ -120,6 +139,39 @@ function computeCache(node: SimNode, inputRps: number): NodeSnapshot {
     errorRate: 0.0001,
     costPerHour: inst.costPerHour,
     status: 'healthy',
+  }
+}
+
+// ── Queue ─────────────────────────────────────────────────────────────────────
+
+function computeQueue(node: SimNode, inputRps: number, latencyMult = 1): NodeSnapshot {
+  const cfg = node.config as QueueConfig
+  const { processingRatePerSec, maxDepth } = cfg
+
+  if (inputRps === 0) return idleSnapshot(node.id, QUEUE_COST_PER_HOUR)
+
+  const rho = inputRps / processingRatePerSec
+
+  // Queue depth estimate via Little's law (L = λW)
+  const baseWaitMs = rho < 1
+    ? (rho / (processingRatePerSec * (1 - rho))) * 1000
+    : (maxDepth / processingRatePerSec) * 1000
+  const latencyMs = Math.min(baseWaitMs * latencyMult, 30_000)
+
+  // When overloaded: output is capped at drain rate, excess is dropped
+  const overflow = Math.max(inputRps - processingRatePerSec, 0)
+  const dropRate = overflow > 0 ? overflow / inputRps : 0
+  const outputRps = Math.min(inputRps, processingRatePerSec) * (1 - 0.0001)
+
+  return {
+    id: node.id,
+    inputRps,
+    outputRps,
+    utilization: Math.min(rho, 1),
+    latencyMs,
+    errorRate: dropRate,
+    costPerHour: QUEUE_COST_PER_HOUR,
+    status: statusFromRho(Math.min(rho, 1), inputRps),
   }
 }
 

@@ -9,8 +9,9 @@ import type { Challenge } from '@/lib/challenges/types'
 import type { CompletionRow } from '@/lib/actions/completions'
 
 const TIERS = [
-  { id: 0, label: 'Tutorial',              color: 'text-gray-400'  },
-  { id: 1, label: 'Tier 1 — Foundations', color: 'text-blue-400'  },
+  { id: 0, label: 'Tutorial',              color: 'text-gray-400'   },
+  { id: 1, label: 'Tier 1 — Foundations', color: 'text-blue-400'   },
+  { id: 2, label: 'Tier 2 — Reliability', color: 'text-orange-400' },
 ]
 
 function ChallengeCard({
@@ -185,7 +186,7 @@ export default async function CampaignPage() {
         <section className="opacity-50">
           <div className="flex items-center gap-3 mb-4">
             <h2 className="text-[13px] font-bold uppercase tracking-wider text-gray-600">
-              Tier 2 — Reliability
+              Tier 3 — Distributed Data
             </h2>
             <div className="flex-1 h-px bg-gray-800/40" />
             <Lock size={12} className="text-gray-700" />
@@ -193,7 +194,7 @@ export default async function CampaignPage() {
           <div className="flex items-center gap-3 p-4 rounded-xl border border-gray-800/40 bg-gray-900/30">
             <Lock size={16} className="text-gray-700" />
             <p className="text-[13px] text-gray-600">
-              Complete Tier 1 to unlock replicas, failover, and chaos injection.
+              Complete Tier 2 to unlock replication, sharding, and consensus protocols.
             </p>
           </div>
         </section>

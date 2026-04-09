@@ -1,4 +1,4 @@
-export type ComponentType = 'client' | 'server' | 'database' | 'cache' | 'load-balancer'
+export type ComponentType = 'client' | 'server' | 'database' | 'cache' | 'load-balancer' | 'queue'
 
 // ── Per-component config shapes ────────────────────────────────────────────
 
@@ -33,7 +33,12 @@ export type LoadBalancerConfig = {
   algorithm: 'round-robin' | 'least-connections' | 'ip-hash'
 }
 
-export type ComponentConfig = ClientConfig | ServerConfig | DatabaseConfig | CacheConfig | LoadBalancerConfig
+export type QueueConfig = {
+  processingRatePerSec: number   // max drain rate (RPS the downstream receives)
+  maxDepth: number               // buffer size before dropping requests
+}
+
+export type ComponentConfig = ClientConfig | ServerConfig | DatabaseConfig | CacheConfig | LoadBalancerConfig | QueueConfig
 
 // ── Instance pricing ────────────────────────────────────────────────────────
 
@@ -64,6 +69,9 @@ export const CACHE_INSTANCES = {
 export const LB_COST_PER_HOUR = 0.008
 export const LB_MAX_RPS = 100_000
 
+/** Fixed cost for a managed message queue (SQS-like). */
+export const QUEUE_COST_PER_HOUR = 0.001
+
 // ── Default configs ─────────────────────────────────────────────────────────
 
 export const DEFAULT_CONFIGS: Record<ComponentType, ComponentConfig> = {
@@ -91,6 +99,10 @@ export const DEFAULT_CONFIGS: Record<ComponentType, ComponentConfig> = {
   'load-balancer': {
     algorithm: 'round-robin',
   } satisfies LoadBalancerConfig,
+  queue: {
+    processingRatePerSec: 200,
+    maxDepth: 10_000,
+  } satisfies QueueConfig,
 }
 
 // ── Visual metadata ─────────────────────────────────────────────────────────
@@ -133,6 +145,12 @@ export const COMPONENT_META: Record<ComponentType, ComponentMeta> = {
     label: 'Load Balancer',
     description: 'Distributes traffic across multiple backends. Enables horizontal scaling.',
     accentColor: 'sky',
+    tier: 2,
+  },
+  queue: {
+    label: 'Queue',
+    description: 'Message queue. Decouples producers from consumers, absorbs traffic bursts.',
+    accentColor: 'orange',
     tier: 2,
   },
 }

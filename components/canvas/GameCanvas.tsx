@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useRef } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import {
   ReactFlow,
   Background,
@@ -10,6 +10,7 @@ import {
   useReactFlow,
   type NodeTypes,
   type EdgeTypes,
+  type NodeMouseHandler,
 } from '@xyflow/react'
 
 import { ClientNode }       from '@/components/nodes/ClientNode'
@@ -17,8 +18,11 @@ import { ServerNode }       from '@/components/nodes/ServerNode'
 import { DatabaseNode }     from '@/components/nodes/DatabaseNode'
 import { CacheNode }        from '@/components/nodes/CacheNode'
 import { LoadBalancerNode } from '@/components/nodes/LoadBalancerNode'
-import { AnimatedEdge } from '@/components/canvas/edges/AnimatedEdge'
+import { QueueNode }        from '@/components/nodes/QueueNode'
+import { AnimatedEdge }     from '@/components/canvas/edges/AnimatedEdge'
+import { ChaosMenu }        from '@/components/canvas/ChaosMenu'
 import { useArchitectureStore, type ComponentNode } from '@/lib/store/architectureStore'
+import { useSimStore } from '@/lib/store/simStore'
 import type { ComponentType } from '@/lib/components/definitions'
 
 const NODE_TYPES: NodeTypes = {
@@ -27,6 +31,7 @@ const NODE_TYPES: NodeTypes = {
   database:        DatabaseNode,
   cache:           CacheNode,
   'load-balancer': LoadBalancerNode,
+  queue:           QueueNode,
 }
 
 const EDGE_TYPES: EdgeTypes = {
@@ -40,9 +45,12 @@ function nodeColor(node: ComponentNode): string {
     database:        '#8b5cf6',
     cache:           '#10b981',
     'load-balancer': '#0ea5e9',
+    queue:           '#f97316',
   }
   return map[node.data.componentType] ?? '#64748b'
 }
+
+type ChaosMenuState = { nodeId: string; nodeLabel: string; x: number; y: number } | null
 
 export function GameCanvas() {
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -52,6 +60,10 @@ export function GameCanvas() {
     onNodesChange, onEdgesChange, onConnect,
     addNode, setSelectedNodeId, setSelectedEdgeId,
   } = useArchitectureStore()
+
+  const simStatus = useSimStore((s) => s.status)
+  const isRunning = simStatus === 'running' || simStatus === 'paused'
+  const [chaosMenu, setChaosMenu] = useState<ChaosMenuState>(null)
 
   const onDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -69,6 +81,20 @@ export function GameCanvas() {
     [screenToFlowPosition, addNode],
   )
 
+  const onNodeContextMenu: NodeMouseHandler = useCallback(
+    (e, node) => {
+      if (!isRunning) return
+      e.preventDefault()
+      setChaosMenu({
+        nodeId: node.id,
+        nodeLabel: (node.data as ComponentNode['data']).label,
+        x: e.clientX,
+        y: e.clientY,
+      })
+    },
+    [isRunning],
+  )
+
   return (
     <div ref={wrapperRef} className="w-full h-full">
       <ReactFlow
@@ -81,7 +107,8 @@ export function GameCanvas() {
         onConnect={onConnect}
         onNodeClick={(_, node) => setSelectedNodeId(node.id)}
         onEdgeClick={(_, edge) => setSelectedEdgeId(edge.id)}
-        onPaneClick={() => { setSelectedNodeId(null); setSelectedEdgeId(null) }}
+        onPaneClick={() => { setSelectedNodeId(null); setSelectedEdgeId(null); setChaosMenu(null) }}
+        onNodeContextMenu={onNodeContextMenu}
         onDragOver={onDragOver}
         onDrop={onDrop}
         deleteKeyCode="Delete"
@@ -99,6 +126,16 @@ export function GameCanvas() {
           style={{ width: 160, height: 100 }}
         />
       </ReactFlow>
+
+      {chaosMenu && isRunning && (
+        <ChaosMenu
+          nodeId={chaosMenu.nodeId}
+          nodeLabel={chaosMenu.nodeLabel}
+          x={chaosMenu.x}
+          y={chaosMenu.y}
+          onClose={() => setChaosMenu(null)}
+        />
+      )}
     </div>
   )
 }
