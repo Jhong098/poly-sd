@@ -40,14 +40,14 @@ const EDGE_TYPES: EdgeTypes = {
 
 function nodeColor(node: ComponentNode): string {
   const map: Record<string, string> = {
-    client:          '#f59e0b',
-    server:          '#3b82f6',
-    database:        '#8b5cf6',
-    cache:           '#10b981',
-    'load-balancer': '#0ea5e9',
-    queue:           '#f97316',
+    client:          '#00e5ff',
+    server:          '#00bfa5',
+    database:        '#a78bfa',
+    cache:           '#fbbf24',
+    'load-balancer': '#38bdf8',
+    queue:           '#fb923c',
   }
-  return map[node.data.componentType] ?? '#64748b'
+  return map[node.data.componentType] ?? '#0d3d4e'
 }
 
 type ChaosMenuState = { nodeId: string; nodeLabel: string; x: number; y: number } | null
@@ -118,11 +118,11 @@ export function GameCanvas() {
         maxZoom={2}
         proOptions={{ hideAttribution: true }}
       >
-        <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#1e293b" />
+        <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#0a2d3a" />
         <Controls showInteractive={false} />
         <MiniMap
           nodeColor={nodeColor}
-          maskColor="rgba(3,7,18,0.7)"
+          maskColor="rgba(2,11,15,0.8)"
           style={{ width: 160, height: 100 }}
         />
       </ReactFlow>

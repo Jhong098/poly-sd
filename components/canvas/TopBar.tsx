@@ -21,7 +21,7 @@ function CurvePreview({ waypoints, durationMs }: { waypoints: { timeMs: number; 
   const pts = sorted.map((w) => `${(w.timeMs / durationMs) * W},${H - (w.rps / maxRps) * H}`).join(' ')
   return (
     <svg width={W} height={H} className="overflow-visible">
-      <polyline points={pts} fill="none" stroke="#60a5fa" strokeWidth="1.5" strokeLinejoin="round" />
+      <polyline points={pts} fill="none" stroke="var(--color-cyan)" strokeWidth="1.5" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -62,28 +62,26 @@ function TrafficPopover({ onClose }: { onClose: () => void }) {
   const sorted = [...waypoints].sort((a, b) => a.timeMs - b.timeMs)
 
   return (
-    <div className="absolute top-full left-0 mt-1 z-50 w-96 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl shadow-black/60 p-4">
+    <div className="absolute top-full left-0 mt-1 z-50 w-96 bg-raised border border-edge shadow-2xl p-4">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-[12px] font-semibold text-gray-200">Traffic Configuration</p>
-        <button onClick={onClose} className="text-gray-600 hover:text-gray-400">
+        <p className="text-[11px] font-bold tracking-widest uppercase text-cyan">// Traffic Config</p>
+        <button onClick={onClose} className="text-ink-3 hover:text-ink-2">
           <X size={14} />
         </button>
       </div>
 
       {/* Duration */}
       <div className="flex items-center gap-2 mb-4">
-        <label className="text-[11px] text-gray-500 w-16">Duration</label>
+        <label className="text-[10px] text-ink-3 tracking-wider w-16 uppercase">Duration</label>
         <input
           type="number"
           value={durationSec}
           min={10}
           max={3600}
           onChange={(e) => setDuration(Number(e.target.value) * 1000)}
-          className="w-20 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-[12px] text-gray-200 font-mono focus:outline-none"
+          className="w-20 bg-surface border border-edge px-2 py-1 text-[12px] text-ink focus:outline-none focus:border-edge-strong"
         />
-        <span className="text-[11px] text-gray-600">seconds</span>
-
-        {/* Curve preview */}
+        <span className="text-[10px] text-ink-3">seconds</span>
         <div className="ml-auto">
           <CurvePreview waypoints={waypoints} durationMs={durationMs} />
         </div>
@@ -91,24 +89,24 @@ function TrafficPopover({ onClose }: { onClose: () => void }) {
 
       {/* Quick presets */}
       <div className="mb-3">
-        <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-2">Quick presets</p>
+        <p className="text-[10px] text-ink-3 uppercase tracking-widest mb-2">Quick presets</p>
         <div className="flex items-center gap-2">
           <input
             type="number"
             value={presetRps}
             min={1}
             onChange={(e) => setPresetRps(Number(e.target.value))}
-            className="w-20 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-[12px] text-gray-200 font-mono focus:outline-none"
+            className="w-20 bg-surface border border-edge px-2 py-1 text-[12px] text-ink focus:outline-none"
             title="Base RPS"
           />
-          <span className="text-[11px] text-gray-600">RPS ×</span>
+          <span className="text-[10px] text-ink-3">RPS ×</span>
           <input
             type="number"
             value={presetMult}
             min={2}
             max={20}
             onChange={(e) => setPresetMult(Number(e.target.value))}
-            className="w-12 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-[12px] text-gray-200 font-mono focus:outline-none"
+            className="w-12 bg-surface border border-edge px-2 py-1 text-[12px] text-ink focus:outline-none"
             title="Peak multiplier"
           />
           <div className="flex gap-1 ml-1">
@@ -116,7 +114,7 @@ function TrafficPopover({ onClose }: { onClose: () => void }) {
               <button
                 key={p}
                 onClick={() => handlePreset(p)}
-                className="px-2 py-1 text-[11px] rounded bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-gray-200 border border-gray-700 capitalize"
+                className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-surface hover:bg-overlay text-ink-3 hover:text-ink-2 border border-edge capitalize transition-colors"
               >
                 {p}
               </button>
@@ -127,13 +125,13 @@ function TrafficPopover({ onClose }: { onClose: () => void }) {
 
       {/* Waypoint editor */}
       <div>
-        <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-2">Waypoints</p>
+        <p className="text-[10px] text-ink-3 uppercase tracking-widest mb-2">Waypoints</p>
         <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
           {sorted.map((w, i) => {
             const origIdx = waypoints.indexOf(w)
             return (
               <div key={i} className="flex items-center gap-2">
-                <span className="text-[10px] text-gray-700 w-3">{i + 1}</span>
+                <span className="text-[10px] text-ink-3 w-3">{i + 1}</span>
                 <div className="flex items-center gap-1">
                   <input
                     type="number"
@@ -141,9 +139,9 @@ function TrafficPopover({ onClose }: { onClose: () => void }) {
                     min={0}
                     max={durationSec}
                     onChange={(e) => updateWaypoint(origIdx, 'timeMs', Number(e.target.value) * 1000)}
-                    className="w-16 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-[11px] text-gray-200 font-mono focus:outline-none"
+                    className="w-16 bg-surface border border-edge px-2 py-1 text-[11px] text-ink focus:outline-none"
                   />
-                  <span className="text-[10px] text-gray-600">s</span>
+                  <span className="text-[10px] text-ink-3">s</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <input
@@ -151,14 +149,14 @@ function TrafficPopover({ onClose }: { onClose: () => void }) {
                     value={w.rps}
                     min={0}
                     onChange={(e) => updateWaypoint(origIdx, 'rps', Number(e.target.value))}
-                    className="w-20 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-[11px] text-gray-200 font-mono focus:outline-none"
+                    className="w-20 bg-surface border border-edge px-2 py-1 text-[11px] text-ink focus:outline-none"
                   />
-                  <span className="text-[10px] text-gray-600">RPS</span>
+                  <span className="text-[10px] text-ink-3">RPS</span>
                 </div>
                 <button
                   onClick={() => removeWaypoint(origIdx)}
                   disabled={waypoints.length <= 2}
-                  className="text-gray-700 hover:text-red-400 disabled:opacity-30 ml-auto"
+                  className="text-ink-3 hover:text-err disabled:opacity-30 ml-auto transition-colors"
                 >
                   <X size={12} />
                 </button>
@@ -168,14 +166,14 @@ function TrafficPopover({ onClose }: { onClose: () => void }) {
         </div>
         <button
           onClick={addWaypoint}
-          className="mt-2 flex items-center gap-1 text-[11px] text-gray-600 hover:text-gray-300 transition-colors"
+          className="mt-2 flex items-center gap-1 text-[10px] text-ink-3 hover:text-ink-2 uppercase tracking-wider transition-colors"
         >
           <Plus size={12} /> Add waypoint
         </button>
       </div>
 
-      <p className="text-[10px] text-gray-700 mt-3">
-        Note: Client nodes on the canvas use their own RPS config and override global traffic.
+      <p className="text-[10px] text-ink-3 mt-3 opacity-60">
+        // Client nodes on the canvas override global traffic config
       </p>
     </div>
   )
@@ -198,10 +196,10 @@ function SaveDialog({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="absolute top-full right-0 mt-1 z-50 w-72 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl shadow-black/60 p-4">
+    <div className="absolute top-full right-0 mt-1 z-50 w-72 bg-raised border border-edge shadow-2xl p-4">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-[12px] font-semibold text-gray-200">Save Architecture</p>
-        <button onClick={onClose} className="text-gray-600 hover:text-gray-400"><X size={14} /></button>
+        <p className="text-[11px] font-bold tracking-widest uppercase text-cyan">// Save</p>
+        <button onClick={onClose} className="text-ink-3 hover:text-ink-2"><X size={14} /></button>
       </div>
       <input
         autoFocus
@@ -209,14 +207,14 @@ function SaveDialog({ onClose }: { onClose: () => void }) {
         onChange={(e) => setName(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && handleSave()}
         placeholder="Architecture name"
-        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-[13px] text-gray-200 focus:outline-none focus:border-gray-500 mb-3"
+        className="w-full bg-surface border border-edge px-3 py-2 text-[13px] text-ink focus:outline-none focus:border-edge-strong mb-3 placeholder:text-ink-off"
       />
       <button
         onClick={handleSave}
         disabled={isPending || !name.trim()}
-        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 text-white text-[12px] font-medium transition-colors"
+        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-cyan hover:bg-cyan/90 disabled:bg-surface disabled:text-ink-3 text-base text-[11px] font-bold uppercase tracking-wider transition-colors"
       >
-        {saved ? <><Check size={13} /> Saved!</> : isPending ? 'Saving…' : <><Save size={13} /> Save</>}
+        {saved ? <><Check size={13} /> Saved</> : isPending ? 'Saving…' : <><Save size={13} /> Save</>}
       </button>
     </div>
   )
@@ -242,36 +240,34 @@ export function TopBar() {
   const maxRps = Math.max(...waypoints.map((w) => w.rps))
 
   return (
-    <header className="h-12 flex-shrink-0 flex items-center gap-3 px-4 bg-gray-900/90 border-b border-gray-800/60 backdrop-blur-sm relative">
+    <header className="h-11 flex-shrink-0 flex items-center gap-3 px-4 bg-raised border-b border-edge relative">
       {/* Logo */}
       <div className="flex items-center gap-2 flex-shrink-0">
-        <div className="w-6 h-6 rounded-md bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
-          <LayoutGrid size={13} className="text-white" />
-        </div>
-        <span className="text-[14px] font-bold tracking-tight text-gray-100">Poly-SD</span>
+        <LayoutGrid size={13} className="text-cyan" />
+        <span className="text-[13px] font-bold tracking-widest text-cyan">POLY-SD</span>
       </div>
 
-      <div className="h-5 w-px bg-gray-800" />
+      <div className="h-4 w-px bg-edge" />
 
       {/* Traffic summary + editor trigger */}
       <div className="relative">
         <button
           onClick={() => setShowTraffic((v) => !v)}
           disabled={isActive}
-          className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-[12px] transition-colors
+          className={`flex items-center gap-2 px-2.5 py-1.5 border text-[11px] transition-colors
             ${isActive
-              ? 'border-gray-800 text-gray-600 cursor-not-allowed'
-              : 'border-gray-700/60 bg-gray-800/50 hover:bg-gray-800 text-gray-300 hover:text-gray-100'
+              ? 'border-edge-dim text-ink-3 cursor-not-allowed'
+              : 'border-edge bg-surface hover:bg-overlay text-ink-2 hover:text-ink'
             }`}
         >
           {!hasClients && <CurvePreview waypoints={waypoints} durationMs={durationMs} />}
           <div className="text-left">
             {hasClients
-              ? <span className="text-amber-400 font-medium">Client nodes active</span>
+              ? <span className="text-warn font-semibold">Client nodes active</span>
               : <span>{maxRps.toLocaleString()} RPS peak · {durationMs / 1000}s</span>
             }
           </div>
-          {!isActive && <ChevronDown size={12} className="text-gray-600" />}
+          {!isActive && <ChevronDown size={11} className="text-ink-3" />}
         </button>
 
         {showTraffic && !isActive && (
@@ -279,7 +275,7 @@ export function TopBar() {
         )}
       </div>
 
-      <div className="h-5 w-px bg-gray-800" />
+      <div className="h-4 w-px bg-edge" />
 
       {/* Playback */}
       <div className="flex items-center gap-1.5">
@@ -287,7 +283,7 @@ export function TopBar() {
           <button
             onClick={startSimulation}
             disabled={!canRun}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 disabled:cursor-not-allowed text-white text-[12px] font-medium transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan hover:bg-cyan/90 disabled:bg-surface disabled:text-ink-3 disabled:cursor-not-allowed text-base text-[11px] font-bold uppercase tracking-wider transition-colors"
           >
             <Play size={11} />
             Run
@@ -295,16 +291,25 @@ export function TopBar() {
         ) : (
           <>
             {isRunning && (
-              <button onClick={pauseSimulation} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-yellow-600/80 hover:bg-yellow-500/80 text-white text-[12px] font-medium transition-colors">
+              <button
+                onClick={pauseSimulation}
+                className="flex items-center gap-1.5 px-3 py-1.5 border border-warn text-warn text-[11px] font-bold uppercase tracking-wider transition-colors hover:bg-warn/10"
+              >
                 <Pause size={11} /> Pause
               </button>
             )}
             {isPaused && (
-              <button onClick={resumeSimulation} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[12px] font-medium transition-colors">
+              <button
+                onClick={resumeSimulation}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan hover:bg-cyan/90 text-base text-[11px] font-bold uppercase tracking-wider transition-colors"
+              >
                 <Play size={11} /> Resume
               </button>
             )}
-            <button onClick={stopSimulation} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-[12px] font-medium transition-colors">
+            <button
+              onClick={stopSimulation}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 border border-edge bg-surface hover:bg-overlay text-ink-2 text-[11px] font-bold uppercase tracking-wider transition-colors"
+            >
               <Square size={11} /> Stop
             </button>
           </>
@@ -313,14 +318,16 @@ export function TopBar() {
 
       {/* Speed */}
       <div className="flex items-center gap-1.5">
-        <span className="text-[11px] text-gray-600">Speed</span>
-        <div className="flex rounded-md overflow-hidden border border-gray-700/60">
+        <span className="text-[10px] text-ink-3 uppercase tracking-widest">Speed</span>
+        <div className="flex border border-edge">
           {SPEED_OPTIONS.map((s) => (
             <button
               key={s}
               onClick={() => setSpeed(s)}
-              className={`px-2 py-1 text-[11px] font-mono font-medium transition-colors ${
-                speed === s ? 'bg-gray-600 text-gray-100' : 'bg-gray-800/80 text-gray-500 hover:text-gray-300 hover:bg-gray-700/50'
+              className={`px-2.5 py-1 text-[11px] font-bold tracking-wider transition-colors border-l border-edge first:border-l-0 ${
+                speed === s
+                  ? 'bg-cyan text-base'
+                  : 'bg-raised text-ink-3 hover:text-ink-2 hover:bg-overlay'
               }`}
             >
               {s}×
@@ -329,18 +336,32 @@ export function TopBar() {
         </div>
       </div>
 
-      {/* Right side: hint / save / user */}
+      {/* Right: status / save / auth */}
       <div className="ml-auto flex items-center gap-3">
-        {nodes.length === 0 && status === 'idle' && (
-          <span className="text-[11px] text-gray-700">← drag a Client + components onto the canvas</span>
+        {/* Running indicator */}
+        {isActive && (
+          <div className="flex items-center gap-1.5">
+            <span
+              className="w-1.5 h-1.5 rounded-full"
+              style={{
+                background: isRunning ? 'var(--color-ok)' : isPaused ? 'var(--color-warn)' : 'var(--color-cyan)',
+              }}
+            />
+            <span className="text-[10px] text-ink-3 uppercase tracking-wider">
+              {isRunning ? 'Running' : isPaused ? 'Paused' : 'Complete'}
+            </span>
+          </div>
         )}
 
-        {/* Save button (only in sandbox, only when signed in) */}
+        {nodes.length === 0 && status === 'idle' && (
+          <span className="text-[10px] text-ink-3 tracking-wider">// drag a Client onto the canvas</span>
+        )}
+
         {isSignedIn && nodes.length > 0 && (
           <div className="relative">
             <button
               onClick={() => setShowSave((v) => !v)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-gray-700/60 bg-gray-800/50 hover:bg-gray-800 text-gray-400 hover:text-gray-200 text-[12px] transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 border border-edge bg-raised hover:bg-overlay text-ink-3 hover:text-ink-2 text-[11px] font-bold uppercase tracking-wider transition-colors"
             >
               <Save size={12} /> Save
             </button>
@@ -348,12 +369,11 @@ export function TopBar() {
           </div>
         )}
 
-        {/* Auth */}
         {isSignedIn ? (
           <UserButton />
         ) : (
           <SignInButton mode="modal">
-            <button className="px-3 py-1.5 rounded-lg border border-gray-700/60 bg-gray-800/50 hover:bg-gray-800 text-gray-400 hover:text-gray-200 text-[12px] transition-colors">
+            <button className="px-3 py-1.5 border border-edge bg-raised hover:bg-overlay text-ink-3 hover:text-ink-2 text-[11px] font-bold uppercase tracking-wider transition-colors">
               Sign in
             </button>
           </SignInButton>

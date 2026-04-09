@@ -22,7 +22,7 @@ import { ArrowRight } from 'lucide-react'
 // ── Shared primitives ────────────────────────────────────────────────────────
 
 function Label({ children }: { children: React.ReactNode }) {
-  return <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wider mb-1">{children}</p>
+  return <p className="text-[10px] font-bold text-ink-3 uppercase tracking-widest mb-1">{children}</p>
 }
 
 function Select({ value, onChange, options }: {
@@ -32,7 +32,7 @@ function Select({ value, onChange, options }: {
 }) {
   return (
     <select value={value} onChange={(e) => onChange(e.target.value)}
-      className="w-full bg-gray-800 border border-gray-700 rounded-md px-2.5 py-1.5 text-[12px] text-gray-200 focus:outline-none focus:border-gray-500">
+      className="w-full bg-surface border border-edge px-2.5 py-1.5 text-[12px] text-ink focus:outline-none focus:border-edge-strong">
       {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
     </select>
   )
@@ -44,7 +44,7 @@ function NumberInput({ value, onChange, min, max, step = 1 }: {
   return (
     <input type="number" value={value} min={min} max={max} step={step}
       onChange={(e) => onChange(Number(e.target.value))}
-      className="w-full bg-gray-800 border border-gray-700 rounded-md px-2.5 py-1.5 text-[12px] text-gray-200 focus:outline-none focus:border-gray-500" />
+      className="w-full bg-surface border border-edge px-2.5 py-1.5 text-[12px] text-ink focus:outline-none focus:border-edge-strong" />
   )
 }
 
@@ -54,13 +54,13 @@ function Slider({ value, onChange, min, max, step, format }: {
   return (
     <div className="space-y-1">
       <div className="flex justify-between">
-        <span className="text-[11px] text-gray-600">{format(min)}</span>
-        <span className="text-[12px] font-mono text-gray-200">{format(value)}</span>
-        <span className="text-[11px] text-gray-600">{format(max)}</span>
+        <span className="text-[10px] text-ink-3">{format(min)}</span>
+        <span className="text-[12px] font-semibold text-ink">{format(value)}</span>
+        <span className="text-[10px] text-ink-3">{format(max)}</span>
       </div>
       <input type="range" value={value} min={min} max={max} step={step}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full accent-blue-500 h-1.5 rounded-full bg-gray-700 appearance-none cursor-pointer" />
+        className="w-full h-1.5 appearance-none cursor-pointer bg-edge accent-cyan" />
     </div>
   )
 }
@@ -68,19 +68,19 @@ function Slider({ value, onChange, min, max, step, format }: {
 function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
     <button onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${checked ? 'bg-blue-500' : 'bg-gray-700'}`}>
-      <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${checked ? 'translate-x-4' : 'translate-x-1'}`} />
+      className={`relative inline-flex h-5 w-9 items-center transition-colors ${checked ? 'bg-cyan' : 'bg-edge'}`}>
+      <span className={`inline-block h-3.5 w-3.5 transform transition-transform ${checked ? 'translate-x-4 bg-base' : 'translate-x-1 bg-ink-3'}`} />
     </button>
   )
 }
 
-function Divider() { return <div className="h-px bg-gray-800 my-1" /> }
+function Divider() { return <div className="h-px bg-edge-dim my-1" /> }
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between text-[11px]">
-      <span className="text-gray-500">{label}</span>
-      <span className="font-mono text-gray-300">{value}</span>
+      <span className="text-ink-3">{label}</span>
+      <span className="font-semibold text-ink-2">{value}</span>
     </div>
   )
 }
@@ -111,7 +111,7 @@ function ClientConfigEditor({ config, patch }: { config: ClientConfig; patch: (p
           <Label>Peak Multiplier</Label>
           <Slider value={config.peakMultiplier} onChange={(v) => patch({ peakMultiplier: v })}
             min={2} max={20} step={0.5} format={(v) => `${v}×`} />
-          <p className="text-[11px] text-gray-600 mt-1">Peak: {(config.rps * config.peakMultiplier).toLocaleString()} RPS</p>
+          <p className="text-[10px] text-ink-3 mt-1">// Peak: {(config.rps * config.peakMultiplier).toLocaleString()} RPS</p>
         </div>
       )}
     </div>
@@ -154,7 +154,7 @@ function DatabaseConfigEditor({ config, patch }: { config: DatabaseConfig; patch
         <Label>Multi-AZ</Label>
         <div className="flex items-center gap-2 mt-1">
           <Toggle checked={config.multiAz} onChange={(v) => patch({ multiAz: v })} />
-          <span className="text-[12px] text-gray-400">{config.multiAz ? 'Enabled' : 'Disabled'}</span>
+          <span className="text-[12px] text-ink-2">{config.multiAz ? 'Enabled' : 'Disabled'}</span>
         </div>
       </div>
       <Divider />
@@ -188,12 +188,12 @@ function QueueConfigEditor({ config, patch }: { config: QueueConfig; patch: (p: 
       <div>
         <Label>Drain Rate (RPS)</Label>
         <NumberInput value={config.processingRatePerSec} onChange={(v) => patch({ processingRatePerSec: v })} min={1} max={10_000} step={50} />
-        <p className="text-[11px] text-gray-600 mt-1">Max requests/sec the downstream consumer receives.</p>
+        <p className="text-[10px] text-ink-3 mt-1">// Max RPS delivered to downstream consumer</p>
       </div>
       <div>
         <Label>Max Depth</Label>
         <NumberInput value={config.maxDepth} onChange={(v) => patch({ maxDepth: v })} min={100} max={1_000_000} step={1000} />
-        <p className="text-[11px] text-gray-600 mt-1">Requests beyond this limit are dropped.</p>
+        <p className="text-[10px] text-ink-3 mt-1">// Requests beyond limit are dropped</p>
       </div>
       <Divider />
       <Stat label="Cost per hour" value={`$${QUEUE_COST_PER_HOUR.toFixed(3)}`} />
@@ -215,8 +215,8 @@ function LoadBalancerConfigEditor({ config, patch }: { config: LoadBalancerConfi
             { value: 'ip-hash',           label: 'IP Hash — session affinity' },
           ]}
         />
-        <p className="text-[11px] text-gray-600 mt-1.5">
-          In Phase 2, traffic split is controlled by edge weights regardless of algorithm.
+        <p className="text-[10px] text-ink-3 mt-1.5">
+          // Traffic split controlled by edge weights in Phase 2
         </p>
       </div>
       <Divider />
@@ -226,7 +226,7 @@ function LoadBalancerConfigEditor({ config, patch }: { config: LoadBalancerConfi
   )
 }
 
-// ── Edge config panel ─────────────────────────────────────────────────────────
+// ── Edge config panel ────────────────────────────────────────────────────────
 
 function EdgeConfigPanel({ edgeId }: { edgeId: string }) {
   const { nodes, edges, updateEdgeSplitWeight } = useArchitectureStore()
@@ -237,7 +237,6 @@ function EdgeConfigPanel({ edgeId }: { edgeId: string }) {
   const sourceNode = nodes.find((n) => n.id === edge.source)
   const targetNode = nodes.find((n) => n.id === edge.target)
 
-  // Sibling edges (same source) — needed to show split as percentage
   const siblings = edges.filter((e) => e.source === edge.source)
   const totalWeight = siblings.reduce((s, e) => s + (e.data?.splitWeight ?? 1), 0)
   const myWeight = edge.data?.splitWeight ?? 1
@@ -245,23 +244,22 @@ function EdgeConfigPanel({ edgeId }: { edgeId: string }) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-4 pt-4 pb-3 border-b border-gray-800/60">
-        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Connection</p>
-        <div className="flex items-center gap-1.5 mt-1.5 text-[13px] text-gray-300">
-          <span className="font-medium truncate max-w-[80px]">{sourceNode?.data.label ?? edge.source}</span>
-          <ArrowRight size={12} className="text-gray-600 flex-shrink-0" />
-          <span className="font-medium truncate max-w-[80px]">{targetNode?.data.label ?? edge.target}</span>
+      <div className="px-4 pt-4 pb-3 border-b border-edge-dim">
+        <p className="text-[10px] font-bold text-cyan uppercase tracking-widest">// Connection</p>
+        <div className="flex items-center gap-1.5 mt-1.5 text-[13px] text-ink">
+          <span className="font-semibold truncate max-w-[80px]">{sourceNode?.data.label ?? edge.source}</span>
+          <ArrowRight size={12} className="text-ink-3 flex-shrink-0" />
+          <span className="font-semibold truncate max-w-[80px]">{targetNode?.data.label ?? edge.target}</span>
         </div>
       </div>
 
       <div className="px-4 py-4 space-y-4 flex-1">
-        {/* Split weight */}
         {siblings.length > 1 && (
           <div>
             <Label>Traffic Split Weight</Label>
             <NumberInput value={myWeight} onChange={(v) => updateEdgeSplitWeight(edgeId, v)} min={0.1} max={100} step={0.1} />
-            <p className="text-[11px] text-gray-600 mt-1">
-              {pct}% of traffic from {sourceNode?.data.label ?? 'source'}
+            <p className="text-[10px] text-ink-3 mt-1">
+              // {pct}% of traffic from {sourceNode?.data.label ?? 'source'}
             </p>
             <div className="mt-2 space-y-1">
               {siblings.map((sib) => {
@@ -269,9 +267,9 @@ function EdgeConfigPanel({ edgeId }: { edgeId: string }) {
                 const sibPct = ((sibWeight / totalWeight) * 100).toFixed(0)
                 const sibTarget = nodes.find((n) => n.id === sib.target)
                 return (
-                  <div key={sib.id} className={`flex justify-between text-[11px] ${sib.id === edgeId ? 'text-gray-300' : 'text-gray-600'}`}>
+                  <div key={sib.id} className={`flex justify-between text-[11px] ${sib.id === edgeId ? 'text-ink' : 'text-ink-3'}`}>
                     <span>→ {sibTarget?.data.label ?? sib.target}</span>
-                    <span className="font-mono">{sibPct}%</span>
+                    <span className="font-semibold">{sibPct}%</span>
                   </div>
                 )
               })}
@@ -280,10 +278,9 @@ function EdgeConfigPanel({ edgeId }: { edgeId: string }) {
         )}
 
         {siblings.length === 1 && (
-          <p className="text-[12px] text-gray-600">Add more connections from the same source to configure traffic split.</p>
+          <p className="text-[11px] text-ink-3">// Add more connections from the same source to configure traffic split</p>
         )}
 
-        {/* Live metrics */}
         {edgeSnap && (
           <>
             <Divider />
@@ -306,24 +303,20 @@ export function ConfigPanel() {
   const { nodes, selectedNodeId, selectedEdgeId, updateNodeConfig, updateNodeLabel } = useArchitectureStore()
   const selectedNode = nodes.find((n) => n.id === selectedNodeId)
 
-  // Edge selected
   if (selectedEdgeId && !selectedNodeId) {
     return (
-      <aside className="w-64 flex-shrink-0 h-full bg-gray-900/80 border-l border-gray-800/60 overflow-y-auto">
+      <aside className="w-64 flex-shrink-0 h-full bg-raised border-l border-edge overflow-y-auto">
         <EdgeConfigPanel edgeId={selectedEdgeId} />
       </aside>
     )
   }
 
-  // Nothing selected
   if (!selectedNode) {
     return (
-      <aside className="w-64 flex-shrink-0 h-full bg-gray-900/80 border-l border-gray-800/60 flex flex-col items-center justify-center">
+      <aside className="w-64 flex-shrink-0 h-full bg-raised border-l border-edge flex flex-col items-center justify-center">
         <div className="text-center px-6">
-          <div className="w-10 h-10 rounded-xl bg-gray-800 flex items-center justify-center mx-auto mb-3">
-            <span className="text-gray-600 text-xl">⚙️</span>
-          </div>
-          <p className="text-[12px] text-gray-600">Select a node or connection to configure it</p>
+          <p className="text-[10px] text-ink-3 uppercase tracking-widest mb-1">// Config</p>
+          <p className="text-[11px] text-ink-3">Select a node or connection</p>
         </div>
       </aside>
     )
@@ -335,11 +328,11 @@ export function ConfigPanel() {
   function patch(p: Partial<typeof data.config>) { updateNodeConfig(nodeId, p) }
 
   return (
-    <aside className="w-64 flex-shrink-0 h-full bg-gray-900/80 border-l border-gray-800/60 flex flex-col overflow-y-auto">
-      <div className="px-4 pt-4 pb-3 border-b border-gray-800/60">
-        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">{meta.label}</p>
+    <aside className="w-64 flex-shrink-0 h-full bg-raised border-l border-edge flex flex-col overflow-y-auto">
+      <div className="px-4 pt-4 pb-3 border-b border-edge-dim">
+        <p className="text-[10px] font-bold text-cyan uppercase tracking-widest">// {meta.label}</p>
         <input value={data.label} onChange={(e) => updateNodeLabel(selectedNode.id, e.target.value)}
-          className="mt-1 w-full bg-transparent text-[14px] font-semibold text-gray-100 focus:outline-none border-b border-transparent focus:border-gray-600 pb-0.5" />
+          className="mt-1 w-full bg-transparent text-[14px] font-semibold text-ink focus:outline-none border-b border-transparent focus:border-edge-strong pb-0.5" />
       </div>
 
       <div className="px-4 py-4 flex-1">
@@ -351,8 +344,8 @@ export function ConfigPanel() {
         {data.componentType === 'queue'         && <QueueConfigEditor        config={data.config as QueueConfig}        patch={patch} />}
       </div>
 
-      <div className="px-4 py-3 border-t border-gray-800/60">
-        <p className="text-[11px] text-gray-600">{meta.description}</p>
+      <div className="px-4 py-3 border-t border-edge-dim">
+        <p className="text-[10px] text-ink-3">{meta.description}</p>
       </div>
     </aside>
   )

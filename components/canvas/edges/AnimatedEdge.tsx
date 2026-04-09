@@ -29,15 +29,15 @@ export function AnimatedEdge({
   // Color by health
   const packetColor =
     dropRate > 0.05 ? '#ef4444'
-    : dropRate > 0.005 ? '#f59e0b'
-    : '#60a5fa'
+    : dropRate > 0.005 ? '#fbbf24'
+    : '#00e5ff'
 
   // Edge stroke color matches packet health
   const edgeColor =
-    dropRate > 0.05 ? '#ef444460'
-    : dropRate > 0.005 ? '#f59e0b60'
-    : isActive ? '#60a5fa50'
-    : '#334155'
+    dropRate > 0.05 ? '#ef444450'
+    : dropRate > 0.005 ? '#fbbf2450'
+    : isActive ? '#00e5ff30'
+    : '#0d3d4e'
 
   return (
     <>

@@ -60,24 +60,24 @@ export function ChaosMenu({ nodeId, nodeLabel, x, y, onClose }: Props) {
   return (
     <div
       ref={ref}
-      className="fixed z-50 w-56 bg-gray-900 border border-gray-700/60 rounded-xl shadow-2xl shadow-black/60 overflow-hidden"
+      className="fixed z-50 w-52 bg-raised border border-err/40 shadow-2xl overflow-hidden"
       style={{ left: x, top: y }}
     >
-      <div className="px-3 py-2 border-b border-gray-800/60">
-        <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Inject Chaos</p>
-        <p className="text-[12px] font-semibold text-gray-300 mt-0.5 truncate">{nodeLabel}</p>
+      <div className="px-3 py-2 border-b border-edge-dim">
+        <p className="text-[10px] font-bold text-err uppercase tracking-widest">// Inject Chaos</p>
+        <p className="text-[12px] font-semibold text-ink mt-0.5 truncate">{nodeLabel}</p>
       </div>
       <div className="p-1">
         {CHAOS_OPTIONS.map((opt) => (
           <button
             key={opt.type}
             onClick={() => handleInject(opt.type, opt.durationMs, opt.magnitude)}
-            className="w-full flex items-start gap-2.5 px-3 py-2.5 rounded-lg hover:bg-red-500/10 hover:border-red-500/20 border border-transparent transition-colors text-left group"
+            className="w-full flex items-start gap-2.5 px-3 py-2.5 hover:bg-err/10 border border-transparent hover:border-err/20 transition-colors text-left group"
           >
-            <span className="text-red-400 mt-0.5 flex-shrink-0">{opt.icon}</span>
+            <span className="text-err mt-0.5 flex-shrink-0">{opt.icon}</span>
             <div>
-              <p className="text-[12px] font-semibold text-gray-200 group-hover:text-red-300 transition-colors">{opt.label}</p>
-              <p className="text-[11px] text-gray-600">{opt.desc}</p>
+              <p className="text-[12px] font-semibold text-ink-2 group-hover:text-err transition-colors">{opt.label}</p>
+              <p className="text-[10px] text-ink-3">{opt.desc}</p>
             </div>
           </button>
         ))}

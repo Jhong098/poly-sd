@@ -10,47 +10,30 @@ type PaletteItem = {
 }
 
 const TIER1_ITEMS: PaletteItem[] = [
-  { type: 'client',   icon: <Users size={18} />,    shortDesc: 'Traffic source'  },
-  { type: 'server',   icon: <Server size={18} />,   shortDesc: 'App server'      },
-  { type: 'database', icon: <Database size={18} />, shortDesc: 'Relational DB'   },
-  { type: 'cache',    icon: <Zap size={18} />,      shortDesc: 'In-memory cache' },
+  { type: 'client',   icon: <Users size={16} />,    shortDesc: 'Traffic source'  },
+  { type: 'server',   icon: <Server size={16} />,   shortDesc: 'App server'      },
+  { type: 'database', icon: <Database size={16} />, shortDesc: 'Relational DB'   },
+  { type: 'cache',    icon: <Zap size={16} />,      shortDesc: 'In-memory cache' },
 ]
 
 const TIER2_ITEMS: PaletteItem[] = [
-  { type: 'load-balancer', icon: <Shuffle size={18} />, shortDesc: 'Distribute traffic'  },
-  { type: 'queue',         icon: <List size={18} />,    shortDesc: 'Buffer & decouple'   },
+  { type: 'load-balancer', icon: <Shuffle size={16} />, shortDesc: 'Distribute traffic' },
+  { type: 'queue',         icon: <List size={16} />,    shortDesc: 'Buffer & decouple'  },
 ]
 
-const ACCENT_CLASSES: Record<string, { card: string; icon: string }> = {
-  amber: {
-    card: 'border-amber-500/30 hover:border-amber-400/60 hover:bg-amber-500/5',
-    icon: 'text-amber-400 bg-amber-500/10',
-  },
-  blue: {
-    card: 'border-blue-500/30 hover:border-blue-400/60 hover:bg-blue-500/5',
-    icon: 'text-blue-400 bg-blue-500/10',
-  },
-  violet: {
-    card: 'border-violet-500/30 hover:border-violet-400/60 hover:bg-violet-500/5',
-    icon: 'text-violet-400 bg-violet-500/10',
-  },
-  emerald: {
-    card: 'border-emerald-500/30 hover:border-emerald-400/60 hover:bg-emerald-500/5',
-    icon: 'text-emerald-400 bg-emerald-500/10',
-  },
-  sky: {
-    card: 'border-sky-500/30 hover:border-sky-400/60 hover:bg-sky-500/5',
-    icon: 'text-sky-400 bg-sky-500/10',
-  },
-  orange: {
-    card: 'border-orange-500/30 hover:border-orange-400/60 hover:bg-orange-500/5',
-    icon: 'text-orange-400 bg-orange-500/10',
-  },
+// Maps accentColor → design system color variable
+const TYPE_COLOR_VAR: Record<string, string> = {
+  sky:     'var(--color-node-client)',
+  emerald: 'var(--color-node-server)',
+  violet:  'var(--color-node-db)',
+  amber:   'var(--color-node-cache)',
+  blue:    'var(--color-node-lb)',
+  orange:  'var(--color-node-queue)',
 }
 
 function PaletteCard({ item }: { item: PaletteItem }) {
   const meta = COMPONENT_META[item.type]
-  const accent = ACCENT_CLASSES[meta.accentColor] ?? ACCENT_CLASSES.blue
+  const color = TYPE_COLOR_VAR[meta.accentColor] ?? 'var(--color-edge-strong)'
 
   function onDragStart(e: React.DragEvent) {
     e.dataTransfer.setData('componentType', item.type)
@@ -61,19 +44,13 @@ function PaletteCard({ item }: { item: PaletteItem }) {
     <div
       draggable
       onDragStart={onDragStart}
-      className={`
-        flex items-center gap-3 px-3 py-2.5 rounded-lg border
-        bg-gray-900/50 cursor-grab active:cursor-grabbing
-        transition-all duration-150 select-none
-        ${accent.card}
-      `}
+      className="flex items-center gap-3 px-3 py-2.5 border border-edge bg-surface hover:bg-overlay cursor-grab active:cursor-grabbing transition-colors duration-150 select-none"
+      style={{ borderLeftWidth: 2, borderLeftColor: color }}
     >
-      <div className={`p-1.5 rounded-md flex-shrink-0 ${accent.icon}`}>
-        {item.icon}
-      </div>
+      <span style={{ color }} className="flex-shrink-0">{item.icon}</span>
       <div className="min-w-0">
-        <p className="text-[13px] font-semibold text-gray-200">{meta.label}</p>
-        <p className="text-[11px] text-gray-500 truncate">{item.shortDesc}</p>
+        <p className="text-[12px] font-bold tracking-wider uppercase" style={{ color }}>{meta.label}</p>
+        <p className="text-[10px] text-ink-3 truncate">{item.shortDesc}</p>
       </div>
     </div>
   )
@@ -95,15 +72,15 @@ export function Palette({ allowedTypes }: { allowedTypes?: ComponentType[] | 'al
   })).filter((tier) => tier.items.length > 0)
 
   return (
-    <aside className="w-56 flex-shrink-0 h-full bg-gray-900/80 border-r border-gray-800/60 flex flex-col overflow-y-auto">
-      <div className="px-4 pt-4 pb-3 border-b border-gray-800/60">
-        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Components</p>
-        <p className="text-[11px] text-gray-600 mt-0.5">Drag onto canvas</p>
+    <aside className="w-52 flex-shrink-0 h-full bg-raised border-r border-edge flex flex-col overflow-y-auto">
+      <div className="px-4 pt-4 pb-3 border-b border-edge-dim">
+        <p className="text-[10px] font-bold text-cyan uppercase tracking-widest">// Components</p>
+        <p className="text-[10px] text-ink-3 mt-0.5">Drag onto canvas</p>
       </div>
 
       {visibleTiers.map((tier) => (
-        <div key={tier.label} className="px-3 py-3 border-t border-gray-800/40 first:border-t-0">
-          <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-2 px-1">
+        <div key={tier.label} className="px-3 py-3 border-t border-edge-dim first:border-t-0">
+          <p className="text-[9px] font-bold text-ink-3 uppercase tracking-widest mb-2 px-1">
             {tier.label}
           </p>
           <div className="space-y-1.5">
@@ -114,9 +91,9 @@ export function Palette({ allowedTypes }: { allowedTypes?: ComponentType[] | 'al
         </div>
       ))}
 
-      <div className="px-3 py-3 border-t border-gray-800/40 mt-auto">
-        <p className="text-[11px] text-gray-700 text-center">
-          More components unlock as you progress
+      <div className="px-3 py-3 border-t border-edge-dim mt-auto">
+        <p className="text-[10px] text-ink-3 text-center">
+          // More unlock as you progress
         </p>
       </div>
     </aside>

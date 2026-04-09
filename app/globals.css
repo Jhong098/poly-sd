@@ -1,15 +1,48 @@
 @import "tailwindcss";
 @import "@xyflow/react/dist/style.css";
 
-:root {
-  --background: #030712;
-  --foreground: #f9fafb;
+@theme {
+  /* ── Backgrounds ── */
+  --color-base:    #020b0f;
+  --color-raised:  #041218;
+  --color-surface: #061e27;
+  --color-overlay: #082535;
+
+  /* ── Borders ── */
+  --color-edge-dim:    #0a2d3a;
+  --color-edge:        #0d3d4e;
+  --color-edge-strong: #155e75;
+
+  /* ── Text — all three tiers pass WCAG AA on every surface ── */
+  --color-ink:     #e0f7ff;  /* 17.9:1 on bg-base */
+  --color-ink-2:   #8ec8dc;  /* 10.8:1 on bg-base */
+  --color-ink-3:   #4593ac;  /*  5.7:1 on bg-base */
+  --color-ink-off: #153040;  /* intentionally sub-threshold, placeholders only */
+
+  /* ── Primary accent ── */
+  --color-cyan:     #00e5ff;
+  --color-cyan-dim: #007a8a;
+
+  /* ── Status / health ── */
+  --color-ok:   #00e5a0;
+  --color-warn: #fbbf24;
+  --color-hot:  #fb923c;
+  --color-err:  #ef4444;
+  --color-down: #991b1b;
+
+  /* ── Node type accents (left-border + label only — never fills) ── */
+  --color-node-client: #00e5ff;
+  --color-node-server: #00bfa5;
+  --color-node-db:     #a78bfa;
+  --color-node-cache:  #fbbf24;
+  --color-node-lb:     #38bdf8;
+  --color-node-queue:  #fb923c;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  background: var(--color-base);
+  color: var(--color-ink);
+  font-family: var(--font-ibm-mono), 'Courier New', monospace;
 }
 
 html,
@@ -18,7 +51,7 @@ body {
   overflow: hidden;
 }
 
-/* React Flow overrides */
+/* ── React Flow overrides ── */
 .react-flow__renderer {
   background: transparent;
 }
@@ -30,29 +63,34 @@ body {
 }
 
 .react-flow__edge-path {
-  stroke-width: 2;
+  stroke-width: 1.5;
 }
 
 .react-flow__controls {
-  background: #0f172a;
-  border: 1px solid #1e293b;
-  border-radius: 8px;
+  background: var(--color-raised);
+  border: 1px solid var(--color-edge);
+  border-radius: 2px;
   overflow: hidden;
+  box-shadow: none;
 }
 
 .react-flow__controls-button {
-  background: #0f172a;
-  border-bottom: 1px solid #1e293b;
-  fill: #94a3b8;
+  background: var(--color-raised);
+  border-bottom: 1px solid var(--color-edge-dim);
+  fill: var(--color-ink-3);
 }
 
 .react-flow__controls-button:hover {
-  background: #1e293b;
-  fill: #f8fafc;
+  background: var(--color-surface);
+  fill: var(--color-ink);
 }
 
 .react-flow__minimap {
-  background: #0f172a;
-  border: 1px solid #1e293b;
-  border-radius: 8px;
+  background: var(--color-raised);
+  border: 1px solid var(--color-edge);
+  border-radius: 2px;
+}
+
+.react-flow__minimap-mask {
+  fill: rgba(2, 11, 15, 0.75);
 }

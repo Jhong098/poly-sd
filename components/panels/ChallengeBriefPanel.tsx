@@ -21,13 +21,11 @@ function SlaRow({
 }) {
   return (
     <div className="flex items-center gap-2 py-1.5">
-      <Icon size={13} className="text-gray-600 flex-shrink-0" />
-      <span className="text-[11px] text-gray-500 flex-1">{label}</span>
-      <span className="text-[11px] font-mono text-gray-400">{target}</span>
+      <Icon size={13} className="text-ink-3 flex-shrink-0" />
+      <span className="text-[11px] text-ink-3 flex-1">{label}</span>
+      <span className="text-[11px] text-ink-2">{target}</span>
       {isActive && current !== undefined && (
-        <span className={`text-[11px] font-mono ml-1 ${
-          passed ? 'text-emerald-400' : 'text-red-400'
-        }`}>
+        <span className={`text-[11px] font-semibold ml-1 ${passed ? 'text-ok' : 'text-err'}`}>
           {passed ? <CheckCircle2 size={12} className="inline" /> : <XCircle size={12} className="inline" />}
           {' '}{current}
         </span>
@@ -55,33 +53,33 @@ export function ChallengeBriefPanel() {
   const passedBudget  = costPerHour !== undefined && costPerHour <= activeChallenge.budgetPerHour
 
   return (
-    <aside className="w-64 flex-shrink-0 h-full bg-gray-900/80 border-r border-gray-800/60 flex flex-col overflow-y-auto">
+    <aside className="w-64 flex-shrink-0 h-full bg-raised border-r border-edge flex flex-col overflow-y-auto">
       {/* Header */}
-      <div className="px-4 pt-4 pb-3 border-b border-gray-800/60">
+      <div className="px-4 pt-4 pb-3 border-b border-edge-dim">
         <div className="flex items-center gap-1.5 mb-1">
-          <span className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider">
+          <span className="text-[10px] font-bold text-cyan uppercase tracking-widest">
             {activeChallenge.tier === 0 ? 'Tutorial' : `Tier ${activeChallenge.tier}`}
           </span>
-          <span className="text-[10px] text-gray-700">·</span>
-          <span className="text-[10px] text-gray-600">{activeChallenge.id}</span>
+          <span className="text-[10px] text-ink-3">·</span>
+          <span className="text-[10px] text-ink-3">{activeChallenge.id}</span>
         </div>
-        <p className="text-[14px] font-bold text-gray-100">{activeChallenge.title}</p>
+        <p className="text-[14px] font-bold text-ink">{activeChallenge.title}</p>
       </div>
 
       {/* Narrative */}
-      <div className="px-4 py-3 border-b border-gray-800/60">
-        <p className="text-[11px] text-gray-500 leading-relaxed">{activeChallenge.narrative}</p>
+      <div className="px-4 py-3 border-b border-edge-dim">
+        <p className="text-[11px] text-ink-3 leading-relaxed">{activeChallenge.narrative}</p>
       </div>
 
       {/* Objective */}
-      <div className="px-4 py-3 border-b border-gray-800/60">
-        <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1.5">Objective</p>
-        <p className="text-[12px] text-gray-300 leading-relaxed">{activeChallenge.objective}</p>
+      <div className="px-4 py-3 border-b border-edge-dim">
+        <p className="text-[10px] font-bold text-cyan uppercase tracking-widest mb-1.5">// Objective</p>
+        <p className="text-[12px] text-ink-2 leading-relaxed">{activeChallenge.objective}</p>
       </div>
 
       {/* SLA Targets */}
-      <div className="px-4 py-3 border-b border-gray-800/60">
-        <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Win Conditions</p>
+      <div className="px-4 py-3 border-b border-edge-dim">
+        <p className="text-[10px] font-bold text-cyan uppercase tracking-widest mb-1">// Win Conditions</p>
         <SlaRow
           icon={Clock}
           label="p99 Latency"
@@ -108,12 +106,12 @@ export function ChallengeBriefPanel() {
         />
       </div>
 
-      {/* Concepts taught */}
-      <div className="px-4 py-3 border-b border-gray-800/60">
-        <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-2">Concepts</p>
+      {/* Concepts */}
+      <div className="px-4 py-3 border-b border-edge-dim">
+        <p className="text-[10px] font-bold text-cyan uppercase tracking-widest mb-2">// Concepts</p>
         <div className="flex flex-wrap gap-1">
           {activeChallenge.conceptsTaught.map((c) => (
-            <span key={c} className="px-1.5 py-0.5 rounded text-[10px] bg-gray-800 text-gray-500 border border-gray-700/50">
+            <span key={c} className="px-1.5 py-0.5 text-[10px] bg-surface text-ink-3 border border-edge">
               {c}
             </span>
           ))}
@@ -122,11 +120,11 @@ export function ChallengeBriefPanel() {
 
       {/* Hints */}
       <div className="px-4 py-3 mt-auto">
-        <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-2">Hints</p>
+        <p className="text-[10px] font-bold text-cyan uppercase tracking-widest mb-2">// Hints</p>
         <ol className="space-y-1.5">
           {activeChallenge.hints.map((h, i) => (
-            <li key={i} className="flex gap-2 text-[11px] text-gray-600">
-              <span className="text-gray-700 flex-shrink-0">{i + 1}.</span>
+            <li key={i} className="flex gap-2 text-[11px] text-ink-3">
+              <span className="text-ink-3 flex-shrink-0">{i + 1}.</span>
               <span>{h}</span>
             </li>
           ))}
