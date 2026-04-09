@@ -1,4 +1,4 @@
-export type ComponentType = 'client' | 'server' | 'database' | 'cache'
+export type ComponentType = 'client' | 'server' | 'database' | 'cache' | 'load-balancer'
 
 // ── Per-component config shapes ────────────────────────────────────────────
 
@@ -29,7 +29,11 @@ export type CacheConfig = {
   ttlSeconds: number
 }
 
-export type ComponentConfig = ClientConfig | ServerConfig | DatabaseConfig | CacheConfig
+export type LoadBalancerConfig = {
+  algorithm: 'round-robin' | 'least-connections' | 'ip-hash'
+}
+
+export type ComponentConfig = ClientConfig | ServerConfig | DatabaseConfig | CacheConfig | LoadBalancerConfig
 
 // ── Instance pricing ────────────────────────────────────────────────────────
 
@@ -53,6 +57,12 @@ export const CACHE_INSTANCES = {
   'cache.t3.small': { label: 'cache.t3.small', costPerHour: 0.034, memoryGb: 1.5  },
   'cache.r6g.large':{ label: 'cache.r6g.large',costPerHour: 0.154, memoryGb: 13.1 },
 } as const
+
+// ── Load balancer pricing ───────────────────────────────────────────────────
+
+/** Fixed cost for an Application Load Balancer (simplified flat rate). */
+export const LB_COST_PER_HOUR = 0.008
+export const LB_MAX_RPS = 100_000
 
 // ── Default configs ─────────────────────────────────────────────────────────
 
@@ -78,6 +88,9 @@ export const DEFAULT_CONFIGS: Record<ComponentType, ComponentConfig> = {
     hitRate: 0.8,
     ttlSeconds: 300,
   } satisfies CacheConfig,
+  'load-balancer': {
+    algorithm: 'round-robin',
+  } satisfies LoadBalancerConfig,
 }
 
 // ── Visual metadata ─────────────────────────────────────────────────────────
@@ -115,5 +128,11 @@ export const COMPONENT_META: Record<ComponentType, ComponentMeta> = {
     description: 'In-memory key-value store. Reduces database load.',
     accentColor: 'emerald',
     tier: 1,
+  },
+  'load-balancer': {
+    label: 'Load Balancer',
+    description: 'Distributes traffic across multiple backends. Enables horizontal scaling.',
+    accentColor: 'sky',
+    tier: 2,
   },
 }

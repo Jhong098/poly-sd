@@ -7,10 +7,12 @@ import {
   type ServerConfig,
   type DatabaseConfig,
   type CacheConfig,
+  type LoadBalancerConfig,
   type TrafficPreset,
   SERVER_INSTANCES,
   DATABASE_INSTANCES,
   CACHE_INSTANCES,
+  LB_COST_PER_HOUR,
   COMPONENT_META,
 } from '@/lib/components/definitions'
 import { ArrowRight } from 'lucide-react'
@@ -178,6 +180,31 @@ function CacheConfigEditor({ config, patch }: { config: CacheConfig; patch: (p: 
   )
 }
 
+function LoadBalancerConfigEditor({ config, patch }: { config: LoadBalancerConfig; patch: (p: Partial<LoadBalancerConfig>) => void }) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <Label>Algorithm</Label>
+        <Select
+          value={config.algorithm}
+          onChange={(v) => patch({ algorithm: v as LoadBalancerConfig['algorithm'] })}
+          options={[
+            { value: 'round-robin',       label: 'Round Robin — equal distribution' },
+            { value: 'least-connections', label: 'Least Connections — adaptive' },
+            { value: 'ip-hash',           label: 'IP Hash — session affinity' },
+          ]}
+        />
+        <p className="text-[11px] text-gray-600 mt-1.5">
+          In Phase 2, traffic split is controlled by edge weights regardless of algorithm.
+        </p>
+      </div>
+      <Divider />
+      <Stat label="Max RPS" value="100,000" />
+      <Stat label="Cost per hour" value={`$${LB_COST_PER_HOUR.toFixed(3)}`} />
+    </div>
+  )
+}
+
 // ── Edge config panel ─────────────────────────────────────────────────────────
 
 function EdgeConfigPanel({ edgeId }: { edgeId: string }) {
@@ -295,10 +322,11 @@ export function ConfigPanel() {
       </div>
 
       <div className="px-4 py-4 flex-1">
-        {data.componentType === 'client'   && <ClientConfigEditor   config={data.config as ClientConfig}   patch={patch} />}
-        {data.componentType === 'server'   && <ServerConfigEditor   config={data.config as ServerConfig}   patch={patch} />}
-        {data.componentType === 'database' && <DatabaseConfigEditor config={data.config as DatabaseConfig} patch={patch} />}
-        {data.componentType === 'cache'    && <CacheConfigEditor    config={data.config as CacheConfig}    patch={patch} />}
+        {data.componentType === 'client'        && <ClientConfigEditor       config={data.config as ClientConfig}       patch={patch} />}
+        {data.componentType === 'server'        && <ServerConfigEditor       config={data.config as ServerConfig}       patch={patch} />}
+        {data.componentType === 'database'      && <DatabaseConfigEditor     config={data.config as DatabaseConfig}     patch={patch} />}
+        {data.componentType === 'cache'         && <CacheConfigEditor        config={data.config as CacheConfig}        patch={patch} />}
+        {data.componentType === 'load-balancer' && <LoadBalancerConfigEditor config={data.config as LoadBalancerConfig} patch={patch} />}
       </div>
 
       <div className="px-4 py-3 border-t border-gray-800/60">

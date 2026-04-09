@@ -20,6 +20,7 @@ import {
   type ComponentConfig,
   DEFAULT_CONFIGS,
 } from '@/lib/components/definitions'
+import type { StarterNode, StarterEdge } from '@/lib/challenges/types'
 
 // ── Node data shape ──────────────────────────────────────────────────────────
 
@@ -60,6 +61,8 @@ type ArchitectureState = {
   updateNodeConfig: (nodeId: string, patch: Partial<ComponentConfig>) => void
   updateNodeLabel: (nodeId: string, label: string) => void
   updateEdgeSplitWeight: (edgeId: string, weight: number) => void
+  initFromStarterGraph: (nodes: StarterNode[], edges: StarterEdge[]) => void
+  clearCanvas: () => void
 }
 
 export const useArchitectureStore = create<ArchitectureState>((set, get) => ({
@@ -131,5 +134,32 @@ export const useArchitectureStore = create<ArchitectureState>((set, get) => ({
         e.id === edgeId ? { ...e, data: { ...e.data, splitWeight: Math.max(0.1, weight) } } : e,
       ),
     })
+  },
+
+  clearCanvas: () => {
+    set({ nodes: [], edges: [], selectedNodeId: null, selectedEdgeId: null, _nodeCounter: 0 })
+  },
+
+  initFromStarterGraph: (starterNodes, starterEdges) => {
+    const nodes: ComponentNode[] = starterNodes.map((sn) => ({
+      id: sn.id,
+      type: sn.type,
+      position: sn.position,
+      data: {
+        componentType: sn.type,
+        label: sn.label ?? `${sn.type.charAt(0).toUpperCase() + sn.type.slice(1)}`,
+        config: { ...DEFAULT_CONFIGS[sn.type], ...(sn.config ?? {}) } as ComponentConfig,
+      },
+    }))
+
+    const edges: ComponentEdge[] = starterEdges.map((se, i) => ({
+      id: `starter-e-${i}`,
+      source: se.source,
+      target: se.target,
+      data: { splitWeight: 1 },
+      type: 'default',
+    }))
+
+    set({ nodes, edges, selectedNodeId: null, selectedEdgeId: null, _nodeCounter: starterNodes.length })
   },
 }))

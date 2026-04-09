@@ -1,0 +1,248 @@
+import { presetToWaypoints, DEFAULT_TRAFFIC } from '@/sim/types'
+import type { Challenge } from './types'
+
+export const CHALLENGES: Challenge[] = [
+  // ── Tutorial ────────────────────────────────────────────────────────────────
+
+  {
+    id: 'T-0',
+    tier: 0,
+    order: 0,
+    title: 'Hello, Traffic',
+    narrative:
+      'Your startup just launched. One server is handling all requests. ' +
+      'The traffic is light, but it needs to actually work.',
+    objective:
+      'Connect a Client to a Server. Run the simulation and see traffic flow.',
+    trafficConfig: {
+      durationMs: 30_000,
+      waypoints: presetToWaypoints('steady', 50, 1, 30_000),
+    },
+    slaTargets: { p99LatencyMs: 500, errorRate: 0.05 },
+    budgetPerHour: 1.0,
+    allowedComponents: ['client', 'server'],
+    conceptsTaught: ['request flow', 'latency', 'error rate'],
+    hints: [
+      'Drag a Client node and a Server node onto the canvas.',
+      'Draw a connection from the Client to the Server.',
+      'Press Run and watch the metrics appear.',
+    ],
+    starterNodes: [
+      { id: 'client-1', type: 'client', position: { x: 80, y: 200 }, label: 'Users', config: { rps: 50, preset: 'steady', peakMultiplier: 1 } },
+    ],
+  },
+
+  {
+    id: 'T-1',
+    tier: 0,
+    order: 1,
+    title: 'Growing Pains',
+    narrative:
+      'Traffic doubled overnight. Your single t3.micro is sweating — ' +
+      'p99 latency is creeping up and errors are starting to appear.',
+    objective:
+      'Keep p99 latency under 200ms and errors under 1% at 100 RPS. ' +
+      'Upgrade the server or add a second one.',
+    trafficConfig: {
+      durationMs: 45_000,
+      waypoints: presetToWaypoints('steady', 100, 1, 45_000),
+    },
+    slaTargets: { p99LatencyMs: 200, errorRate: 0.01 },
+    budgetPerHour: 0.5,
+    allowedComponents: ['client', 'server'],
+    conceptsTaught: ['vertical scaling', 'horizontal scaling', 'instance types'],
+    hints: [
+      'A t3.micro handles 50 RPS max — 100 RPS will saturate it.',
+      'Try upgrading the instance type to t3.small or t3.medium.',
+      'Or add a second server node and split traffic with edge weights.',
+    ],
+    starterNodes: [
+      { id: 'client-1', type: 'client', position: { x: 80, y: 200 }, label: 'Users', config: { rps: 100, preset: 'steady', peakMultiplier: 1 } },
+      { id: 'server-1', type: 'server', position: { x: 320, y: 200 }, label: 'App Server', config: { instanceType: 't3.micro', instanceCount: 1, baseLatencyMs: 20 } },
+    ],
+    starterEdges: [
+      { source: 'client-1', target: 'server-1' },
+    ],
+  },
+
+  {
+    id: 'T-2',
+    tier: 0,
+    order: 2,
+    title: 'The Spike',
+    narrative:
+      'Your blog post went viral. Traffic is mostly steady but spikes to 5× ' +
+      'at noon. Your server handles the baseline fine — it's the spike that kills you.',
+    objective:
+      'Survive a 5× traffic spike without exceeding 300ms p99 or 2% error rate.',
+    trafficConfig: {
+      durationMs: 60_000,
+      waypoints: presetToWaypoints('spike', 100, 5, 60_000),
+    },
+    slaTargets: { p99LatencyMs: 300, errorRate: 0.02 },
+    budgetPerHour: 1.0,
+    allowedComponents: ['client', 'server'],
+    conceptsTaught: ['traffic spikes', 'over-provisioning', 'peak capacity planning'],
+    hints: [
+      'Watch the traffic curve — RPS peaks at 500 at the midpoint.',
+      'You need enough total capacity to handle the peak, not just the baseline.',
+      'Multiple smaller servers can be more cost-effective than one giant one.',
+    ],
+    starterNodes: [
+      { id: 'client-1', type: 'client', position: { x: 80, y: 200 }, label: 'Users', config: { rps: 100, preset: 'spike', peakMultiplier: 5 } },
+    ],
+  },
+
+  {
+    id: 'T-3',
+    tier: 0,
+    order: 3,
+    title: 'The Database Bottleneck',
+    narrative:
+      'You added a database for persistence. Now every request hits the DB — ' +
+      'and the DB can only handle so many connections.',
+    objective:
+      'Route Server → Database and keep everything under 400ms p99 at 80 RPS.',
+    trafficConfig: {
+      durationMs: 45_000,
+      waypoints: presetToWaypoints('steady', 80, 1, 45_000),
+    },
+    slaTargets: { p99LatencyMs: 400, errorRate: 0.01 },
+    budgetPerHour: 0.5,
+    allowedComponents: ['client', 'server', 'database'],
+    conceptsTaught: ['database connections', 'latency stacking', 'connection pools'],
+    hints: [
+      'Every hop adds latency. Client → Server → DB means latencies add up.',
+      'The database maxConnections setting throttles how many simultaneous queries it can handle.',
+      'Try db.t3.small with maxConnections = 150 to start.',
+    ],
+    starterNodes: [
+      { id: 'client-1', type: 'client', position: { x: 60, y: 200 }, label: 'Users', config: { rps: 80, preset: 'steady', peakMultiplier: 1 } },
+      { id: 'server-1', type: 'server', position: { x: 280, y: 200 }, label: 'App Server', config: { instanceType: 't3.small', instanceCount: 1, baseLatencyMs: 20 } },
+    ],
+    starterEdges: [
+      { source: 'client-1', target: 'server-1' },
+    ],
+  },
+
+  // ── Tier 1 ──────────────────────────────────────────────────────────────────
+
+  {
+    id: '1-1',
+    tier: 1,
+    order: 0,
+    title: 'Cache Money',
+    narrative:
+      'Your product is gaining users. DB queries are the bottleneck — 90% of ' +
+      'reads are for the same 100 products. Time to introduce a cache.',
+    objective:
+      'Achieve p99 < 150ms and < 0.5% errors at 200 RPS. Stay under $0.20/hr.',
+    trafficConfig: {
+      durationMs: 60_000,
+      waypoints: presetToWaypoints('steady', 200, 1, 60_000),
+    },
+    slaTargets: { p99LatencyMs: 150, errorRate: 0.005 },
+    budgetPerHour: 0.20,
+    allowedComponents: ['client', 'server', 'database', 'cache'],
+    conceptsTaught: ['cache-aside pattern', 'cache hit rate', 'read amplification reduction'],
+    hints: [
+      'Route: Client → Server → Cache → Database.',
+      'The Cache passes through only cache-miss requests (1 - hitRate) to the DB.',
+      'A 90% hit rate means the DB only sees 10% of requests.',
+      'cache.t3.micro is cheap — use it to absorb reads.',
+    ],
+    starterNodes: [
+      { id: 'client-1', type: 'client', position: { x: 60, y: 200 }, label: 'Users', config: { rps: 200, preset: 'steady', peakMultiplier: 1 } },
+    ],
+  },
+
+  {
+    id: '1-2',
+    tier: 1,
+    order: 1,
+    title: 'Load Balancing 101',
+    narrative:
+      'Engineering tells you a single server maxes out at 500 RPS. You\'re at ' +
+      '400 now and trending up. Time to learn about load balancers.',
+    objective:
+      'Handle 600 RPS with p99 < 100ms, < 0.5% errors, under $0.50/hr.',
+    trafficConfig: {
+      durationMs: 60_000,
+      waypoints: presetToWaypoints('steady', 600, 1, 60_000),
+    },
+    slaTargets: { p99LatencyMs: 100, errorRate: 0.005 },
+    budgetPerHour: 0.50,
+    allowedComponents: ['client', 'server', 'load-balancer'],
+    conceptsTaught: ['horizontal scaling', 'load balancing', 'traffic distribution', 'edge weights'],
+    hints: [
+      'A single m5.large handles 500 RPS — you need more.',
+      'Place a Load Balancer between the Client and your servers.',
+      'Connect the LB to 2+ servers. Adjust edge weights for even distribution.',
+      'Two t3.medium instances = 400 RPS combined, $0.083/hr — cheap and sufficient.',
+    ],
+    starterNodes: [
+      { id: 'client-1', type: 'client', position: { x: 60, y: 250 }, label: 'Users', config: { rps: 600, preset: 'steady', peakMultiplier: 1 } },
+    ],
+  },
+
+  {
+    id: '1-3',
+    tier: 1,
+    order: 2,
+    title: 'The Ramp',
+    narrative:
+      'You\'re onboarding a new enterprise customer. Traffic will ramp from ' +
+      '100 to 800 RPS over the next hour. Design for the peak, optimize for cost.',
+    objective:
+      'Handle a ramp from 100 to 800 RPS with p99 < 200ms, < 1% errors, under $0.80/hr.',
+    trafficConfig: {
+      durationMs: 90_000,
+      waypoints: presetToWaypoints('ramp', 100, 8, 90_000),
+    },
+    slaTargets: { p99LatencyMs: 200, errorRate: 0.01 },
+    budgetPerHour: 0.80,
+    allowedComponents: ['client', 'server', 'database', 'cache', 'load-balancer'],
+    conceptsTaught: ['capacity planning', 'ramp traffic', 'cost vs. headroom'],
+    hints: [
+      'The ramp ends at 800 RPS. Your architecture must handle the peak.',
+      'A Load Balancer + multiple servers gives you the throughput you need.',
+      'Add a Cache to reduce DB load as traffic grows.',
+      'Balance: enough servers to handle peak, cheap enough to stay in budget.',
+    ],
+    starterNodes: [
+      { id: 'client-1', type: 'client', position: { x: 60, y: 250 }, label: 'Users', config: { rps: 100, preset: 'ramp', peakMultiplier: 8 } },
+    ],
+  },
+
+  {
+    id: '1-4',
+    tier: 1,
+    order: 3,
+    title: 'Flash Sale',
+    narrative:
+      'Black Friday. Traffic is steady at 150 RPS then spikes to 1,000 RPS for ' +
+      '5 minutes at peak. You have a $1/hr budget. Design for the chaos.',
+    objective:
+      'Survive a 6.7× spike to 1,000 RPS: p99 < 250ms, < 1% errors, under $1/hr.',
+    trafficConfig: {
+      durationMs: 120_000,
+      waypoints: presetToWaypoints('spike', 150, 7, 120_000),
+    },
+    slaTargets: { p99LatencyMs: 250, errorRate: 0.01 },
+    budgetPerHour: 1.00,
+    allowedComponents: ['client', 'server', 'database', 'cache', 'load-balancer'],
+    conceptsTaught: ['spike handling', 'cache as buffer', 'over-provisioning trade-offs'],
+    hints: [
+      'Peak is ~1,050 RPS. You need headroom above that.',
+      'A high-hit-rate cache dramatically reduces DB pressure during spikes.',
+      'Consider: LB → 3-4 servers → Cache → DB.',
+      'Watch both the latency spike and error rate — they\'re linked.',
+    ],
+    starterNodes: [
+      { id: 'client-1', type: 'client', position: { x: 60, y: 250 }, label: 'Users', config: { rps: 150, preset: 'spike', peakMultiplier: 7 } },
+    ],
+  },
+]
+
+/** Fast lookup by challenge ID. */
+export const CHALLENGE_MAP = new Map(CHALLENGES.map((c) => [c.id, c]))

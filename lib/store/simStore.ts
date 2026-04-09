@@ -5,6 +5,8 @@ import type { SimSnapshot, TrafficConfig, TrafficWaypoint, WorkerInbound, Worker
 import { DEFAULT_TRAFFIC, presetToWaypoints } from '@/sim/types'
 import type { TrafficPreset } from '@/lib/components/definitions'
 import { useArchitectureStore } from './architectureStore'
+import { useChallengeStore } from './challengeStore'
+import { evaluateChallenge } from '@/lib/challenges/evaluator'
 
 export type SimStatus = 'idle' | 'running' | 'paused' | 'complete'
 
@@ -101,6 +103,14 @@ export const useSimStore = create<SimState>((set, get) => ({
         }))
       } else if (msg.type === 'COMPLETE') {
         set({ status: 'complete' })
+        // Evaluate against active challenge if one is loaded
+        const { activeChallenge, setEvalResult } = useChallengeStore.getState()
+        if (activeChallenge) {
+          const { history, nodeSnapshots } = get()
+          const componentCount = Object.keys(nodeSnapshots).length
+          const result = evaluateChallenge(activeChallenge, history, componentCount)
+          setEvalResult(result)
+        }
       } else if (msg.type === 'ERROR') {
         console.error('Sim worker error:', msg.message)
         set({ status: 'idle' })

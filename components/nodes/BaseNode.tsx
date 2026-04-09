@@ -31,6 +31,13 @@ const ACCENT: Record<string, { border: string; header: string; handle: string; i
     icon:    'text-emerald-400',
     badge:   'bg-emerald-500/20 text-emerald-300',
   },
+  sky: {
+    border:  'border-sky-500/40 hover:border-sky-400/70',
+    header:  'bg-sky-500/10 border-b border-sky-500/20',
+    handle:  '!bg-sky-500 !border-sky-300',
+    icon:    'text-sky-400',
+    badge:   'bg-sky-500/20 text-sky-300',
+  },
 }
 
 // ── Simulation heat overlay ──────────────────────────────────────────────────

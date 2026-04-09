@@ -1,6 +1,6 @@
 import type { SimNode, NodeSnapshot, NodeStatus } from '../types'
-import type { ClientConfig, ServerConfig, DatabaseConfig, CacheConfig } from '@/lib/components/definitions'
-import { SERVER_INSTANCES, DATABASE_INSTANCES, CACHE_INSTANCES } from '@/lib/components/definitions'
+import type { ClientConfig, ServerConfig, DatabaseConfig, CacheConfig, LoadBalancerConfig } from '@/lib/components/definitions'
+import { SERVER_INSTANCES, DATABASE_INSTANCES, CACHE_INSTANCES, LB_COST_PER_HOUR, LB_MAX_RPS } from '@/lib/components/definitions'
 
 export type ComponentState = { queuedRequests: number }
 
@@ -15,11 +15,12 @@ export function computeNode(
   clientRps?: number,
 ): NodeSnapshot {
   switch (node.componentType) {
-    case 'client':   return computeClient(node, clientRps ?? 0)
-    case 'server':   return computeServer(node, inputRps)
-    case 'database': return computeDatabase(node, inputRps)
-    case 'cache':    return computeCache(node, inputRps)
-    default:         return idleSnapshot((node as SimNode).id)
+    case 'client':        return computeClient(node, clientRps ?? 0)
+    case 'server':        return computeServer(node, inputRps)
+    case 'database':      return computeDatabase(node, inputRps)
+    case 'cache':         return computeCache(node, inputRps)
+    case 'load-balancer': return computeLoadBalancer(node, inputRps)
+    default:              return idleSnapshot((node as SimNode).id)
   }
 }
 
@@ -119,6 +120,28 @@ function computeCache(node: SimNode, inputRps: number): NodeSnapshot {
     errorRate: 0.0001,
     costPerHour: inst.costPerHour,
     status: 'healthy',
+  }
+}
+
+// ── Load Balancer ─────────────────────────────────────────────────────────────
+
+function computeLoadBalancer(node: SimNode, inputRps: number): NodeSnapshot {
+  // LB is modeled as near-zero-overhead pass-through. The actual distribution
+  // to backends is handled by edge split weights in graph.ts.
+  void (node.config as LoadBalancerConfig)  // algorithm is conceptual in Phase 2
+
+  if (inputRps === 0) return idleSnapshot(node.id, LB_COST_PER_HOUR)
+
+  const rho = inputRps / LB_MAX_RPS
+  return {
+    id: node.id,
+    inputRps,
+    outputRps: inputRps * 0.9999,
+    utilization: rho,
+    latencyMs: 1,       // ~1ms L7 overhead
+    errorRate: 0.0001,
+    costPerHour: LB_COST_PER_HOUR,
+    status: statusFromRho(rho, inputRps),
   }
 }
 

@@ -12,19 +12,21 @@ import {
   type EdgeTypes,
 } from '@xyflow/react'
 
-import { ClientNode }   from '@/components/nodes/ClientNode'
-import { ServerNode }   from '@/components/nodes/ServerNode'
-import { DatabaseNode } from '@/components/nodes/DatabaseNode'
-import { CacheNode }    from '@/components/nodes/CacheNode'
+import { ClientNode }       from '@/components/nodes/ClientNode'
+import { ServerNode }       from '@/components/nodes/ServerNode'
+import { DatabaseNode }     from '@/components/nodes/DatabaseNode'
+import { CacheNode }        from '@/components/nodes/CacheNode'
+import { LoadBalancerNode } from '@/components/nodes/LoadBalancerNode'
 import { AnimatedEdge } from '@/components/canvas/edges/AnimatedEdge'
 import { useArchitectureStore, type ComponentNode } from '@/lib/store/architectureStore'
 import type { ComponentType } from '@/lib/components/definitions'
 
 const NODE_TYPES: NodeTypes = {
-  client:   ClientNode,
-  server:   ServerNode,
-  database: DatabaseNode,
-  cache:    CacheNode,
+  client:          ClientNode,
+  server:          ServerNode,
+  database:        DatabaseNode,
+  cache:           CacheNode,
+  'load-balancer': LoadBalancerNode,
 }
 
 const EDGE_TYPES: EdgeTypes = {
@@ -33,10 +35,11 @@ const EDGE_TYPES: EdgeTypes = {
 
 function nodeColor(node: ComponentNode): string {
   const map: Record<string, string> = {
-    client:   '#f59e0b',
-    server:   '#3b82f6',
-    database: '#8b5cf6',
-    cache:    '#10b981',
+    client:          '#f59e0b',
+    server:          '#3b82f6',
+    database:        '#8b5cf6',
+    cache:           '#10b981',
+    'load-balancer': '#0ea5e9',
   }
   return map[node.data.componentType] ?? '#64748b'
 }

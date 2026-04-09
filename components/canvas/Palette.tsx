@@ -1,6 +1,6 @@
 'use client'
 
-import { Users, Server, Database, Zap } from 'lucide-react'
+import { Users, Server, Database, Zap, Shuffle } from 'lucide-react'
 import { COMPONENT_META, type ComponentType } from '@/lib/components/definitions'
 
 type PaletteItem = {
@@ -9,11 +9,15 @@ type PaletteItem = {
   shortDesc: string
 }
 
-const ITEMS: PaletteItem[] = [
+const TIER1_ITEMS: PaletteItem[] = [
   { type: 'client',   icon: <Users size={18} />,    shortDesc: 'Traffic source'  },
   { type: 'server',   icon: <Server size={18} />,   shortDesc: 'App server'      },
   { type: 'database', icon: <Database size={18} />, shortDesc: 'Relational DB'   },
   { type: 'cache',    icon: <Zap size={18} />,      shortDesc: 'In-memory cache' },
+]
+
+const TIER2_ITEMS: PaletteItem[] = [
+  { type: 'load-balancer', icon: <Shuffle size={18} />, shortDesc: 'Distribute traffic' },
 ]
 
 const ACCENT_CLASSES: Record<string, { card: string; icon: string }> = {
@@ -32,6 +36,10 @@ const ACCENT_CLASSES: Record<string, { card: string; icon: string }> = {
   emerald: {
     card: 'border-emerald-500/30 hover:border-emerald-400/60 hover:bg-emerald-500/5',
     icon: 'text-emerald-400 bg-emerald-500/10',
+  },
+  sky: {
+    card: 'border-sky-500/30 hover:border-sky-400/60 hover:bg-sky-500/5',
+    icon: 'text-sky-400 bg-sky-500/10',
   },
 }
 
@@ -68,7 +76,7 @@ function PaletteCard({ item }: { item: PaletteItem }) {
 
 export function Palette() {
   return (
-    <aside className="w-56 flex-shrink-0 h-full bg-gray-900/80 border-r border-gray-800/60 flex flex-col">
+    <aside className="w-56 flex-shrink-0 h-full bg-gray-900/80 border-r border-gray-800/60 flex flex-col overflow-y-auto">
       <div className="px-4 pt-4 pb-3 border-b border-gray-800/60">
         <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Components</p>
         <p className="text-[11px] text-gray-600 mt-0.5">Drag onto canvas</p>
@@ -79,7 +87,18 @@ export function Palette() {
           Tier 1 — Foundations
         </p>
         <div className="space-y-1.5">
-          {ITEMS.map((item) => (
+          {TIER1_ITEMS.map((item) => (
+            <PaletteCard key={item.type} item={item} />
+          ))}
+        </div>
+      </div>
+
+      <div className="px-3 py-3 border-t border-gray-800/40">
+        <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-2 px-1">
+          Tier 2 — Scaling
+        </p>
+        <div className="space-y-1.5">
+          {TIER2_ITEMS.map((item) => (
             <PaletteCard key={item.type} item={item} />
           ))}
         </div>
