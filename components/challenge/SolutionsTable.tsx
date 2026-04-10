@@ -1,5 +1,3 @@
-'use client'
-
 import { ExternalLink } from 'lucide-react'
 import type { LeaderboardEntry } from '@/lib/actions/replays'
 import type { Challenge } from '@/lib/challenges/types'
@@ -40,9 +38,7 @@ export function SolutionsTable({
   return (
     <div className="divide-y divide-edge-dim">
       {entries.map((entry, i) => {
-        const nonClientNodes = entry.architecture.nodes.filter(
-          (n) => n.data.componentType !== 'client'
-        ).length
+        const nonClientNodes = entry.eval_result.metrics.componentCount
         const date = new Date(entry.created_at).toLocaleDateString('en-US', {
           month: 'short',
           day: 'numeric',
