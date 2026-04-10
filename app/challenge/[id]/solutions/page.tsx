@@ -42,7 +42,7 @@ export default async function SolutionsPage({
               <p className="text-[12px] text-ink-2 font-semibold">${challenge.budgetPerHour.toFixed(2)}/hr</p>
             </div>
             <div>
-              <span className="text-[10px] text-ink-3 uppercase tracking-widest">solutions</span>
+              <span className="text-[10px] text-ink-3 uppercase tracking-widest">top solutions</span>
               <p className="text-[12px] text-ink-2 font-semibold">{entries.length}</p>
             </div>
           </div>
