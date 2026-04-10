@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
+import { useAuth } from '@clerk/nextjs'
 import { ReactFlowProvider } from '@xyflow/react'
 import { TopBar }             from './TopBar'
 import { Palette }            from './Palette'
@@ -10,11 +12,28 @@ import { ChallengeBriefPanel }from '@/components/panels/ChallengeBriefPanel'
 import { ResultsModal }       from '@/components/overlays/ResultsModal'
 import { TutorialCallout }   from '@/components/overlays/TutorialCallout'
 import { useChallengeStore }  from '@/lib/store/challengeStore'
+import { useArchitectureStore } from '@/lib/store/architectureStore'
+import { writeLocalDraft } from '@/lib/draft'
 import type { ComponentType } from '@/lib/components/definitions'
 
 export function ChallengeLayout() {
   const activeChallenge = useChallengeStore((s) => s.activeChallenge)
   const allowedTypes = activeChallenge?.allowedComponents ?? 'all'
+  const { userId } = useAuth()
+  const nodes = useArchitectureStore((s) => s.nodes)
+  const edges = useArchitectureStore((s) => s.edges)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (!activeChallenge || !userId) return
+    if (timerRef.current) clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(() => {
+      writeLocalDraft(userId, activeChallenge.id, nodes, edges)
+    }, 1500)
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+    }
+  }, [nodes, edges, activeChallenge?.id, userId])
 
   return (
     <ReactFlowProvider>
