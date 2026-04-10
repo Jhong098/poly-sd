@@ -43,11 +43,15 @@ export async function getChallengeDrafts(): Promise<DraftSummary[]> {
   if (!userId) return []
 
   const db = createAdminClient()
-  const { data } = await db
+  const { data, error } = await db
     .from('challenge_drafts')
     .select('challenge_id, saved_at')
     .eq('user_id', userId)
 
+  if (error) {
+    console.error('getChallengeDrafts error:', error)
+    return []
+  }
   return (data ?? []) as DraftSummary[]
 }
 
