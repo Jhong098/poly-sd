@@ -6,14 +6,24 @@ type LocalDraft = {
   savedAt: string  // ISO string
 }
 
-function draftKey(userId: string, challengeId: string) {
+function draftKey(userId: string, challengeId: string): string {
   return `draft:${userId}:${challengeId}`
 }
 
 export function readLocalDraft(userId: string, challengeId: string): LocalDraft | null {
   try {
     const raw = localStorage.getItem(draftKey(userId, challengeId))
-    return raw ? (JSON.parse(raw) as LocalDraft) : null
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (
+      !parsed ||
+      !Array.isArray(parsed.nodes) ||
+      !Array.isArray(parsed.edges) ||
+      typeof parsed.savedAt !== 'string'
+    ) {
+      return null
+    }
+    return parsed as LocalDraft
   } catch {
     return null
   }
