@@ -86,9 +86,11 @@ function ChallengeCard({
   const cardClass = `
     group relative flex flex-col gap-3 p-5 border
     bg-raised transition-colors
-    ${passed
-      ? 'border-ok/30 hover:border-ok/50'
-      : `border-edge-dim ${colors.hover}`
+    ${hasDraft
+      ? passed ? 'border-ok/30 cursor-default' : 'border-edge-dim cursor-default'
+      : passed
+        ? 'border-ok/30 hover:border-ok/50'
+        : `border-edge-dim ${colors.hover}`
     }
   `
 
