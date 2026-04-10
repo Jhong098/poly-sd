@@ -83,6 +83,30 @@ export type Database = {
           architecture_snapshot?: Json | null
           completed_at?: string
         }
+      replays: {
+        Row: {
+          id: string
+          user_id: string | null
+          challenge_id: string | null
+          architecture: Json
+          eval_result: Json
+          score: number
+          is_public: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          challenge_id?: string | null
+          architecture: Json
+          eval_result: Json
+          score?: number
+          is_public?: boolean
+          created_at?: string
+        }
+        Update: {
+          is_public?: boolean
+        }
       }
     }
   }

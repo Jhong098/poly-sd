@@ -1,14 +1,17 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Play, Pause, Square, LayoutGrid, ChevronDown, Plus, X, Save, Check, ChevronLeft } from 'lucide-react'
+import { Play, Pause, Square, LayoutGrid, ChevronDown, Plus, X, Save, Check, ChevronLeft, Share2 } from 'lucide-react'
 import Link from 'next/link'
 import { UserButton, SignInButton, useAuth } from '@clerk/nextjs'
 import { useSimStore } from '@/lib/store/simStore'
 import { useArchitectureStore } from '@/lib/store/architectureStore'
+import { useChallengeStore } from '@/lib/store/challengeStore'
 import { saveArchitecture } from '@/lib/actions/architectures'
+import { createReplay } from '@/lib/actions/replays'
 import { presetToWaypoints } from '@/sim/types'
 import type { TrafficPreset } from '@/lib/components/definitions'
+import type { EvalResult } from '@/lib/challenges/types'
 
 const SPEED_OPTIONS = [1, 5, 10] as const
 
@@ -226,10 +229,45 @@ function SaveDialog({ onClose }: { onClose: () => void }) {
 export function TopBar() {
   const [showTraffic, setShowTraffic] = useState(false)
   const [showSave, setShowSave] = useState(false)
+  const [shareState, setShareState] = useState<'idle' | 'sharing' | 'copied' | 'error'>('idle')
+  const [, startShareTransition] = useTransition()
 
   const { isSignedIn } = useAuth()
-  const { nodes } = useArchitectureStore()
-  const { status, speed, trafficConfig, setSpeed, startSimulation, pauseSimulation, resumeSimulation, stopSimulation } = useSimStore()
+  const { nodes, edges } = useArchitectureStore()
+  const { activeChallenge, evalResult } = useChallengeStore()
+  const { status, speed, trafficConfig, history, nodeSnapshots, setSpeed, startSimulation, pauseSimulation, resumeSimulation, stopSimulation } = useSimStore()
+
+  function handleShare() {
+    setShareState('sharing')
+    startShareTransition(async () => {
+      // For sandbox (no activeChallenge), build a minimal EvalResult from history
+      let result: EvalResult
+      if (evalResult) {
+        result = evalResult
+      } else {
+        const snap = history.length > 0 ? history[history.length - 1] : null
+        const componentCount = Object.keys(nodeSnapshots).length
+        result = {
+          passed: false,
+          passedLatency: false,
+          passedErrors: false,
+          passedBudget: false,
+          scores: { performance: 0, cost: 0, simplicity: 0, resilience: 0, total: 0 },
+          metrics: {
+            p99LatencyMs: snap?.systemP99LatencyMs ?? 0,
+            errorRate: snap?.systemErrorRate ?? 0,
+            costPerHour: snap?.systemCostPerHour ?? 0,
+            componentCount,
+          },
+        }
+      }
+      const res = await createReplay(activeChallenge?.id ?? null, nodes, edges, result)
+      if ('error' in res) { setShareState('error'); return }
+      await navigator.clipboard.writeText(`${window.location.origin}/replay/${res.id}`)
+      setShareState('copied')
+      setTimeout(() => setShareState('idle'), 2500)
+    })
+  }
 
   const hasClients = nodes.some((n) => n.data.componentType === 'client')
   const canRun = nodes.length > 0 && status === 'idle'
@@ -364,6 +402,21 @@ export function TopBar() {
 
         {nodes.length === 0 && status === 'idle' && (
           <span className="text-[10px] text-ink-3 tracking-wider">// drag a Client onto the canvas</span>
+        )}
+
+        {status === 'complete' && (
+          <button
+            onClick={handleShare}
+            disabled={shareState === 'sharing'}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 border border-edge bg-raised hover:bg-overlay text-ink-3 hover:text-ink-2 text-[11px] font-bold uppercase tracking-wider transition-colors disabled:opacity-50"
+          >
+            {shareState === 'copied'
+              ? <><Check size={12} className="text-ok" /> Copied!</>
+              : shareState === 'error'
+              ? <><X size={12} className="text-err" /> Error</>
+              : <><Share2 size={12} /> Share</>
+            }
+          </button>
         )}
 
         {isSignedIn && nodes.length > 0 && (

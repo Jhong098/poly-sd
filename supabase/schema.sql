@@ -42,6 +42,26 @@ create table if not exists public.challenge_completions (
 
 create index if not exists challenge_completions_user_id_idx on public.challenge_completions(user_id);
 
+-- ── Replays ──────────────────────────────────────────────────────────────────
+-- One row per shared replay. challenge_id is null for sandbox shares.
+-- user_id is null when a guest (tutorial) shares.
+
+create table if not exists public.replays (
+  id           uuid        primary key default gen_random_uuid(),
+  user_id      text        references public.profiles(id) on delete set null,
+  challenge_id text,
+  architecture jsonb       not null default '{}',
+  eval_result  jsonb       not null default '{}',
+  score        integer     not null default 0,
+  is_public    boolean     not null default true,
+  created_at   timestamptz not null default now()
+);
+
+-- Fast leaderboard queries: top scores per challenge
+create index if not exists replays_challenge_score_idx
+  on public.replays(challenge_id, score desc)
+  where is_public = true;
+
 -- ── Row Level Security ────────────────────────────────────────────────────────
 -- All mutations go through the service role (server actions), so RLS is mainly
 -- a safety net. SELECT is open so profiles can be read for leaderboards later.
@@ -60,6 +80,11 @@ create policy "architectures_select" on public.architectures
 -- Completions: users read their own
 create policy "completions_select" on public.challenge_completions
   for select using (true);
+
+-- Replays: public replays readable by anyone
+alter table public.replays enable row level security;
+create policy "replays_select" on public.replays
+  for select using (is_public = true);
 
 -- ── Helper functions ──────────────────────────────────────────────────────────
 

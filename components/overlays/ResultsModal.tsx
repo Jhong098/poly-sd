@@ -1,10 +1,12 @@
 'use client'
 
-import { CheckCircle2, XCircle, RotateCcw, ChevronRight, Trophy } from 'lucide-react'
+import { useState, useEffect, useTransition } from 'react'
+import { CheckCircle2, XCircle, RotateCcw, ChevronRight, Trophy, Share2, Check, ExternalLink } from 'lucide-react'
 import { useChallengeStore } from '@/lib/store/challengeStore'
 import { useSimStore } from '@/lib/store/simStore'
 import { useArchitectureStore } from '@/lib/store/architectureStore'
 import { CHALLENGES } from '@/lib/challenges/definitions'
+import { createReplay, getLeaderboard, type LeaderboardEntry } from '@/lib/actions/replays'
 import type { EvalResult } from '@/lib/challenges/types'
 
 function ScoreBar({ label, value, color }: { label: string; value: number; color: string }) {
@@ -39,18 +41,64 @@ function MetricRow({ label, value, passed }: { label: string; value: string; pas
   )
 }
 
+function Leaderboard({ challengeId }: { challengeId: string }) {
+  const [entries, setEntries] = useState<LeaderboardEntry[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    getLeaderboard(challengeId, 5).then((data) => {
+      setEntries(data)
+      setLoading(false)
+    })
+  }, [challengeId])
+
+  if (loading) {
+    return <p className="text-[11px] text-ink-3 py-2">Loading leaderboard…</p>
+  }
+  if (entries.length === 0) {
+    return <p className="text-[11px] text-ink-3 py-2">No scores yet — be the first!</p>
+  }
+
+  return (
+    <div className="space-y-1">
+      {entries.map((e, i) => (
+        <a
+          key={e.id}
+          href={`/replay/${e.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 py-1.5 px-2 hover:bg-overlay transition-colors group"
+        >
+          <span className="text-[10px] text-ink-3 w-4 flex-shrink-0">#{i + 1}</span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 text-[11px]">
+              <span className="font-bold text-ink">{e.score}</span>
+              <span className="text-ink-3">·</span>
+              <span className="text-ink-3">{e.architecture.nodes.length} nodes</span>
+              <span className="text-ink-3">·</span>
+              <span className="text-ink-3">${(e.eval_result.metrics.costPerHour).toFixed(3)}/hr</span>
+            </div>
+          </div>
+          <ExternalLink size={11} className="text-ink-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+        </a>
+      ))}
+    </div>
+  )
+}
+
 export function ResultsModal() {
   const { activeChallenge, evalResult, setEvalResult } = useChallengeStore()
   const { stopSimulation } = useSimStore()
   const simStatus = useSimStore((s) => s.status)
-  const { initFromStarterGraph } = useArchitectureStore()
+  const { nodes, edges, initFromStarterGraph } = useArchitectureStore()
+  const [shareState, setShareState] = useState<'idle' | 'sharing' | 'copied' | 'error'>('idle')
+  const [, startTransition] = useTransition()
 
   if (!evalResult || simStatus !== 'complete' || !activeChallenge) return null
 
   const result: EvalResult = evalResult
   const challenge = activeChallenge
 
-  // Find the next challenge in sequence (same tier, next order — or next tier)
   const sortedChallenges = [...CHALLENGES].sort((a, b) =>
     a.tier !== b.tier ? a.tier - b.tier : a.order - b.order
   )
@@ -60,6 +108,7 @@ export function ResultsModal() {
   function handleRetry() {
     stopSimulation()
     setEvalResult(null)
+    setShareState('idle')
     if (challenge.starterNodes || challenge.starterEdges) {
       initFromStarterGraph(challenge.starterNodes ?? [], challenge.starterEdges ?? [])
     }
@@ -68,12 +117,28 @@ export function ResultsModal() {
   function handleClose() {
     stopSimulation()
     setEvalResult(null)
+    setShareState('idle')
+  }
+
+  function handleShare() {
+    setShareState('sharing')
+    startTransition(async () => {
+      const res = await createReplay(challenge.id, nodes, edges, result)
+      if ('error' in res) {
+        setShareState('error')
+        return
+      }
+      const url = `${window.location.origin}/replay/${res.id}`
+      await navigator.clipboard.writeText(url)
+      setShareState('copied')
+      setTimeout(() => setShareState('idle'), 2500)
+    })
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-base/80">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-base/80 overflow-y-auto py-8">
       <div
-        className="w-96 bg-raised border border-edge overflow-hidden"
+        className="w-[420px] bg-raised border border-edge overflow-hidden"
         style={{ borderTopWidth: 2, borderTopColor: result.passed ? 'var(--color-ok)' : 'var(--color-err)' }}
       >
         {/* Header */}
@@ -131,20 +196,44 @@ export function ResultsModal() {
           </div>
         )}
 
+        {/* Leaderboard */}
+        {result.passed && (
+          <div className="px-6 py-4 border-b border-edge-dim">
+            <p className="text-[10px] font-bold text-cyan uppercase tracking-widest mb-2">// Top Scores</p>
+            <Leaderboard challengeId={challenge.id} />
+          </div>
+        )}
+
         {/* Actions */}
-        <div className="px-6 py-4 flex gap-2">
+        <div className="px-6 py-4 flex gap-2 flex-wrap">
           <button
             onClick={handleRetry}
             className="flex items-center gap-1.5 px-3 py-2 border border-edge bg-surface hover:bg-overlay text-ink-2 text-[11px] font-bold uppercase tracking-wider transition-colors"
           >
             <RotateCcw size={13} /> Retry
           </button>
+
+          {/* Share button */}
+          <button
+            onClick={handleShare}
+            disabled={shareState === 'sharing'}
+            className="flex items-center gap-1.5 px-3 py-2 border border-edge bg-surface hover:bg-overlay text-ink-2 text-[11px] font-bold uppercase tracking-wider transition-colors disabled:opacity-50"
+          >
+            {shareState === 'copied'
+              ? <><Check size={13} className="text-ok" /> Copied!</>
+              : shareState === 'error'
+              ? <><XCircle size={13} className="text-err" /> Error</>
+              : <><Share2 size={13} /> Share</>
+            }
+          </button>
+
           <button
             onClick={handleClose}
             className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 border border-edge bg-surface hover:bg-overlay text-ink-2 text-[11px] font-bold uppercase tracking-wider transition-colors"
           >
             Close
           </button>
+
           {result.passed && nextChallenge && (
             <a
               href={`/play/${nextChallenge.id}`}
