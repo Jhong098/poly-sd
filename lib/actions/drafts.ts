@@ -25,7 +25,7 @@ export async function saveDraft(
   if (!userId) return
 
   const db = createAdminClient()
-  await db.from('challenge_drafts').upsert(
+  const { error } = await db.from('challenge_drafts').upsert(
     {
       user_id: userId,
       challenge_id: challengeId,
@@ -35,6 +35,7 @@ export async function saveDraft(
     },
     { onConflict: 'user_id,challenge_id' },
   )
+  if (error) throw new Error(`saveDraft failed: ${error.message}`)
 }
 
 /** Return challenge_id + saved_at for every draft the current user has. No payload. */
