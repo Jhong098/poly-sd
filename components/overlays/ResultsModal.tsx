@@ -227,6 +227,15 @@ export function ResultsModal() {
             }
           </button>
 
+          {result.passed && (
+            <a
+              href={`/challenge/${challenge.id}/solutions`}
+              className="flex items-center gap-1.5 px-3 py-2 border border-edge bg-surface hover:bg-overlay text-ink-2 text-[11px] font-bold uppercase tracking-wider transition-colors"
+            >
+              <Trophy size={13} /> Solutions
+            </a>
+          )}
+
           <button
             onClick={handleClose}
             className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 border border-edge bg-surface hover:bg-overlay text-ink-2 text-[11px] font-bold uppercase tracking-wider transition-colors"
