@@ -9,6 +9,7 @@ import { useArchitectureStore } from './architectureStore'
 import { useChallengeStore } from './challengeStore'
 import { evaluateChallenge } from '@/lib/challenges/evaluator'
 import { recordCompletion } from '@/lib/actions/completions'
+import { saveDraft } from '@/lib/actions/drafts'
 
 export type SimStatus = 'idle' | 'running' | 'paused' | 'complete'
 
@@ -73,6 +74,12 @@ export const useSimStore = create<SimState>((set, get) => ({
 
     const { nodes, edges } = useArchitectureStore.getState()
     if (nodes.length === 0) return
+
+    // Persist draft so the user can resume later (fire-and-forget)
+    const { activeChallenge } = useChallengeStore.getState()
+    if (activeChallenge) {
+      saveDraft(activeChallenge.id, nodes, edges).catch(console.error)
+    }
 
     const graph = {
       nodes: nodes.map((n) => ({
