@@ -8,6 +8,7 @@ import { ConfigPanel }        from '@/components/panels/ConfigPanel'
 import { MetricsPanel }       from '@/components/panels/MetricsPanel'
 import { ChallengeBriefPanel }from '@/components/panels/ChallengeBriefPanel'
 import { ResultsModal }       from '@/components/overlays/ResultsModal'
+import { TutorialCallout }   from '@/components/overlays/TutorialCallout'
 import { useChallengeStore }  from '@/lib/store/challengeStore'
 import type { ComponentType } from '@/lib/components/definitions'
 
@@ -24,6 +25,7 @@ export function ChallengeLayout() {
           <Palette allowedTypes={allowedTypes as ComponentType[] | 'all'} />
           <main className="flex-1 relative overflow-hidden">
             <GameCanvas />
+            <TutorialCallout />
           </main>
           <ConfigPanel />
         </div>

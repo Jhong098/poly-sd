@@ -31,12 +31,16 @@
   --color-down: #991b1b;
 
   /* ── Node type accents (left-border + label only — never fills) ── */
-  --color-node-client: #00e5ff;
-  --color-node-server: #00bfa5;
-  --color-node-db:     #a78bfa;
-  --color-node-cache:  #fbbf24;
-  --color-node-lb:     #38bdf8;
-  --color-node-queue:  #fb923c;
+  --color-node-client:  #00e5ff;
+  --color-node-server:  #00bfa5;
+  --color-node-db:      #a78bfa;
+  --color-node-cache:   #fbbf24;
+  --color-node-lb:      #38bdf8;
+  --color-node-queue:   #fb923c;
+  --color-node-gateway: #f472b6;
+  --color-node-k8s:     #818cf8;
+  --color-node-kafka:   #2dd4bf;
+  --color-node-cdn:     #a3e635;
 }
 
 body {

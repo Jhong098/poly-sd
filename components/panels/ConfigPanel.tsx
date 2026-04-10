@@ -9,12 +9,21 @@ import {
   type CacheConfig,
   type LoadBalancerConfig,
   type QueueConfig,
+  type ApiGatewayConfig,
+  type K8sFleetConfig,
+  type KafkaConfig,
+  type CdnConfig,
   type TrafficPreset,
   SERVER_INSTANCES,
   DATABASE_INSTANCES,
   CACHE_INSTANCES,
   LB_COST_PER_HOUR,
   QUEUE_COST_PER_HOUR,
+  GATEWAY_COST_PER_HOUR,
+  K8S_INSTANCES,
+  KAFKA_COST_PER_PARTITION_HOUR,
+  KAFKA_MAX_RPS_PER_PARTITION,
+  CDN_COST_PER_REGION_HOUR,
   COMPONENT_META,
 } from '@/lib/components/definitions'
 import { ArrowRight } from 'lucide-react'
@@ -201,6 +210,64 @@ function QueueConfigEditor({ config, patch }: { config: QueueConfig; patch: (p: 
   )
 }
 
+function ApiGatewayConfigEditor({ config, patch }: { config: ApiGatewayConfig; patch: (p: Partial<ApiGatewayConfig>) => void }) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <Label>Rate Limit (RPS)</Label>
+        <NumberInput value={config.maxRps} onChange={(v) => patch({ maxRps: Math.max(1, v) })} min={1} max={100_000} step={100} />
+        <p className="text-[10px] text-ink-3 mt-1">// Requests above limit get 429 errors</p>
+      </div>
+      <div>
+        <Label>Upstream Timeout</Label>
+        <Slider value={config.timeoutMs} onChange={(v) => patch({ timeoutMs: v })} min={100} max={30_000} step={100} format={(v) => `${v}ms`} />
+      </div>
+      <div>
+        <Label>Circuit Breaker</Label>
+        <div className="flex items-center gap-2 mt-1">
+          <Toggle checked={config.circuitBreakerEnabled} onChange={(v) => patch({ circuitBreakerEnabled: v })} />
+          <span className="text-[12px] text-ink-2">{config.circuitBreakerEnabled ? 'Enabled' : 'Disabled'}</span>
+        </div>
+        <p className="text-[10px] text-ink-3 mt-1.5">
+          // When enabled: trips on latency spike → fast-fail (low latency, high err)
+        </p>
+      </div>
+      <Divider />
+      <Stat label="Cost per hour" value={`$${GATEWAY_COST_PER_HOUR.toFixed(3)}`} />
+    </div>
+  )
+}
+
+function K8sFleetConfigEditor({ config, patch }: { config: K8sFleetConfig; patch: (p: Partial<K8sFleetConfig>) => void }) {
+  const inst = K8S_INSTANCES[config.instanceType]
+  return (
+    <div className="space-y-4">
+      <div>
+        <Label>Pod Size</Label>
+        <Select value={config.instanceType} onChange={(v) => patch({ instanceType: v as K8sFleetConfig['instanceType'] })}
+          options={Object.entries(K8S_INSTANCES).map(([k, v]) => ({ value: k, label: `${v.label} — ${v.maxRps} RPS · $${v.costPerHour}/hr` }))} />
+      </div>
+      <div>
+        <Label>Min Replicas</Label>
+        <NumberInput value={config.minReplicas} onChange={(v) => patch({ minReplicas: Math.max(1, v) })} min={1} max={config.maxReplicas} />
+      </div>
+      <div>
+        <Label>Max Replicas</Label>
+        <NumberInput value={config.maxReplicas} onChange={(v) => patch({ maxReplicas: Math.max(config.minReplicas, v) })} min={config.minReplicas} max={100} />
+      </div>
+      <div>
+        <Label>HPA Target Utilization</Label>
+        <Slider value={config.targetUtilization} onChange={(v) => patch({ targetUtilization: v })} min={0.3} max={0.95} step={0.05} format={(v) => `${(v * 100).toFixed(0)}%`} />
+        <p className="text-[10px] text-ink-3 mt-1">// Scale out when pods exceed this threshold</p>
+      </div>
+      <Divider />
+      <Stat label="Max capacity" value={`${(config.maxReplicas * inst.maxRps).toLocaleString()} RPS`} />
+      <Stat label="Min cost" value={`$${(config.minReplicas * inst.costPerHour).toFixed(3)}/hr`} />
+      <Stat label="Max cost" value={`$${(config.maxReplicas * inst.costPerHour).toFixed(3)}/hr`} />
+    </div>
+  )
+}
+
 function LoadBalancerConfigEditor({ config, patch }: { config: LoadBalancerConfig; patch: (p: Partial<LoadBalancerConfig>) => void }) {
   return (
     <div className="space-y-4">
@@ -222,6 +289,65 @@ function LoadBalancerConfigEditor({ config, patch }: { config: LoadBalancerConfi
       <Divider />
       <Stat label="Max RPS" value="100,000" />
       <Stat label="Cost per hour" value={`$${LB_COST_PER_HOUR.toFixed(3)}`} />
+    </div>
+  )
+}
+
+function KafkaConfigEditor({ config, patch }: { config: KafkaConfig; patch: (p: Partial<KafkaConfig>) => void }) {
+  const maxRps = config.partitions * KAFKA_MAX_RPS_PER_PARTITION
+  const costPerHour = config.partitions * KAFKA_COST_PER_PARTITION_HOUR
+  return (
+    <div className="space-y-4">
+      <div>
+        <Label>Partitions</Label>
+        <NumberInput value={config.partitions} onChange={(v) => patch({ partitions: Math.max(1, v) })} min={1} max={128} />
+        <p className="text-[10px] text-ink-3 mt-1">// Each partition handles up to {KAFKA_MAX_RPS_PER_PARTITION.toLocaleString()} RPS</p>
+      </div>
+      <div>
+        <Label>Consumer Groups</Label>
+        <NumberInput value={config.consumerGroups} onChange={(v) => patch({ consumerGroups: Math.max(1, v) })} min={1} max={20} />
+        <p className="text-[10px] text-ink-3 mt-1">// Each group receives a full copy of the stream</p>
+      </div>
+      <div>
+        <Label>Retention</Label>
+        <Select
+          value={String(config.retentionMs)}
+          onChange={(v) => patch({ retentionMs: Number(v) })}
+          options={[
+            { value: '3600000',    label: '1 hour' },
+            { value: '86400000',   label: '24 hours' },
+            { value: '604800000',  label: '7 days (default)' },
+            { value: '2592000000', label: '30 days' },
+          ]}
+        />
+      </div>
+      <Divider />
+      <Stat label="Max throughput" value={`${maxRps.toLocaleString()} RPS`} />
+      <Stat label="Cost per hour"  value={`$${costPerHour.toFixed(3)}`} />
+    </div>
+  )
+}
+
+function CdnConfigEditor({ config, patch }: { config: CdnConfig; patch: (p: Partial<CdnConfig>) => void }) {
+  const costPerHour = config.regions * CDN_COST_PER_REGION_HOUR
+  return (
+    <div className="space-y-4">
+      <div>
+        <Label>Cache Hit Rate</Label>
+        <Slider value={config.hitRate} onChange={(v) => patch({ hitRate: v })} min={0} max={0.99} step={0.01} format={(v) => `${(v * 100).toFixed(0)}%`} />
+        <p className="text-[10px] text-ink-3 mt-1">// Requests above hit rate are forwarded to origin</p>
+      </div>
+      <div>
+        <Label>Regions (PoPs)</Label>
+        <NumberInput value={config.regions} onChange={(v) => patch({ regions: Math.max(1, v) })} min={1} max={20} />
+      </div>
+      <div>
+        <Label>TTL (seconds)</Label>
+        <NumberInput value={config.ttlSeconds} onChange={(v) => patch({ ttlSeconds: Math.max(1, v) })} min={1} max={86400} step={60} />
+      </div>
+      <Divider />
+      <Stat label="Offload rate"  value={`${(config.hitRate * 100).toFixed(0)}% of requests`} />
+      <Stat label="Cost per hour" value={`$${costPerHour.toFixed(3)}`} />
     </div>
   )
 }
@@ -342,6 +468,10 @@ export function ConfigPanel() {
         {data.componentType === 'cache'         && <CacheConfigEditor        config={data.config as CacheConfig}        patch={patch} />}
         {data.componentType === 'load-balancer' && <LoadBalancerConfigEditor config={data.config as LoadBalancerConfig} patch={patch} />}
         {data.componentType === 'queue'         && <QueueConfigEditor        config={data.config as QueueConfig}        patch={patch} />}
+        {data.componentType === 'api-gateway'   && <ApiGatewayConfigEditor   config={data.config as ApiGatewayConfig}   patch={patch} />}
+        {data.componentType === 'k8s-fleet'     && <K8sFleetConfigEditor     config={data.config as K8sFleetConfig}     patch={patch} />}
+        {data.componentType === 'kafka'         && <KafkaConfigEditor        config={data.config as KafkaConfig}        patch={patch} />}
+        {data.componentType === 'cdn'           && <CdnConfigEditor          config={data.config as CdnConfig}          patch={patch} />}
       </div>
 
       <div className="px-4 py-3 border-t border-edge-dim">

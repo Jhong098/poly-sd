@@ -1,4 +1,4 @@
-export type ComponentType = 'client' | 'server' | 'database' | 'cache' | 'load-balancer' | 'queue'
+export type ComponentType = 'client' | 'server' | 'database' | 'cache' | 'load-balancer' | 'queue' | 'api-gateway' | 'k8s-fleet' | 'kafka' | 'cdn'
 
 // ── Per-component config shapes ────────────────────────────────────────────
 
@@ -38,7 +38,32 @@ export type QueueConfig = {
   maxDepth: number               // buffer size before dropping requests
 }
 
-export type ComponentConfig = ClientConfig | ServerConfig | DatabaseConfig | CacheConfig | LoadBalancerConfig | QueueConfig
+export type ApiGatewayConfig = {
+  maxRps: number              // hard rate cap — excess requests get 429
+  timeoutMs: number           // upstream timeout; circuit breaker trips after this
+  circuitBreakerEnabled: boolean
+}
+
+export type K8sFleetConfig = {
+  instanceType: 't3.small' | 't3.medium' | 'm5.large' | 'm5.xlarge'
+  minReplicas: number
+  maxReplicas: number
+  targetUtilization: number   // 0–1; HPA scale-out threshold
+}
+
+export type KafkaConfig = {
+  partitions: number           // parallelism units; each handles ~10k RPS
+  consumerGroups: number       // concurrent consumer groups (read fanout multiplier)
+  retentionMs: number          // how long messages are kept (ms)
+}
+
+export type CdnConfig = {
+  hitRate: number              // 0–1; fraction served from edge
+  regions: number              // number of PoPs (affects cost)
+  ttlSeconds: number           // edge cache TTL
+}
+
+export type ComponentConfig = ClientConfig | ServerConfig | DatabaseConfig | CacheConfig | LoadBalancerConfig | QueueConfig | ApiGatewayConfig | K8sFleetConfig | KafkaConfig | CdnConfig
 
 // ── Instance pricing ────────────────────────────────────────────────────────
 
@@ -72,6 +97,25 @@ export const LB_MAX_RPS = 100_000
 /** Fixed cost for a managed message queue (SQS-like). */
 export const QUEUE_COST_PER_HOUR = 0.001
 
+/** Fixed cost for an API Gateway (AWS APIGW-like, simplified flat rate). */
+export const GATEWAY_COST_PER_HOUR = 0.023
+export const GATEWAY_MAX_RPS = 50_000
+
+/** K8s server instance sizes (per pod/replica). */
+export const K8S_INSTANCES = {
+  't3.small':  { label: 't3.small',  costPerHour: 0.0208, maxRps: 100 },
+  't3.medium': { label: 't3.medium', costPerHour: 0.0416, maxRps: 200 },
+  'm5.large':  { label: 'm5.large',  costPerHour: 0.0960, maxRps: 500 },
+  'm5.xlarge': { label: 'm5.xlarge', costPerHour: 0.1920, maxRps: 1000},
+} as const
+
+/** Kafka: cost per partition per hour (MSK-like). */
+export const KAFKA_COST_PER_PARTITION_HOUR = 0.010
+export const KAFKA_MAX_RPS_PER_PARTITION = 10_000
+
+/** CDN: cost per region per hour (CloudFront-like flat rate). */
+export const CDN_COST_PER_REGION_HOUR = 0.008
+
 // ── Default configs ─────────────────────────────────────────────────────────
 
 export const DEFAULT_CONFIGS: Record<ComponentType, ComponentConfig> = {
@@ -103,6 +147,27 @@ export const DEFAULT_CONFIGS: Record<ComponentType, ComponentConfig> = {
     processingRatePerSec: 200,
     maxDepth: 10_000,
   } satisfies QueueConfig,
+  'api-gateway': {
+    maxRps: 1_000,
+    timeoutMs: 5_000,
+    circuitBreakerEnabled: false,
+  } satisfies ApiGatewayConfig,
+  'k8s-fleet': {
+    instanceType: 't3.medium',
+    minReplicas: 2,
+    maxReplicas: 10,
+    targetUtilization: 0.7,
+  } satisfies K8sFleetConfig,
+  kafka: {
+    partitions: 4,
+    consumerGroups: 1,
+    retentionMs: 604_800_000,  // 7 days
+  } satisfies KafkaConfig,
+  cdn: {
+    hitRate: 0.85,
+    regions: 3,
+    ttlSeconds: 3600,
+  } satisfies CdnConfig,
 }
 
 // ── Visual metadata ─────────────────────────────────────────────────────────
@@ -152,5 +217,29 @@ export const COMPONENT_META: Record<ComponentType, ComponentMeta> = {
     description: 'Message queue. Decouples producers from consumers, absorbs traffic bursts.',
     accentColor: 'orange',
     tier: 2,
+  },
+  'api-gateway': {
+    label: 'API Gateway',
+    description: 'Rate limiting, auth, and routing at the edge. Optional circuit breaker prevents cascading failures.',
+    accentColor: 'pink',
+    tier: 3,
+  },
+  'k8s-fleet': {
+    label: 'K8s Fleet',
+    description: 'Auto-scaling pod fleet (HPA). Scales replicas up/down based on utilization.',
+    accentColor: 'indigo',
+    tier: 3,
+  },
+  kafka: {
+    label: 'Kafka',
+    description: 'Distributed event stream. High-throughput, durable, ordered, replayable. Scales with partitions.',
+    accentColor: 'teal',
+    tier: 3,
+  },
+  cdn: {
+    label: 'CDN',
+    description: 'Edge caching layer. Serves cached responses from PoPs near users. Drastically reduces origin load.',
+    accentColor: 'lime',
+    tier: 3,
   },
 }

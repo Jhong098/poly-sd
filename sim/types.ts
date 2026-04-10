@@ -115,6 +115,8 @@ export type NodeSnapshot = {
   errorRate: number
   costPerHour: number
   status: NodeStatus
+  replicaCount?: number   // K8s Fleet HPA: current replica count
+  activeChaosType?: string // visual feedback: which chaos type is active
 }
 
 export type EdgeSnapshot = {

@@ -41,6 +41,7 @@ export type ScoreBreakdown = {
   performance: number    // 0–100
   cost: number           // 0–100
   simplicity: number     // 0–100
+  resilience: number     // 0–100 (0 if no chaos events in challenge)
   total: number          // weighted average
 }
 

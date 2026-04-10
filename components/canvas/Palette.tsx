@@ -1,6 +1,6 @@
 'use client'
 
-import { Users, Server, Database, Zap, Shuffle, List } from 'lucide-react'
+import { Users, Server, Database, Zap, Shuffle, List, Shield, Layers, Radio, Globe } from 'lucide-react'
 import { COMPONENT_META, type ComponentType } from '@/lib/components/definitions'
 
 type PaletteItem = {
@@ -21,6 +21,13 @@ const TIER2_ITEMS: PaletteItem[] = [
   { type: 'queue',         icon: <List size={16} />,    shortDesc: 'Buffer & decouple'  },
 ]
 
+const TIER3_ITEMS: PaletteItem[] = [
+  { type: 'api-gateway', icon: <Shield size={16} />, shortDesc: 'Rate limit & circuit breaker' },
+  { type: 'k8s-fleet',   icon: <Layers size={16} />, shortDesc: 'Auto-scaling pod fleet'       },
+  { type: 'kafka',       icon: <Radio  size={16} />, shortDesc: 'Distributed event stream'     },
+  { type: 'cdn',         icon: <Globe  size={16} />, shortDesc: 'Edge cache, global PoPs'       },
+]
+
 // Maps accentColor → design system color variable
 const TYPE_COLOR_VAR: Record<string, string> = {
   sky:     'var(--color-node-client)',
@@ -29,6 +36,10 @@ const TYPE_COLOR_VAR: Record<string, string> = {
   amber:   'var(--color-node-cache)',
   blue:    'var(--color-node-lb)',
   orange:  'var(--color-node-queue)',
+  pink:    'var(--color-node-gateway)',
+  indigo:  'var(--color-node-k8s)',
+  teal:    'var(--color-node-kafka)',
+  lime:    'var(--color-node-cdn)',
 }
 
 function PaletteCard({ item }: { item: PaletteItem }) {
@@ -59,6 +70,7 @@ function PaletteCard({ item }: { item: PaletteItem }) {
 const ALL_TIERS = [
   { label: 'Tier 1 — Foundations', items: TIER1_ITEMS },
   { label: 'Tier 2 — Scaling',     items: TIER2_ITEMS },
+  { label: 'Tier 3 — Advanced',    items: TIER3_ITEMS },
 ]
 
 export function Palette({ allowedTypes }: { allowedTypes?: ComponentType[] | 'all' }) {

@@ -1,6 +1,6 @@
 import type { SimNode, NodeSnapshot, NodeStatus, ChaosEvent } from '../types'
-import type { ClientConfig, ServerConfig, DatabaseConfig, CacheConfig, LoadBalancerConfig, QueueConfig } from '@/lib/components/definitions'
-import { SERVER_INSTANCES, DATABASE_INSTANCES, CACHE_INSTANCES, LB_COST_PER_HOUR, LB_MAX_RPS, QUEUE_COST_PER_HOUR } from '@/lib/components/definitions'
+import type { ClientConfig, ServerConfig, DatabaseConfig, CacheConfig, LoadBalancerConfig, QueueConfig, ApiGatewayConfig, K8sFleetConfig, KafkaConfig, CdnConfig } from '@/lib/components/definitions'
+import { SERVER_INSTANCES, DATABASE_INSTANCES, CACHE_INSTANCES, LB_COST_PER_HOUR, LB_MAX_RPS, QUEUE_COST_PER_HOUR, GATEWAY_COST_PER_HOUR, GATEWAY_MAX_RPS, K8S_INSTANCES, KAFKA_COST_PER_PARTITION_HOUR, KAFKA_MAX_RPS_PER_PARTITION, CDN_COST_PER_REGION_HOUR } from '@/lib/components/definitions'
 
 export type ComponentState = { queuedRequests: number }
 
@@ -32,15 +32,26 @@ export function computeNode(
   // Latency spike: pass magnitude into compute as a multiplier
   const latencyMult = chaos?.type === 'latency-spike' ? chaos.magnitude : 1
 
+  let snap: NodeSnapshot
   switch (node.componentType) {
-    case 'client':        return computeClient(node, clientRps ?? 0)
-    case 'server':        return computeServer(node, inputRps, latencyMult)
-    case 'database':      return computeDatabase(node, inputRps, latencyMult)
-    case 'cache':         return computeCache(node, inputRps)
-    case 'load-balancer': return computeLoadBalancer(node, inputRps)
-    case 'queue':         return computeQueue(node, inputRps, latencyMult)
-    default:              return idleSnapshot((node as SimNode).id)
+    case 'client':        snap = computeClient(node, clientRps ?? 0); break
+    case 'server':        snap = computeServer(node, inputRps, latencyMult); break
+    case 'database':      snap = computeDatabase(node, inputRps, latencyMult); break
+    case 'cache':         snap = computeCache(node, inputRps); break
+    case 'load-balancer': snap = computeLoadBalancer(node, inputRps); break
+    case 'queue':         snap = computeQueue(node, inputRps, latencyMult); break
+    case 'api-gateway':   snap = computeApiGateway(node, inputRps, chaos); break
+    case 'k8s-fleet':     snap = computeK8sFleet(node, inputRps, latencyMult); break
+    case 'kafka':         snap = computeKafka(node, inputRps, latencyMult); break
+    case 'cdn':           snap = computeCdn(node, inputRps); break
+    default:              snap = idleSnapshot((node as SimNode).id); break
   }
+
+  // Tag active chaos type for visual feedback in the UI
+  if (chaos && snap.status !== 'failed') {
+    snap = { ...snap, activeChaosType: chaos.type }
+  }
+  return snap
 }
 
 // ── M/M/1 helpers ────────────────────────────────────────────────────────────
@@ -194,6 +205,155 @@ function computeLoadBalancer(node: SimNode, inputRps: number): NodeSnapshot {
     errorRate: 0.0001,
     costPerHour: LB_COST_PER_HOUR,
     status: statusFromRho(rho, inputRps),
+  }
+}
+
+// ── API Gateway ───────────────────────────────────────────────────────────────
+
+function computeApiGateway(node: SimNode, inputRps: number, chaos?: ChaosEvent): NodeSnapshot {
+  const cfg = node.config as ApiGatewayConfig
+
+  if (inputRps === 0) return idleSnapshot(node.id, GATEWAY_COST_PER_HOUR)
+
+  const rho = inputRps / GATEWAY_MAX_RPS
+
+  // Rate limiting: requests above maxRps get 429
+  const rateLimitedRps = Math.min(inputRps, cfg.maxRps)
+  const rateDropRate = inputRps > cfg.maxRps ? (inputRps - cfg.maxRps) / inputRps : 0
+
+  // Circuit breaker: if enabled and a latency-spike chaos is active on this node,
+  // the GW fast-fails (low latency, high error) rather than passing timeouts downstream.
+  // In normal operation, circuit breaker adds no overhead.
+  const hasChaos = chaos?.type === 'latency-spike'
+  const circuitOpen = cfg.circuitBreakerEnabled && hasChaos
+  if (circuitOpen) {
+    return {
+      id: node.id,
+      inputRps,
+      outputRps: 0,
+      utilization: rho,
+      latencyMs: 5,          // fast-fail: GW returns error immediately
+      errorRate: 1,
+      costPerHour: GATEWAY_COST_PER_HOUR,
+      status: 'saturated',   // show as red — circuit is open
+    }
+  }
+
+  // Normal operation: ~2ms overhead, pass through rate-limited traffic
+  return {
+    id: node.id,
+    inputRps,
+    outputRps: rateLimitedRps * 0.9999,
+    utilization: rho,
+    latencyMs: 2,
+    errorRate: rateDropRate + 0.0001,
+    costPerHour: GATEWAY_COST_PER_HOUR,
+    status: rateDropRate > 0.1 ? 'hot' : statusFromRho(rho, inputRps),
+  }
+}
+
+// ── K8s Fleet (HPA) ───────────────────────────────────────────────────────────
+
+function computeK8sFleet(node: SimNode, inputRps: number, latencyMult = 1): NodeSnapshot {
+  const cfg = node.config as K8sFleetConfig
+  const inst = K8S_INSTANCES[cfg.instanceType]
+  const perReplicaMaxRps = inst.maxRps
+
+  if (inputRps === 0) {
+    // Cluster idles at minReplicas
+    return idleSnapshot(node.id, inst.costPerHour * cfg.minReplicas)
+  }
+
+  // HPA desired replicas: enough to keep each pod under targetUtilization
+  const desiredForLoad = Math.ceil(inputRps / (perReplicaMaxRps * cfg.targetUtilization))
+  const actualReplicas = Math.max(cfg.minReplicas, Math.min(cfg.maxReplicas, desiredForLoad))
+  const effectiveMaxRps = actualReplicas * perReplicaMaxRps
+  const costPerHour = inst.costPerHour * actualReplicas
+
+  const rho = inputRps / effectiveMaxRps
+  const latencyMs = mm1Latency(20 * latencyMult, rho)   // 20ms base like a server
+
+  let errorRate: number, outputRps: number
+  if (rho <= 1) {
+    errorRate = 0.001 + (rho > 0.8 ? Math.pow((rho - 0.8) * 5, 3) * 0.05 : 0)
+    outputRps = inputRps * (1 - errorRate)
+  } else {
+    errorRate = Math.min((inputRps - effectiveMaxRps) / inputRps + 0.001, 1)
+    outputRps = effectiveMaxRps * 0.999
+  }
+
+  return {
+    id: node.id,
+    inputRps,
+    outputRps,
+    utilization: rho,
+    latencyMs,
+    errorRate,
+    costPerHour,
+    status: statusFromRho(rho, inputRps),
+    replicaCount: actualReplicas,
+  }
+}
+
+// ── Kafka ─────────────────────────────────────────────────────────────────────
+
+function computeKafka(node: SimNode, inputRps: number, latencyMult = 1): NodeSnapshot {
+  const cfg = node.config as KafkaConfig
+  const maxRps = cfg.partitions * KAFKA_MAX_RPS_PER_PARTITION
+  const costPerHour = cfg.partitions * KAFKA_COST_PER_PARTITION_HOUR
+
+  if (inputRps === 0) return idleSnapshot(node.id, costPerHour)
+
+  const rho = inputRps / maxRps
+
+  // Kafka adds minimal per-message latency; under load producer latency grows slightly
+  const latencyMs = mm1Latency(5 * latencyMult, Math.min(rho, 0.95))
+
+  // Fan-out: each consumer group receives a full copy of the stream
+  // outputRps = inputRps * consumerGroups (Kafka doesn't consume — it publishes to each group)
+  const outputRps = rho <= 1
+    ? inputRps * cfg.consumerGroups * 0.9999
+    : maxRps * cfg.consumerGroups * 0.999
+
+  const errorRate = rho > 1 ? Math.min((inputRps - maxRps) / inputRps, 1) : 0.0001
+
+  return {
+    id: node.id,
+    inputRps,
+    outputRps,
+    utilization: Math.min(rho, 1),
+    latencyMs,
+    errorRate,
+    costPerHour,
+    status: statusFromRho(Math.min(rho, 1), inputRps),
+  }
+}
+
+// ── CDN ───────────────────────────────────────────────────────────────────────
+
+function computeCdn(node: SimNode, inputRps: number): NodeSnapshot {
+  const cfg = node.config as CdnConfig
+  const costPerHour = cfg.regions * CDN_COST_PER_REGION_HOUR
+
+  if (inputRps === 0) return idleSnapshot(node.id, costPerHour)
+
+  // Hits are served from edge (not forwarded to origin)
+  // Output = cache misses only, forwarded to origin
+  const missRps = inputRps * (1 - cfg.hitRate)
+
+  // CDN latency: near zero for hits (served at edge), pass-through for misses
+  // We model the node's own latency contribution as the edge overhead for hits
+  const latencyMs = 2   // ~2ms edge overhead (hit latency is negligible)
+
+  return {
+    id: node.id,
+    inputRps,
+    outputRps: missRps,
+    utilization: 1 - cfg.hitRate,   // show utilization as miss rate
+    latencyMs,
+    errorRate: 0.0001,
+    costPerHour,
+    status: inputRps > 0 ? 'healthy' : 'idle',
   }
 }
 

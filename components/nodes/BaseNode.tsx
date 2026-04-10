@@ -1,7 +1,7 @@
 'use client'
 
 import { Handle, Position, type NodeProps } from '@xyflow/react'
-import { Trash2, XCircle } from 'lucide-react'
+import { Trash2, XCircle, Zap, TrendingUp } from 'lucide-react'
 import { useArchitectureStore, type ComponentNodeData } from '@/lib/store/architectureStore'
 import { useSimStore } from '@/lib/store/simStore'
 import { COMPONENT_META } from '@/lib/components/definitions'
@@ -15,6 +15,10 @@ const TYPE_COLOR: Record<string, string> = {
   amber:   'var(--color-node-cache)',
   blue:    'var(--color-node-lb)',
   orange:  'var(--color-node-queue)',
+  pink:    'var(--color-node-gateway)',
+  indigo:  'var(--color-node-k8s)',
+  teal:    'var(--color-node-kafka)',
+  lime:    'var(--color-node-cdn)',
 }
 
 // Status overrides type color when node is under stress
@@ -43,9 +47,10 @@ type BaseNodeProps = NodeProps & {
   data: ComponentNodeData
   icon: React.ReactNode
   stats: { label: string; value: string }[]
+  hideLiveMetrics?: boolean  // suppress built-in RPS IN / P99 section
 }
 
-export function BaseNode({ id, data, selected, icon, stats }: BaseNodeProps) {
+export function BaseNode({ id, data, selected, icon, stats, hideLiveMetrics }: BaseNodeProps) {
   const { removeNode } = useArchitectureStore()
   const simSnap = useSimStore((s) => s.nodeSnapshots[id])
   const simStatus = useSimStore((s) => s.status)
@@ -57,6 +62,8 @@ export function BaseNode({ id, data, selected, icon, stats }: BaseNodeProps) {
 
   const accentColor = TYPE_COLOR[meta.accentColor] ?? 'var(--color-edge)'
   const leftBorderColor = STATUS_COLOR[status] ?? accentColor
+  const activeChaos = simSnap?.activeChaosType
+
   const typeLabelClass = STATUS_TEXT[status] ?? ({
     sky:     'text-node-client',
     emerald: 'text-node-server',
@@ -64,6 +71,10 @@ export function BaseNode({ id, data, selected, icon, stats }: BaseNodeProps) {
     amber:   'text-node-cache',
     blue:    'text-node-lb',
     orange:  'text-node-queue',
+    pink:    'text-[var(--color-node-gateway)]',
+    indigo:  'text-[var(--color-node-k8s)]',
+    teal:    'text-[var(--color-node-kafka)]',
+    lime:    'text-[var(--color-node-cdn)]',
   }[meta.accentColor] ?? 'text-ink-3')
 
   const latencyVal = simSnap?.latencyMs ?? 0
@@ -78,13 +89,15 @@ export function BaseNode({ id, data, selected, icon, stats }: BaseNodeProps) {
       `}
       style={{ borderLeftWidth: 2, borderLeftColor: leftBorderColor }}
     >
-      {/* Input handle */}
-      <Handle
-        type="target"
-        position={Position.Left}
-        style={{ background: accentColor, borderColor: accentColor }}
-        className="!w-3 !h-3 !border-2"
-      />
+      {/* Input handle — hidden for source-only nodes (clients) */}
+      {!meta.sourceOnly && (
+        <Handle
+          type="target"
+          position={Position.Left}
+          style={{ background: accentColor, borderColor: accentColor }}
+          className="!w-3 !h-3 !border-2"
+        />
+      )}
 
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2 bg-raised border-b border-edge-dim">
@@ -123,7 +136,7 @@ export function BaseNode({ id, data, selected, icon, stats }: BaseNodeProps) {
         ))}
 
         {/* Live sim metrics */}
-        {isSimulating && simSnap && (
+        {isSimulating && simSnap && !hideLiveMetrics && (
           <>
             <div className="h-px bg-edge-dim my-1" />
             <div className="flex items-center justify-between">
@@ -161,6 +174,26 @@ export function BaseNode({ id, data, selected, icon, stats }: BaseNodeProps) {
           <div className="flex flex-col items-center gap-1">
             <XCircle size={20} className="text-err" />
             <span className="text-[9px] font-bold text-err uppercase tracking-widest">// NODE DOWN</span>
+          </div>
+        </div>
+      )}
+
+      {/* Latency spike chaos badge */}
+      {activeChaos === 'latency-spike' && status !== 'failed' && (
+        <div className="absolute inset-0 border-2 border-warn/60 pointer-events-none z-10 animate-pulse">
+          <div className="absolute top-1 right-1 flex items-center gap-1 bg-warn/20 border border-warn/40 px-1.5 py-0.5">
+            <Zap size={9} className="text-warn" />
+            <span className="text-[8px] font-bold text-warn uppercase tracking-widest">SLOW</span>
+          </div>
+        </div>
+      )}
+
+      {/* Traffic surge chaos badge */}
+      {activeChaos === 'traffic-surge' && status !== 'failed' && (
+        <div className="absolute inset-0 border-2 border-hot/60 pointer-events-none z-10 animate-pulse">
+          <div className="absolute top-1 right-1 flex items-center gap-1 bg-hot/20 border border-hot/40 px-1.5 py-0.5">
+            <TrendingUp size={9} className="text-hot" />
+            <span className="text-[8px] font-bold text-hot uppercase tracking-widest">SURGE</span>
           </div>
         </div>
       )}

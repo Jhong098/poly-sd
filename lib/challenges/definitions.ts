@@ -311,6 +311,110 @@ export const CHALLENGES: Challenge[] = [
       makeChaosEvent('server-1', 'node-failure', 40_000, 15_000),
     ],
   },
+
+  // ── Tier 2 (continued) ───────────────────────────────────────────────────
+
+  {
+    id: '2-3',
+    tier: 2,
+    order: 2,
+    title: 'Async Upload Pipeline',
+    narrative:
+      'Your image processing service handles 100 uploads per second, and each job takes ~2 seconds. ' +
+      'Processing everything synchronously means users wait 2s for an ack — and your server explodes at any burst. ' +
+      'Decouple the upload endpoint from the worker fleet.',
+    objective:
+      'Acknowledge uploads within 200ms. Process all jobs — keep errors under 1%.',
+    trafficConfig: {
+      durationMs: 90_000,
+      waypoints: presetToWaypoints('steady', 100, 1, 90_000),
+    },
+    slaTargets: { p99LatencyMs: 200, errorRate: 0.01 },
+    budgetPerHour: 2.00,
+    allowedComponents: ['client', 'server', 'database', 'cache', 'queue', 'k8s-fleet'],
+    conceptsTaught: ['async decoupling', 'queue dwell time', 'worker pools', 'write-ahead acknowledge'],
+    hints: [
+      'Route: Client → Server → Queue → K8s Fleet → Database.',
+      'The Server only enqueues — it returns immediately (low latency to client).',
+      'The K8s Fleet drains the Queue at a sustained rate ≥ 100 RPS.',
+      'Queue dwell time = depth / drain rate. Watch queue depth in the metrics panel.',
+      'HPA will auto-scale the fleet — set a generous maxReplicas so it can keep up.',
+    ],
+    starterNodes: [
+      { id: 'client-1', type: 'client', position: { x: 60, y: 250 }, label: 'Upload Clients', config: { rps: 100, preset: 'steady', peakMultiplier: 1 } },
+    ],
+  },
+
+  {
+    id: '2-4',
+    tier: 2,
+    order: 3,
+    title: 'Cascading Failure',
+    narrative:
+      'Your checkout service calls a fraud detection API. At t=45s it gets slow — 5× latency. ' +
+      "Without protection every checkout hangs, and users see timeouts. Add a circuit breaker.",
+    objective:
+      'Keep checkout p99 under 500ms and errors under 2% across the full 90s — including the slowdown window.',
+    trafficConfig: {
+      durationMs: 90_000,
+      waypoints: presetToWaypoints('steady', 200, 1, 90_000),
+    },
+    slaTargets: { p99LatencyMs: 500, errorRate: 0.02 },
+    budgetPerHour: 0.50,
+    allowedComponents: ['client', 'server', 'database', 'cache', 'api-gateway'],
+    conceptsTaught: ['circuit breaker', 'cascading failure', 'fast-fail', 'graceful degradation'],
+    hints: [
+      'Place an API Gateway in front of your Server. Enable the Circuit Breaker option.',
+      'Without circuit breaker: the latency spike propagates all the way to the user.',
+      'With circuit breaker: the Gateway opens on the spike and fast-fails (5ms, not 5s).',
+      'Fast-fail means higher error rate briefly — but much lower latency. That trade-off saves the system.',
+      'The chaos fires on the "fraud-api" node — you must name a server node exactly "fraud-api" to trigger it.',
+    ],
+    starterNodes: [
+      { id: 'client-1',   type: 'client',   position: { x: 60,  y: 250 }, label: 'Checkout Clients', config: { rps: 200, preset: 'steady', peakMultiplier: 1 } },
+      { id: 'fraud-api',  type: 'server',   position: { x: 600, y: 250 }, label: 'Fraud API',        config: { instanceType: 'm5.large', instanceCount: 1, baseLatencyMs: 50 } },
+    ],
+    chaosSchedule: [
+      makeChaosEvent('fraud-api', 'latency-spike', 45_000, 30_000, 5),
+    ],
+  },
+
+  {
+    id: '2-5',
+    tier: 2,
+    order: 4,
+    title: 'Flash Sale Scale-Out',
+    narrative:
+      'Your e-commerce platform normally handles 300 RPS. A flash sale starts at t=20s — ' +
+      'traffic surges to 2,400 RPS for 40 seconds, then drops back. ' +
+      'Static provisioning for peak wastes money at baseline. Use a K8s Fleet to auto-scale.',
+    objective:
+      'Keep p99 under 400ms and errors under 2% through the spike. Stay under $1.50/hr average cost.',
+    trafficConfig: {
+      durationMs: 90_000,
+      waypoints: [
+        { timeMs: 0,      rps: 300  },
+        { timeMs: 20_000, rps: 300  },
+        { timeMs: 25_000, rps: 2400 },
+        { timeMs: 65_000, rps: 2400 },
+        { timeMs: 70_000, rps: 300  },
+        { timeMs: 90_000, rps: 300  },
+      ],
+    },
+    slaTargets: { p99LatencyMs: 400, errorRate: 0.02 },
+    budgetPerHour: 1.50,
+    allowedComponents: ['client', 'server', 'database', 'cache', 'load-balancer', 'queue', 'k8s-fleet'],
+    conceptsTaught: ['horizontal auto-scaling', 'HPA', 'cost vs. headroom', 'scale-out'],
+    hints: [
+      'A static server fleet provisioned for 2,400 RPS burns budget at baseline.',
+      'A K8s Fleet with HPA scales from minReplicas at rest to maxReplicas at peak — automatically.',
+      'Set targetUtilization ~70% so the fleet has headroom before the spike arrives.',
+      'A Cache in front reduces read-heavy product queries — meaning the fleet sees less RPS.',
+    ],
+    starterNodes: [
+      { id: 'client-1', type: 'client', position: { x: 60, y: 250 }, label: 'Shoppers', config: { rps: 300, preset: 'spike', peakMultiplier: 8 } },
+    ],
+  },
 ]
 
 /** Fast lookup by challenge ID. */

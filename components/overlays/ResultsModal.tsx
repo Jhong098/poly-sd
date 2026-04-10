@@ -4,6 +4,7 @@ import { CheckCircle2, XCircle, RotateCcw, ChevronRight, Trophy } from 'lucide-r
 import { useChallengeStore } from '@/lib/store/challengeStore'
 import { useSimStore } from '@/lib/store/simStore'
 import { useArchitectureStore } from '@/lib/store/architectureStore'
+import { CHALLENGES } from '@/lib/challenges/definitions'
 import type { EvalResult } from '@/lib/challenges/types'
 
 function ScoreBar({ label, value, color }: { label: string; value: number; color: string }) {
@@ -48,6 +49,13 @@ export function ResultsModal() {
 
   const result: EvalResult = evalResult
   const challenge = activeChallenge
+
+  // Find the next challenge in sequence (same tier, next order — or next tier)
+  const sortedChallenges = [...CHALLENGES].sort((a, b) =>
+    a.tier !== b.tier ? a.tier - b.tier : a.order - b.order
+  )
+  const currentIdx = sortedChallenges.findIndex((c) => c.id === challenge.id)
+  const nextChallenge = currentIdx >= 0 ? sortedChallenges[currentIdx + 1] : undefined
 
   function handleRetry() {
     stopSimulation()
@@ -117,6 +125,9 @@ export function ResultsModal() {
             <ScoreBar label="Performance" value={result.scores.performance} color="var(--color-cyan)" />
             <ScoreBar label="Cost"        value={result.scores.cost}        color="var(--color-ok)" />
             <ScoreBar label="Simplicity"  value={result.scores.simplicity}  color="var(--color-node-db)" />
+            {(challenge.chaosSchedule?.length ?? 0) > 0 && (
+              <ScoreBar label="Resilience" value={result.scores.resilience} color="var(--color-err)" />
+            )}
           </div>
         )}
 
@@ -134,12 +145,20 @@ export function ResultsModal() {
           >
             Close
           </button>
-          {result.passed && (
+          {result.passed && nextChallenge && (
+            <a
+              href={`/play/${nextChallenge.id}`}
+              className="flex items-center gap-1.5 px-4 py-2 bg-ok hover:bg-ok/90 text-base text-[11px] font-bold uppercase tracking-wider transition-colors"
+            >
+              Next <ChevronRight size={13} />
+            </a>
+          )}
+          {result.passed && !nextChallenge && (
             <a
               href="/campaign"
               className="flex items-center gap-1.5 px-4 py-2 bg-ok hover:bg-ok/90 text-base text-[11px] font-bold uppercase tracking-wider transition-colors"
             >
-              Next <ChevronRight size={13} />
+              Campaign <ChevronRight size={13} />
             </a>
           )}
         </div>

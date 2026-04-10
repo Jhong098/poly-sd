@@ -19,6 +19,10 @@ import { DatabaseNode }     from '@/components/nodes/DatabaseNode'
 import { CacheNode }        from '@/components/nodes/CacheNode'
 import { LoadBalancerNode } from '@/components/nodes/LoadBalancerNode'
 import { QueueNode }        from '@/components/nodes/QueueNode'
+import { ApiGatewayNode }   from '@/components/nodes/ApiGatewayNode'
+import { K8sFleetNode }     from '@/components/nodes/K8sFleetNode'
+import { KafkaNode }        from '@/components/nodes/KafkaNode'
+import { CdnNode }          from '@/components/nodes/CdnNode'
 import { AnimatedEdge }     from '@/components/canvas/edges/AnimatedEdge'
 import { ChaosMenu }        from '@/components/canvas/ChaosMenu'
 import { useArchitectureStore, type ComponentNode } from '@/lib/store/architectureStore'
@@ -32,6 +36,10 @@ const NODE_TYPES: NodeTypes = {
   cache:           CacheNode,
   'load-balancer': LoadBalancerNode,
   queue:           QueueNode,
+  'api-gateway':   ApiGatewayNode,
+  'k8s-fleet':     K8sFleetNode,
+  kafka:           KafkaNode,
+  cdn:             CdnNode,
 }
 
 const EDGE_TYPES: EdgeTypes = {

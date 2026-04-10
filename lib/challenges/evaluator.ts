@@ -1,4 +1,4 @@
-import type { SimSnapshot } from '@/sim/types'
+import type { SimSnapshot, ChaosEvent } from '@/sim/types'
 import type { Challenge, EvalResult, ScoreBreakdown } from './types'
 
 /**
@@ -44,6 +44,14 @@ export function evaluateChallenge(
   const passedBudget  = costPerHour  <= challenge.budgetPerHour
   const passed = passedLatency && passedErrors && passedBudget
 
+  // ── Resilience score ───────────────────────────────────────────────────────
+
+  // Only computed when the challenge has scheduled chaos events.
+  // Measures how well the architecture maintained SLAs *during* chaos windows
+  // vs. a hypothetical full-failure baseline (errorRate=1).
+  const chaosSchedule = challenge.chaosSchedule ?? []
+  const resilience = computeResilience(history, chaosSchedule, challenge.slaTargets.errorRate)
+
   // ── Scoring ────────────────────────────────────────────────────────────────
 
   // Performance score: how much headroom vs. SLA (0 = at limit, 100 = free)
@@ -58,10 +66,13 @@ export function evaluateChallenge(
   // Simplicity score: penalise excess components (sweet spot is fewest that pass)
   const simplicity = Math.round(Math.max(0, 1 - (componentCount - 2) / 10) * 100)
 
-  // Weighted total: performance matters most
-  const total = Math.round(performance * 0.5 + cost * 0.3 + simplicity * 0.2)
+  // Weighted total: when chaos is present, resilience replaces some simplicity weight
+  const hasChaos = chaosSchedule.length > 0
+  const total = hasChaos
+    ? Math.round(performance * 0.4 + cost * 0.25 + simplicity * 0.15 + resilience * 0.2)
+    : Math.round(performance * 0.5 + cost * 0.3 + simplicity * 0.2)
 
-  const scores: ScoreBreakdown = { performance, cost, simplicity, total }
+  const scores: ScoreBreakdown = { performance, cost, simplicity, resilience, total }
 
   return {
     passed,
@@ -73,13 +84,42 @@ export function evaluateChallenge(
   }
 }
 
+// ── Resilience computation ────────────────────────────────────────────────────
+
+function computeResilience(
+  history: SimSnapshot[],
+  chaosSchedule: ChaosEvent[],
+  slaErrorRate: number,
+): number {
+  if (chaosSchedule.length === 0 || history.length === 0) return 0
+
+  // Identify snapshots that fall inside any chaos window (+ 5s buffer after)
+  const chaosSnaps = history.filter((s) =>
+    chaosSchedule.some((e) =>
+      s.simTimeMs >= e.startSimMs &&
+      s.simTimeMs < e.startSimMs + e.durationMs + 5_000,
+    ),
+  )
+
+  if (chaosSnaps.length === 0) return 0
+
+  // Mean error rate during chaos windows
+  const chaosErrorRate =
+    chaosSnaps.reduce((sum, s) => sum + s.systemErrorRate, 0) / chaosSnaps.length
+
+  // Score: 100 = no degradation (chaosErrorRate ≤ sla), 0 = total failure (rate=1)
+  const degradation = Math.max(0, chaosErrorRate - slaErrorRate)
+  const maxDegradation = Math.max(1 - slaErrorRate, 0.01)
+  return Math.round(Math.max(0, 1 - degradation / maxDegradation) * 100)
+}
+
 function failing(challenge: Challenge, componentCount: number): EvalResult {
   return {
     passed: false,
     passedLatency: false,
     passedErrors: false,
     passedBudget: false,
-    scores: { performance: 0, cost: 0, simplicity: 0, total: 0 },
+    scores: { performance: 0, cost: 0, simplicity: 0, resilience: 0, total: 0 },
     metrics: {
       p99LatencyMs: Infinity,
       errorRate: 1,
