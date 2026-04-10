@@ -1,12 +1,15 @@
 'use client'
 
 import { use, useEffect, useState } from 'react'
-import { notFound } from 'next/navigation'
+import { notFound, useSearchParams } from 'next/navigation'
+import { useAuth } from '@clerk/nextjs'
 import { CHALLENGE_MAP } from '@/lib/challenges/definitions'
 import { useChallengeStore } from '@/lib/store/challengeStore'
 import { useArchitectureStore } from '@/lib/store/architectureStore'
 import { useSimStore } from '@/lib/store/simStore'
 import { ChallengeLayout } from '@/components/canvas/ChallengeLayout'
+import { getDraft } from '@/lib/actions/drafts'
+import { readLocalDraft, clearLocalDraft } from '@/lib/draft'
 
 export default function PlayPage({ params }: { params: Promise<{ levelId: string }> }) {
   const { levelId } = use(params)
@@ -17,28 +20,74 @@ export default function PlayPage({ params }: { params: Promise<{ levelId: string
   const { stopSimulation, setDuration, setWaypoints } = useSimStore()
   const [ready, setReady] = useState(false)
 
+  const searchParams = useSearchParams()
+  const resume = searchParams.get('resume') === 'true'
+  const restart = searchParams.get('restart') === 'true'
+  const { userId } = useAuth()
+
   useEffect(() => {
     if (!challenge) return
+    let cancelled = false
 
-    // Reset state from any previous session
-    stopSimulation()
-    setActiveChallenge(challenge)
+    async function init() {
+      stopSimulation()
+      setActiveChallenge(challenge)
+      setDuration(challenge.trafficConfig.durationMs)
+      setWaypoints(challenge.trafficConfig.waypoints)
 
-    // Wire up the traffic config from the challenge
-    setDuration(challenge.trafficConfig.durationMs)
-    setWaypoints(challenge.trafficConfig.waypoints)
+      if (restart && userId) {
+        // Path A — restart: clear draft, load starter graph
+        clearLocalDraft(userId, challenge.id)
+        if (challenge.starterNodes?.length) {
+          initFromStarterGraph(challenge.starterNodes, challenge.starterEdges ?? [])
+        } else {
+          clearCanvas()
+        }
+      } else if (resume && userId) {
+        // Path B — resume: load most recent draft (local or db)
+        const local = readLocalDraft(userId, challenge.id)
 
-    // Initialize starter graph (if provided) or clear canvas
-    if (challenge.starterNodes?.length) {
-      initFromStarterGraph(challenge.starterNodes, challenge.starterEdges ?? [])
-    } else {
-      clearCanvas()
+        let db: { nodes: unknown[]; edges: unknown[]; saved_at: string } | null = null
+        try {
+          db = await getDraft(challenge.id)
+        } catch {
+          // Fall back to local draft on error
+        }
+
+        if (cancelled) return
+
+        const localTime = local ? new Date(local.savedAt).getTime() : 0
+        const dbTime = db ? new Date(db.saved_at).getTime() : 0
+
+        if (localTime === 0 && dbTime === 0) {
+          if (challenge.starterNodes?.length) {
+            initFromStarterGraph(challenge.starterNodes, challenge.starterEdges ?? [])
+          } else {
+            clearCanvas()
+          }
+        } else if (localTime >= dbTime && local) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          initFromStarterGraph(local.nodes as any, local.edges as any)
+        } else if (db) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          initFromStarterGraph(db.nodes as any, db.edges as any)
+        }
+      } else {
+        // Path C — normal visit: load starter graph
+        if (challenge.starterNodes?.length) {
+          initFromStarterGraph(challenge.starterNodes, challenge.starterEdges ?? [])
+        } else {
+          clearCanvas()
+        }
+      }
+
+      if (!cancelled) setReady(true)
     }
 
-    setReady(true)
+    init()
 
     return () => {
-      // Clean up when leaving
+      cancelled = true
       stopSimulation()
       setActiveChallenge(null)
     }
