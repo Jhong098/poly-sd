@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Play, Pause, Square, LayoutGrid, ChevronDown, Plus, X, Save, Check } from 'lucide-react'
+import { Play, Pause, Square, LayoutGrid, ChevronDown, Plus, X, Save, Check, ChevronLeft } from 'lucide-react'
+import Link from 'next/link'
 import { UserButton, SignInButton, useAuth } from '@clerk/nextjs'
 import { useSimStore } from '@/lib/store/simStore'
 import { useArchitectureStore } from '@/lib/store/architectureStore'
@@ -241,10 +242,18 @@ export function TopBar() {
 
   return (
     <header className="h-11 flex-shrink-0 flex items-center gap-3 px-4 bg-raised border-b border-edge relative">
-      {/* Logo */}
+      {/* Logo + back nav */}
       <div className="flex items-center gap-2 flex-shrink-0">
-        <LayoutGrid size={13} className="text-cyan" />
-        <span className="text-[13px] font-bold tracking-widest text-cyan">POLY-SD</span>
+        <Link href="/" className="flex items-center gap-1.5 group">
+          <LayoutGrid size={13} className="text-cyan" />
+          <span className="text-[13px] font-bold tracking-widest text-cyan">POLY-SD</span>
+        </Link>
+        <Link
+          href="/campaign"
+          className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-ink-3 hover:text-ink-2 transition-colors"
+        >
+          <ChevronLeft size={11} />Campaign
+        </Link>
       </div>
 
       <div className="h-4 w-px bg-edge" />
