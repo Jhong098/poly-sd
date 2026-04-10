@@ -26,9 +26,10 @@ export function ChallengeLayout() {
 
   useEffect(() => {
     if (!activeChallenge || !userId) return
+    const challengeId = activeChallenge.id
     if (timerRef.current) clearTimeout(timerRef.current)
     timerRef.current = setTimeout(() => {
-      writeLocalDraft(userId, activeChallenge.id, nodes, edges)
+      writeLocalDraft(userId, challengeId, nodes, edges)
     }, 1500)
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
