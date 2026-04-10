@@ -83,6 +83,7 @@ export type Database = {
           architecture_snapshot?: Json | null
           completed_at?: string
         }
+      }
       replays: {
         Row: {
           id: string

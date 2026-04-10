@@ -4,7 +4,7 @@ import { ReactFlow, Background, Controls, MiniMap, BackgroundVariant, ReactFlowP
 import { Trophy, XCircle, CheckCircle2, ArrowLeft, ChevronRight } from 'lucide-react'
 import type { ReplayRow } from '@/lib/actions/replays'
 import type { Challenge } from '@/lib/challenges/types'
-import type { ComponentNode } from '@/lib/store/architectureStore'
+import type { ComponentNode, ComponentEdge } from '@/lib/store/architectureStore'
 import { ClientNode }       from '@/components/nodes/ClientNode'
 import { ServerNode }       from '@/components/nodes/ServerNode'
 import { DatabaseNode }     from '@/components/nodes/DatabaseNode'
@@ -72,7 +72,7 @@ function MetricRow({ label, value, passed }: { label: string; value: string; pas
 export function ReplayViewer({ replay, challenge }: { replay: ReplayRow; challenge: Challenge | null }) {
   const { architecture, eval_result: result, score, created_at } = replay
   const nodes = architecture.nodes as ComponentNode[]
-  const edges = architecture.edges as ComponentNode[]
+  const edges = architecture.edges as ComponentEdge[]
 
   const date = new Date(created_at).toLocaleDateString('en-US', {
     month: 'short', day: 'numeric', year: 'numeric',
