@@ -324,24 +324,26 @@ export const CHALLENGES: Challenge[] = [
       'Processing everything synchronously means users wait 2s for an ack — and your server explodes at any burst. ' +
       'Decouple the upload endpoint from the worker fleet.',
     objective:
-      'Acknowledge uploads within 200ms. Process all jobs — keep errors under 1%.',
+      'Keep the full processing pipeline under 1.5s p99 and drop rate under 0.5%. ' +
+      'The key insight: if the queue overflows, jobs are lost — zero drops = the workers are keeping up.',
     trafficConfig: {
       durationMs: 90_000,
       waypoints: presetToWaypoints('steady', 100, 1, 90_000),
     },
-    slaTargets: { p99LatencyMs: 200, errorRate: 0.01 },
+    slaTargets: { p99LatencyMs: 1500, errorRate: 0.005 },
     budgetPerHour: 2.00,
     allowedComponents: ['client', 'server', 'database', 'cache', 'queue', 'k8s-fleet'],
-    conceptsTaught: ['async decoupling', 'queue dwell time', 'worker pools', 'write-ahead acknowledge'],
+    conceptsTaught: ['async decoupling', 'queue dwell time', 'worker pools', 'backpressure'],
     hints: [
       'Route: Client → Server → Queue → K8s Fleet → Database.',
-      'The Server only enqueues — it returns immediately (low latency to client).',
-      'The K8s Fleet drains the Queue at a sustained rate ≥ 100 RPS.',
-      'Queue dwell time = depth / drain rate. Watch queue depth in the metrics panel.',
-      'HPA will auto-scale the fleet — set a generous maxReplicas so it can keep up.',
+      'Size the Server with headroom — at 100 RPS input, use t3.medium or larger so enqueue latency stays low.',
+      'Set Queue drain rate to 2–3× your input RPS (e.g. 250 RPS for 100 RPS input). At drain = input, ρ = 1 and dwell time explodes.',
+      'The K8s Fleet must handle the drain rate, not just the input. At 250 RPS drain, provision enough replicas (≥ 2 t3.medium).',
+      'Zero errors means the queue is never overflowing. Watch for error rate > 0 — that means jobs are being dropped.',
     ],
     starterNodes: [
-      { id: 'client-1', type: 'client', position: { x: 60, y: 250 }, label: 'Upload Clients', config: { rps: 100, preset: 'steady', peakMultiplier: 1 } },
+      { id: 'client-1', type: 'client',  position: { x: 60,  y: 250 }, label: 'Upload Clients', config: { rps: 100, preset: 'steady', peakMultiplier: 1 } },
+      { id: 'server-1', type: 'server',  position: { x: 280, y: 250 }, label: 'Upload API',     config: { instanceType: 't3.medium', instanceCount: 1, baseLatencyMs: 20 } },
     ],
   },
 
