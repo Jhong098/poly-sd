@@ -232,7 +232,7 @@ export function ResultsModal() {
               href={`/challenge/${challenge.id}/solutions`}
               className="flex items-center gap-1.5 px-3 py-2 border border-edge bg-surface hover:bg-overlay text-ink-2 text-[11px] font-bold uppercase tracking-wider transition-colors"
             >
-              <Trophy size={13} /> Solutions
+              <Trophy size={13} aria-hidden="true" /> Solutions
             </a>
           )}
 
