@@ -1,9 +1,10 @@
 import Link from 'next/link'
-import { CheckCircle2, Lock, Play } from 'lucide-react'
+import { CheckCircle2, Lock, Play, RotateCcw } from 'lucide-react'
 import { auth } from '@clerk/nextjs/server'
 import { CHALLENGES } from '@/lib/challenges/definitions'
 import { getMyCompletions } from '@/lib/actions/completions'
 import { getOrCreateProfile } from '@/lib/actions/profile'
+import { getChallengeDrafts } from '@/lib/actions/drafts'
 import { computeLevel } from '@/lib/xp'
 import { SiteNav } from '@/components/nav/SiteNav'
 import type { Challenge } from '@/lib/challenges/types'
@@ -18,9 +19,11 @@ const TIERS = [
 function ChallengeCard({
   challenge,
   completion,
+  hasDraft,
 }: {
   challenge: Challenge
   completion: CompletionRow | undefined
+  hasDraft: boolean
 }) {
   const tierColors: Record<number, { badge: string; hover: string }> = {
     0: { badge: 'bg-surface text-ink-3',       hover: 'hover:border-edge-strong' },
@@ -29,18 +32,8 @@ function ChallengeCard({
   const colors = tierColors[challenge.tier] ?? tierColors[1]
   const passed = completion?.passed
 
-  return (
-    <Link
-      href={`/play/${challenge.id}`}
-      className={`
-        group relative flex flex-col gap-3 p-5 border
-        bg-raised transition-colors
-        ${passed
-          ? 'border-ok/30 hover:border-ok/50'
-          : `border-edge-dim ${colors.hover}`
-        }
-      `}
-    >
+  const cardBody = (
+    <>
       {/* Completion badge */}
       {passed && (
         <div className="absolute top-3 right-3 flex items-center gap-1 px-1.5 py-0.5 bg-ok/10 border border-ok/30">
@@ -59,7 +52,7 @@ function ChallengeCard({
             {challenge.title}
           </h3>
         </div>
-        {!passed && <Play size={13} className="text-ink-3 group-hover:text-ink-2 flex-shrink-0 mt-5 transition-colors" />}
+        {!passed && !hasDraft && <Play size={13} className="text-ink-3 group-hover:text-ink-2 flex-shrink-0 mt-5 transition-colors" />}
       </div>
 
       {/* Narrative */}
@@ -87,6 +80,46 @@ function ChallengeCard({
           </span>
         )}
       </div>
+    </>
+  )
+
+  const cardClass = `
+    group relative flex flex-col gap-3 p-5 border
+    bg-raised transition-colors
+    ${passed
+      ? 'border-ok/30 hover:border-ok/50'
+      : `border-edge-dim ${colors.hover}`
+    }
+  `
+
+  if (hasDraft) {
+    return (
+      <div className={cardClass}>
+        {cardBody}
+        <div className="flex gap-2 pt-1">
+          <Link
+            href={`/play/${challenge.id}?resume=true`}
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-cyan hover:bg-cyan/90 text-base text-[11px] font-bold uppercase tracking-wider transition-colors"
+          >
+            <Play size={11} /> Continue
+          </Link>
+          <Link
+            href={`/play/${challenge.id}?restart=true`}
+            className="flex items-center gap-1.5 px-3 py-2 border border-edge bg-surface hover:bg-overlay text-ink-2 text-[11px] font-bold uppercase tracking-wider transition-colors"
+          >
+            <RotateCcw size={11} /> Restart
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <Link
+      href={`/play/${challenge.id}`}
+      className={cardClass}
+    >
+      {cardBody}
     </Link>
   )
 }
@@ -94,12 +127,14 @@ function ChallengeCard({
 export default async function CampaignPage() {
   const { userId } = await auth()
 
-  const [completions, profile] = await Promise.all([
+  const [completions, profile, drafts] = await Promise.all([
     userId ? getMyCompletions() : Promise.resolve([]),
     userId ? getOrCreateProfile() : Promise.resolve(null),
+    userId ? getChallengeDrafts() : Promise.resolve([]),
   ])
 
   const completionMap = new Map(completions.map((c) => [c.challenge_id, c]))
+  const draftMap = new Map(drafts.map((d) => [d.challenge_id, true]))
   const level = profile ? computeLevel(profile.xp) : null
   const totalPassed = completions.filter((c) => c.passed).length
 
@@ -142,7 +177,12 @@ export default async function CampaignPage() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {challenges.map((c) => (
-                    <ChallengeCard key={c.id} challenge={c} completion={completionMap.get(c.id)} />
+                    <ChallengeCard
+                      key={c.id}
+                      challenge={c}
+                      completion={completionMap.get(c.id)}
+                      hasDraft={draftMap.get(c.id) ?? false}
+                    />
                   ))}
                 </div>
               </section>
