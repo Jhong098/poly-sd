@@ -36,7 +36,7 @@ export default function PlayPage({ params }: { params: Promise<{ levelId: string
       setWaypoints(challenge.trafficConfig.waypoints)
 
       if (restart && userId) {
-        // Path A — restart: clear draft, load starter graph
+        // Clear localStorage draft and load starter graph
         clearLocalDraft(userId, challenge.id)
         if (challenge.starterNodes?.length) {
           initFromStarterGraph(challenge.starterNodes, challenge.starterEdges ?? [])
@@ -44,22 +44,21 @@ export default function PlayPage({ params }: { params: Promise<{ levelId: string
           clearCanvas()
         }
       } else if (resume && userId) {
-        // Path B — resume: load most recent draft (local or db)
+        // Pick the most recent draft between localStorage and Supabase
         const local = readLocalDraft(userId, challenge.id)
-
         let db: { nodes: unknown[]; edges: unknown[]; saved_at: string } | null = null
         try {
           db = await getDraft(challenge.id)
         } catch {
-          // Fall back to local draft on error
+          // Supabase unavailable — fall back to local
         }
-
         if (cancelled) return
 
         const localTime = local ? new Date(local.savedAt).getTime() : 0
         const dbTime = db ? new Date(db.saved_at).getTime() : 0
 
         if (localTime === 0 && dbTime === 0) {
+          // No draft found — fall back to starter graph
           if (challenge.starterNodes?.length) {
             initFromStarterGraph(challenge.starterNodes, challenge.starterEdges ?? [])
           } else {
@@ -73,7 +72,7 @@ export default function PlayPage({ params }: { params: Promise<{ levelId: string
           initFromStarterGraph(db.nodes as any, db.edges as any)
         }
       } else {
-        // Path C — normal visit: load starter graph
+        // Normal visit — load starter graph
         if (challenge.starterNodes?.length) {
           initFromStarterGraph(challenge.starterNodes, challenge.starterEdges ?? [])
         } else {
