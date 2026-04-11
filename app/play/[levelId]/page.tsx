@@ -10,7 +10,7 @@ import { useSimStore } from '@/lib/store/simStore'
 import { ChallengeLayout } from '@/components/canvas/ChallengeLayout'
 import { getDraft } from '@/lib/actions/drafts'
 import { readLocalDraft, clearLocalDraft } from '@/lib/draft'
-import type { ComponentNode, ComponentEdge } from '@/lib/store/architectureStore'
+import type { DraftRow } from '@/lib/actions/drafts'
 
 export default function PlayPage({ params }: { params: Promise<{ levelId: string }> }) {
   const { levelId } = use(params)
@@ -30,17 +30,18 @@ export default function PlayPage({ params }: { params: Promise<{ levelId: string
     if (!challenge) return
     // Wait for Clerk auth to resolve before running resume/restart paths
     if ((resume || restart) && userId === undefined) return
+    const c = challenge  // narrow Challenge | undefined → Challenge for closures
     let cancelled = false
 
     async function init() {
       stopSimulation()
-      setActiveChallenge(challenge)
-      setDuration(challenge.trafficConfig.durationMs)
-      setWaypoints(challenge.trafficConfig.waypoints)
+      setActiveChallenge(c)
+      setDuration(c.trafficConfig.durationMs)
+      setWaypoints(c.trafficConfig.waypoints)
 
       function loadStarter() {
-        if (challenge.starterNodes?.length) {
-          initFromStarterGraph(challenge.starterNodes, challenge.starterEdges ?? [])
+        if (c.starterNodes?.length) {
+          initFromStarterGraph(c.starterNodes, c.starterEdges ?? [])
         } else {
           clearCanvas()
         }
@@ -48,14 +49,14 @@ export default function PlayPage({ params }: { params: Promise<{ levelId: string
 
       if (restart && userId) {
         // Clear localStorage draft and load starter graph
-        clearLocalDraft(userId, challenge.id)
+        clearLocalDraft(userId, c.id)
         loadStarter()
       } else if (resume && userId) {
         // Pick the most recent draft between localStorage and Supabase
-        const local = readLocalDraft(userId, challenge.id)
-        let db: { nodes: ComponentNode[]; edges: ComponentEdge[]; saved_at: string } | null = null
+        const local = readLocalDraft(userId, c.id)
+        let db: DraftRow | null = null
         try {
-          db = await getDraft(challenge.id) as typeof db
+          db = await getDraft(c.id)
         } catch (err) {
           console.warn('getDraft failed, falling back to localStorage:', err)
         }

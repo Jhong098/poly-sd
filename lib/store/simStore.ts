@@ -76,9 +76,9 @@ export const useSimStore = create<SimState>((set, get) => ({
     if (nodes.length === 0) return
 
     // Persist draft so the user can resume later (fire-and-forget)
-    const { activeChallenge } = useChallengeStore.getState()
-    if (activeChallenge) {
-      saveDraft(activeChallenge.id, nodes, edges).catch(console.error)
+    const activeChallengeForDraft = useChallengeStore.getState().activeChallenge
+    if (activeChallengeForDraft) {
+      saveDraft(activeChallengeForDraft.id, nodes, edges).catch(console.error)
     }
 
     const graph = {
