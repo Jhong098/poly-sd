@@ -19,6 +19,8 @@ const TYPE_COLOR: Record<string, string> = {
   indigo:  'var(--color-node-k8s)',
   teal:    'var(--color-node-kafka)',
   lime:    'var(--color-node-cdn)',
+  fuchsia: 'var(--color-node-nosql)',
+  rose:    'var(--color-node-object-storage)',
 }
 
 // Status overrides type color when node is under stress
@@ -75,6 +77,8 @@ export function BaseNode({ id, data, selected, icon, stats, hideLiveMetrics }: B
     indigo:  'text-[var(--color-node-k8s)]',
     teal:    'text-[var(--color-node-kafka)]',
     lime:    'text-[var(--color-node-cdn)]',
+    fuchsia: 'text-[var(--color-node-nosql)]',
+    rose:    'text-[var(--color-node-object-storage)]',
   }[meta.accentColor] ?? 'text-ink-3')
 
   const latencyVal = simSnap?.latencyMs ?? 0

@@ -23,6 +23,8 @@ import { ApiGatewayNode }   from '@/components/nodes/ApiGatewayNode'
 import { K8sFleetNode }     from '@/components/nodes/K8sFleetNode'
 import { KafkaNode }        from '@/components/nodes/KafkaNode'
 import { CdnNode }          from '@/components/nodes/CdnNode'
+import { NoSqlNode }        from '@/components/nodes/NoSqlNode'
+import { ObjectStorageNode } from '@/components/nodes/ObjectStorageNode'
 import { AnimatedEdge }     from '@/components/canvas/edges/AnimatedEdge'
 import { ChaosMenu }        from '@/components/canvas/ChaosMenu'
 import { useArchitectureStore, type ComponentNode } from '@/lib/store/architectureStore'
@@ -38,8 +40,10 @@ const NODE_TYPES: NodeTypes = {
   queue:           QueueNode,
   'api-gateway':   ApiGatewayNode,
   'k8s-fleet':     K8sFleetNode,
-  kafka:           KafkaNode,
-  cdn:             CdnNode,
+  kafka:            KafkaNode,
+  cdn:              CdnNode,
+  nosql:            NoSqlNode,
+  'object-storage': ObjectStorageNode,
 }
 
 const EDGE_TYPES: EdgeTypes = {
@@ -52,8 +56,10 @@ function nodeColor(node: ComponentNode): string {
     server:          '#00bfa5',
     database:        '#a78bfa',
     cache:           '#fbbf24',
-    'load-balancer': '#38bdf8',
-    queue:           '#fb923c',
+    'load-balancer':  '#38bdf8',
+    queue:            '#fb923c',
+    nosql:            '#e879f9',
+    'object-storage': '#93c5fd',
   }
   return map[node.data.componentType] ?? '#0d3d4e'
 }

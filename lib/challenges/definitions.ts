@@ -686,6 +686,252 @@ export const CHALLENGES: Challenge[] = [
       makeChaosEvent('db-primary', 'node-failure', 60_000, 120_000),
     ],
   },
+
+  // ── Tier 4: Distributed Data ────────────────────────────────────────────────
+
+  {
+    id: '4-1',
+    tier: 4,
+    order: 0,
+    title: 'Read Scaling',
+    narrative:
+      'Your social feed database is groaning. 5,000 reads per second, ' +
+      'and your primary can\'t keep up. Every user-facing page is slow.',
+    objective:
+      'Handle 5,000 RPS on a read-heavy workload within budget. ' +
+      'Add read replicas to distribute the load across multiple DB instances.',
+    trafficConfig: {
+      durationMs: 90_000,
+      waypoints: presetToWaypoints('steady', 5000, 1, 90_000),
+    },
+    slaTargets: { p99LatencyMs: 100, errorRate: 0.005 },
+    budgetPerHour: 1.50,
+    allowedComponents: ['client', 'server', 'database', 'cache', 'load-balancer'],
+    conceptsTaught: ['read replicas', 'read scaling', 'replica lag', 'primary vs replica'],
+    hints: [
+      'Your database\'s max connections define its throughput ceiling.',
+      'Each read replica adds roughly as much read capacity as the primary.',
+      'Read replicas add a small latency overhead (~5ms) due to replication routing.',
+      'Multi-AZ and read replicas are separate concerns — replicas scale reads, Multi-AZ provides HA.',
+    ],
+    starterNodes: [
+      { id: 'client-1', type: 'client',   position: { x: 60,  y: 200 }, label: 'Users',      config: { rps: 5000, preset: 'steady', peakMultiplier: 1 } },
+      { id: 'lb-1',     type: 'load-balancer', position: { x: 260, y: 200 }, label: 'LB',    config: { algorithm: 'round-robin' } },
+      { id: 'srv-1',    type: 'server',   position: { x: 460, y: 120 }, label: 'App Server 1', config: { instanceType: 'm5.large', instanceCount: 1, baseLatencyMs: 20 } },
+      { id: 'srv-2',    type: 'server',   position: { x: 460, y: 280 }, label: 'App Server 2', config: { instanceType: 'm5.large', instanceCount: 1, baseLatencyMs: 20 } },
+      { id: 'db-1',     type: 'database', position: { x: 680, y: 200 }, label: 'Primary DB',   config: { instanceType: 'db.t3.medium', readReplicas: 0, maxConnections: 300, multiAz: false } },
+    ],
+    starterEdges: [
+      { source: 'client-1', target: 'lb-1'  },
+      { source: 'lb-1',     target: 'srv-1' },
+      { source: 'lb-1',     target: 'srv-2' },
+      { source: 'srv-1',    target: 'db-1'  },
+      { source: 'srv-2',    target: 'db-1'  },
+    ],
+  },
+
+  {
+    id: '4-2',
+    tier: 4,
+    order: 1,
+    title: 'The Write Wall',
+    narrative:
+      'Your inventory service writes 3,000 items per second. ' +
+      'Your SQL database is at 100% utilisation and dropping writes. ' +
+      'Adding more connections just makes the contention worse.',
+    objective:
+      'Handle 3,000 write-heavy RPS under $0.50/hr. ' +
+      'Consider whether a NoSQL store fits better than a relational database for this access pattern.',
+    trafficConfig: {
+      durationMs: 90_000,
+      waypoints: presetToWaypoints('steady', 3000, 1, 90_000),
+    },
+    slaTargets: { p99LatencyMs: 50, errorRate: 0.001 },
+    budgetPerHour: 0.50,
+    allowedComponents: ['client', 'server', 'database', 'nosql', 'load-balancer'],
+    conceptsTaught: ['NoSQL vs SQL', 'write throughput', 'provisioned capacity', 'key-value access patterns'],
+    hints: [
+      'SQL databases serialise writes through a single primary — there\'s a hard throughput ceiling.',
+      'NoSQL (DynamoDB-like) shards writes across partitions — capacity scales with WCU allocation.',
+      'Set WCU ≥ your expected write RPS. On-demand mode auto-scales but costs more per request.',
+      'NoSQL works best for simple key lookups — complex joins belong in SQL.',
+    ],
+    starterNodes: [
+      { id: 'client-1', type: 'client',   position: { x: 60,  y: 200 }, label: 'Inventory Client', config: { rps: 3000, preset: 'steady', peakMultiplier: 1 } },
+      { id: 'srv-1',    type: 'server',   position: { x: 280, y: 200 }, label: 'Inventory Service', config: { instanceType: 'm5.large', instanceCount: 2, baseLatencyMs: 10 } },
+      { id: 'db-1',     type: 'database', position: { x: 520, y: 200 }, label: 'Inventory DB',      config: { instanceType: 'db.t3.medium', readReplicas: 0, maxConnections: 300, multiAz: false } },
+    ],
+    starterEdges: [
+      { source: 'client-1', target: 'srv-1' },
+      { source: 'srv-1',    target: 'db-1'  },
+    ],
+  },
+
+  {
+    id: '4-3',
+    tier: 4,
+    order: 2,
+    title: 'The Write-Ahead Log',
+    narrative:
+      'Your metrics pipeline ingests 10,000 events per second. ' +
+      'You need every event persisted durably — even if a consumer crashes mid-processing. ' +
+      'Your database can\'t absorb writes at this rate directly.',
+    objective:
+      'Route 10k events/sec through Kafka as a durable event bus. ' +
+      'Configure enough partitions to absorb the load. ' +
+      'Consumer processing is async — your SLA covers the producer (ingest) path only.',
+    trafficConfig: {
+      durationMs: 90_000,
+      waypoints: presetToWaypoints('steady', 10_000, 1, 90_000),
+    },
+    slaTargets: { p99LatencyMs: 50, errorRate: 0.001 },
+    budgetPerHour: 2.00,
+    allowedComponents: ['client', 'server', 'database', 'kafka', 'queue', 'load-balancer'],
+    conceptsTaught: ['Kafka as WAL', 'partitions and throughput', 'producer vs consumer', 'durable event log', 'async decoupling'],
+    hints: [
+      'Each Kafka partition handles up to 10,000 RPS — one partition is enough for 10k events/sec.',
+      'Kafka is your terminal sink for the producer path. Consumers process independently.',
+      'More partitions = more parallelism for consumers, but also more cost.',
+      'Retention means events survive consumer crashes — consumers can replay from their last offset.',
+    ],
+    starterNodes: [
+      { id: 'client-1', type: 'client',   position: { x: 60,  y: 200 }, label: 'Event Producers', config: { rps: 10_000, preset: 'steady', peakMultiplier: 1 } },
+      { id: 'srv-1',    type: 'server',   position: { x: 280, y: 200 }, label: 'Ingest Service',   config: { instanceType: 'm5.xlarge', instanceCount: 2, baseLatencyMs: 5 } },
+      { id: 'db-1',     type: 'database', position: { x: 520, y: 200 }, label: 'Metrics DB',       config: { instanceType: 'db.r5.large', readReplicas: 0, maxConnections: 500, multiAz: false } },
+    ],
+    starterEdges: [
+      { source: 'client-1', target: 'srv-1' },
+      { source: 'srv-1',    target: 'db-1'  },
+    ],
+  },
+
+  {
+    id: '4-4',
+    tier: 4,
+    order: 3,
+    title: 'CQRS',
+    narrative:
+      'Your reporting service runs complex aggregation queries that lock tables for seconds. ' +
+      'Your write service shares the same database — and now checkout is timing out during every report.',
+    objective:
+      'Separate the read and write paths so heavy queries can\'t interfere with writes. ' +
+      'Writes must stay under 50ms p99. Reads can be slower — up to 500ms is acceptable.',
+    trafficConfig: {
+      durationMs: 90_000,
+      waypoints: presetToWaypoints('steady', 3300, 1, 90_000),
+    },
+    slaTargets: { p99LatencyMs: 80, errorRate: 0.005 },
+    budgetPerHour: 1.50,
+    allowedComponents: ['client', 'server', 'database', 'cache', 'nosql', 'kafka', 'load-balancer'],
+    conceptsTaught: ['CQRS', 'read/write separation', 'query interference', 'eventual consistency on read side'],
+    hints: [
+      'Both clients hit the same App Server → same DB. 3,300 RPS total saturates the DB.',
+      'Route the Write Client path to a lean write DB. Route the Read Client path through a cache or separate read store.',
+      'A Cache in front of the read DB absorbs repeated report queries cheaply.',
+      'Kafka between the write and read paths enables async propagation (true CQRS) for bonus score.',
+    ],
+    starterNodes: [
+      { id: 'client-write', type: 'client',   position: { x: 60,  y: 120 }, label: 'Write Client (checkout)',  config: { rps: 300,  preset: 'steady', peakMultiplier: 1 } },
+      { id: 'client-read',  type: 'client',   position: { x: 60,  y: 300 }, label: 'Read Client (reporting)',  config: { rps: 3000, preset: 'steady', peakMultiplier: 1 } },
+      { id: 'srv-1',        type: 'server',   position: { x: 300, y: 200 }, label: 'App Server',               config: { instanceType: 'm5.xlarge', instanceCount: 2, baseLatencyMs: 20 } },
+      { id: 'db-1',         type: 'database', position: { x: 540, y: 200 }, label: 'Shared DB',                config: { instanceType: 'db.t3.medium', readReplicas: 0, maxConnections: 300, multiAz: false } },
+    ],
+    starterEdges: [
+      { source: 'client-write', target: 'srv-1' },
+      { source: 'client-read',  target: 'srv-1' },
+      { source: 'srv-1',        target: 'db-1'  },
+    ],
+  },
+
+  // ── Tier 5: Global Systems ──────────────────────────────────────────────────
+
+  {
+    id: '5-2',
+    tier: 5,
+    order: 1,
+    title: 'CDN Architecture',
+    narrative:
+      'Your streaming platform just hit 20,000 RPS. ' +
+      '80% of that is static assets — videos, images, JS bundles — ' +
+      'all hitting your origin servers directly. They\'re overwhelmed and bleeding money.',
+    objective:
+      'Serve 20,000 RPS within budget. Use a CDN to offload static content to the edge. ' +
+      'Your origin only needs to handle cache misses and API calls.',
+    trafficConfig: {
+      durationMs: 90_000,
+      waypoints: presetToWaypoints('steady', 20_000, 1, 90_000),
+    },
+    slaTargets: { p99LatencyMs: 200, errorRate: 0.005 },
+    budgetPerHour: 1.50,
+    allowedComponents: ['client', 'server', 'database', 'cache', 'load-balancer', 'cdn', 'object-storage'],
+    conceptsTaught: ['CDN offloading', 'origin shield', 'static vs dynamic content', 'object storage as origin', 'egress cost'],
+    hints: [
+      '20k RPS → 40 m5.large servers to handle raw. That\'s $3.84/hr — way over budget.',
+      'A CDN with 80% hit rate reduces origin traffic to 4,000 RPS.',
+      'Route static content (CDN → Object Storage) and API traffic (CDN miss → App Server → DB) separately.',
+      'Object Storage handles unlimited throughput at ~50ms — perfect for large files.',
+    ],
+    starterNodes: [
+      { id: 'client-1', type: 'client', position: { x: 60,  y: 200 }, label: 'Users', config: { rps: 20_000, preset: 'steady', peakMultiplier: 1 } },
+      { id: 'lb-1',     type: 'load-balancer', position: { x: 280, y: 200 }, label: 'LB', config: { algorithm: 'round-robin' } },
+      { id: 'srv-1',    type: 'server',   position: { x: 480, y: 120 }, label: 'App Server 1', config: { instanceType: 'm5.large', instanceCount: 1, baseLatencyMs: 20 } },
+      { id: 'srv-2',    type: 'server',   position: { x: 480, y: 280 }, label: 'App Server 2', config: { instanceType: 'm5.large', instanceCount: 1, baseLatencyMs: 20 } },
+      { id: 'db-1',     type: 'database', position: { x: 700, y: 200 }, label: 'DB',           config: { instanceType: 'db.t3.small', readReplicas: 0, maxConnections: 150, multiAz: false } },
+    ],
+    starterEdges: [
+      { source: 'client-1', target: 'lb-1'  },
+      { source: 'lb-1',     target: 'srv-1' },
+      { source: 'lb-1',     target: 'srv-2' },
+      { source: 'srv-1',    target: 'db-1'  },
+      { source: 'srv-2',    target: 'db-1'  },
+    ],
+  },
+
+  {
+    id: '5-3',
+    tier: 5,
+    order: 2,
+    title: 'Incident Replay',
+    narrative:
+      'A single misconfigured deploy just took down three critical services simultaneously. ' +
+      'The post-mortem identified every single point of failure. ' +
+      'Now redesign the architecture so the same blast radius is impossible.',
+    objective:
+      'Survive three simultaneous failures: app server crash, database failure, and a downstream ' +
+      'service latency spike — all at t=60s. Keep errors under 5% throughout.',
+    trafficConfig: {
+      durationMs: 180_000,
+      waypoints: presetToWaypoints('steady', 2000, 1, 180_000),
+    },
+    slaTargets: { p99LatencyMs: 500, errorRate: 0.05 },
+    budgetPerHour: 5.00,
+    allowedComponents: ['client', 'server', 'database', 'cache', 'load-balancer', 'api-gateway', 'k8s-fleet', 'kafka', 'cdn', 'nosql', 'object-storage'],
+    conceptsTaught: ['blast radius reduction', 'defense in depth', 'simultaneous failures', 'multi-layer redundancy'],
+    hints: [
+      'Three things fail at once: the app server, the database, and a downstream gateway.',
+      'No single node should be a SPOF. Use a load balancer with multiple servers.',
+      'Enable Multi-AZ on the database — node-failure on a Multi-AZ DB is just elevated latency.',
+      'An API Gateway with circuit breaker isolates the downstream latency spike from propagating.',
+    ],
+    starterNodes: [
+      { id: 'client-1', type: 'client',      position: { x: 60,  y: 200 }, label: 'Users',          config: { rps: 2000, preset: 'steady', peakMultiplier: 1 } },
+      { id: 'gw-1',     type: 'api-gateway', position: { x: 260, y: 200 }, label: 'API Gateway',     config: { maxRps: 5000, timeoutMs: 3000, circuitBreakerEnabled: false } },
+      { id: 'srv-1',    type: 'server',      position: { x: 480, y: 200 }, label: 'App Server',      config: { instanceType: 'm5.large', instanceCount: 1, baseLatencyMs: 20 } },
+      { id: 'db-1',     type: 'database',    position: { x: 700, y: 120 }, label: 'Database',        config: { instanceType: 'db.t3.medium', readReplicas: 0, maxConnections: 300, multiAz: false } },
+      { id: 'svc-down', type: 'api-gateway', position: { x: 700, y: 300 }, label: 'Downstream Svc',  config: { maxRps: 5000, timeoutMs: 3000, circuitBreakerEnabled: false } },
+    ],
+    starterEdges: [
+      { source: 'client-1', target: 'gw-1'     },
+      { source: 'gw-1',     target: 'srv-1'    },
+      { source: 'srv-1',    target: 'db-1'     },
+      { source: 'srv-1',    target: 'svc-down' },
+    ],
+    chaosSchedule: [
+      makeChaosEvent('srv-1',    'node-failure',   60_000, 120_000),
+      makeChaosEvent('db-1',     'node-failure',   60_000, 120_000),
+      makeChaosEvent('svc-down', 'latency-spike',  60_000, 120_000, 50),
+    ],
+  },
 ]
 
 /** Fast lookup by challenge ID. */

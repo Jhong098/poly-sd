@@ -1,6 +1,6 @@
 import type { SimNode, NodeSnapshot, NodeStatus, ChaosEvent } from '../types'
-import type { ClientConfig, ServerConfig, DatabaseConfig, CacheConfig, LoadBalancerConfig, QueueConfig, ApiGatewayConfig, K8sFleetConfig, KafkaConfig, CdnConfig } from '@/lib/components/definitions'
-import { SERVER_INSTANCES, DATABASE_INSTANCES, CACHE_INSTANCES, LB_COST_PER_HOUR, LB_MAX_RPS, QUEUE_COST_PER_HOUR, GATEWAY_COST_PER_HOUR, GATEWAY_MAX_RPS, K8S_INSTANCES, KAFKA_COST_PER_PARTITION_HOUR, KAFKA_MAX_RPS_PER_PARTITION, CDN_COST_PER_REGION_HOUR } from '@/lib/components/definitions'
+import type { ClientConfig, ServerConfig, DatabaseConfig, CacheConfig, LoadBalancerConfig, QueueConfig, ApiGatewayConfig, K8sFleetConfig, KafkaConfig, CdnConfig, NoSqlConfig, ObjectStorageConfig } from '@/lib/components/definitions'
+import { SERVER_INSTANCES, DATABASE_INSTANCES, CACHE_INSTANCES, LB_COST_PER_HOUR, LB_MAX_RPS, QUEUE_COST_PER_HOUR, GATEWAY_COST_PER_HOUR, GATEWAY_MAX_RPS, K8S_INSTANCES, KAFKA_COST_PER_PARTITION_HOUR, KAFKA_MAX_RPS_PER_PARTITION, CDN_COST_PER_REGION_HOUR, NOSQL_RCU_COST_PER_HOUR, NOSQL_WCU_COST_PER_HOUR, NOSQL_ON_DEMAND_MAX_RPS, NOSQL_ON_DEMAND_COST_PER_RPS_HOUR, OBJECT_STORAGE_COST_PER_HOUR } from '@/lib/components/definitions'
 
 export type ComponentState = { queuedRequests: number }
 
@@ -49,8 +49,10 @@ export function computeNode(
     case 'api-gateway':   snap = computeApiGateway(node, inputRps, chaos); break
     case 'k8s-fleet':     snap = computeK8sFleet(node, inputRps, latencyMult); break
     case 'kafka':         snap = computeKafka(node, inputRps, latencyMult); break
-    case 'cdn':           snap = computeCdn(node, inputRps); break
-    default:              snap = idleSnapshot((node as SimNode).id); break
+    case 'cdn':            snap = computeCdn(node, inputRps); break
+    case 'nosql':          snap = computeNoSql(node, inputRps, latencyMult); break
+    case 'object-storage': snap = computeObjectStorage(node, inputRps); break
+    default:               snap = idleSnapshot((node as SimNode).id); break
   }
 
   // Tag active chaos type for visual feedback in the UI
@@ -119,13 +121,17 @@ function computeServer(node: SimNode, inputRps: number, latencyMult = 1): NodeSn
 function computeDatabase(node: SimNode, inputRps: number, latencyMult = 1): NodeSnapshot {
   const cfg = node.config as DatabaseConfig
   const inst = DATABASE_INSTANCES[cfg.instanceType]
-  const maxRps = cfg.maxConnections * 5
+  // Each read replica handles roughly the same throughput as the primary for reads.
+  // Model: effective capacity scales with (1 + readReplicas), assuming mostly read traffic.
+  const maxRps = cfg.maxConnections * 5 * (1 + cfg.readReplicas)
   const costPerHour = inst.costPerHour * (1 + cfg.readReplicas) * (cfg.multiAz ? 2 : 1)
+  // Replica lag adds a small latency overhead when replicas are in use
+  const baseLatencyMs = cfg.readReplicas > 0 ? 15 : 10
 
   if (inputRps === 0) return idleSnapshot(node.id, costPerHour)
 
   const rho = inputRps / maxRps
-  const latencyMs = mm1Latency(10 * latencyMult, rho)
+  const latencyMs = mm1Latency(baseLatencyMs * latencyMult, rho)
 
   let errorRate: number, outputRps: number
   if (rho <= 1) {
@@ -365,6 +371,57 @@ function computeCdn(node: SimNode, inputRps: number): NodeSnapshot {
     errorRate: 0.0001,
     costPerHour,
     status: inputRps > 0 ? 'healthy' : 'idle',
+  }
+}
+
+// ── NoSQL ─────────────────────────────────────────────────────────────────────
+
+function computeNoSql(node: SimNode, inputRps: number, latencyMult = 1): NodeSnapshot {
+  const cfg = node.config as NoSqlConfig
+  const isOnDemand = cfg.capacityMode === 'on-demand'
+  const maxRps = isOnDemand ? NOSQL_ON_DEMAND_MAX_RPS : (cfg.rcuCapacity + cfg.wcuCapacity)
+  const costPerHour = isOnDemand
+    ? Math.max(inputRps * NOSQL_ON_DEMAND_COST_PER_RPS_HOUR, 0.10)
+    : (cfg.rcuCapacity * NOSQL_RCU_COST_PER_HOUR + cfg.wcuCapacity * NOSQL_WCU_COST_PER_HOUR) * cfg.globalTables
+
+  if (inputRps === 0) return idleSnapshot(node.id, costPerHour)
+
+  const rho = inputRps / maxRps
+  const latencyMs = mm1Latency(2 * latencyMult, rho)   // ~2ms base (DynamoDB single-digit ms)
+
+  let errorRate: number, outputRps: number
+  if (rho <= 1) {
+    errorRate = 0.0001 + (rho > 0.8 ? Math.pow((rho - 0.8) * 5, 3) * 0.1 : 0)
+    outputRps = inputRps * (1 - errorRate)
+  } else {
+    // Provisioned mode hard-throttles; on-demand theoretically doesn't but we cap for sim
+    errorRate = Math.min((inputRps - maxRps) / inputRps + 0.001, 1)
+    outputRps = maxRps * 0.999
+  }
+
+  return { id: node.id, inputRps, outputRps, utilization: rho, latencyMs, errorRate, costPerHour, status: statusFromRho(rho, inputRps) }
+}
+
+// ── Object Storage ────────────────────────────────────────────────────────────
+
+function computeObjectStorage(node: SimNode, inputRps: number): NodeSnapshot {
+  const cfg = node.config as ObjectStorageConfig
+  const costPerHour = cfg.replication === 'cross-region'
+    ? OBJECT_STORAGE_COST_PER_HOUR * 2
+    : OBJECT_STORAGE_COST_PER_HOUR
+
+  if (inputRps === 0) return idleSnapshot(node.id, costPerHour)
+
+  // Object storage is effectively unlimited in throughput — never saturates
+  return {
+    id: node.id,
+    inputRps,
+    outputRps: inputRps * 0.9999,
+    utilization: 0.01,
+    latencyMs: 50,    // ~50ms first-byte (S3-like)
+    errorRate: 0.0001,
+    costPerHour,
+    status: 'healthy',
   }
 }
 

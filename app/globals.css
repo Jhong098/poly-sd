@@ -40,7 +40,9 @@
   --color-node-gateway: #f472b6;
   --color-node-k8s:     #818cf8;
   --color-node-kafka:   #2dd4bf;
-  --color-node-cdn:     #a3e635;
+  --color-node-cdn:            #a3e635;
+  --color-node-nosql:          #e879f9;
+  --color-node-object-storage: #93c5fd;
 }
 
 body {

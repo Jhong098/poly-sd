@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { CheckCircle2, Lock, Play, RotateCcw, Trophy } from 'lucide-react'
+import { CheckCircle2, Play, RotateCcw, Trophy } from 'lucide-react'
 import { auth } from '@clerk/nextjs/server'
 import { CHALLENGES } from '@/lib/challenges/definitions'
 import { getMyCompletions } from '@/lib/actions/completions'
@@ -11,10 +11,12 @@ import type { Challenge } from '@/lib/challenges/types'
 import type { CompletionRow } from '@/lib/actions/completions'
 
 const TIERS = [
-  { id: 0, label: 'Tutorial',              color: 'text-ink-3'   },
-  { id: 1, label: 'Tier 1 — Foundations', color: 'text-cyan'    },
-  { id: 2, label: 'Tier 2 — Reliability', color: 'text-hot'     },
-  { id: 3, label: 'Tier 3 — Resilience',  color: 'text-violet'  },
+  { id: 0, label: 'Tutorial',                    color: 'text-ink-3'  },
+  { id: 1, label: 'Tier 1 — Foundations',        color: 'text-cyan'   },
+  { id: 2, label: 'Tier 2 — Scale Out',          color: 'text-hot'    },
+  { id: 3, label: 'Tier 3 — Resilience',         color: 'text-violet' },
+  { id: 4, label: 'Tier 4 — Distributed Data',  color: 'text-ok'     },
+  { id: 5, label: 'Tier 5 — Global Systems',    color: 'text-warn'   },
 ]
 
 function ChallengeCard({
@@ -242,22 +244,6 @@ export default async function CampaignPage() {
             )
           })}
 
-          {/* Locked tiers teaser */}
-          <section className="opacity-40">
-            <div className="flex items-center gap-3 mb-4">
-              <h2 className="text-[11px] font-bold uppercase tracking-widest text-ink-3">
-                Tier 4 — Distributed Data
-              </h2>
-              <div className="flex-1 h-px bg-edge-dim" />
-              <Lock size={11} className="text-ink-3" />
-            </div>
-            <div className="flex items-center gap-3 p-4 border border-edge-dim bg-raised">
-              <Lock size={14} className="text-ink-3 flex-shrink-0" />
-              <p className="text-[12px] text-ink-3">
-                Complete Tier 3 to unlock replication, sharding, and consensus protocols.
-              </p>
-            </div>
-          </section>
         </div>
       </main>
     </div>

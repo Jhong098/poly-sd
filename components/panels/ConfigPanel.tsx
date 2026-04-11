@@ -13,6 +13,8 @@ import {
   type K8sFleetConfig,
   type KafkaConfig,
   type CdnConfig,
+  type NoSqlConfig,
+  type ObjectStorageConfig,
   type TrafficPreset,
   SERVER_INSTANCES,
   DATABASE_INSTANCES,
@@ -24,6 +26,10 @@ import {
   KAFKA_COST_PER_PARTITION_HOUR,
   KAFKA_MAX_RPS_PER_PARTITION,
   CDN_COST_PER_REGION_HOUR,
+  NOSQL_RCU_COST_PER_HOUR,
+  NOSQL_WCU_COST_PER_HOUR,
+  NOSQL_ON_DEMAND_COST_PER_RPS_HOUR,
+  OBJECT_STORAGE_COST_PER_HOUR,
   COMPONENT_META,
 } from '@/lib/components/definitions'
 import { ArrowRight } from 'lucide-react'
@@ -167,7 +173,7 @@ function DatabaseConfigEditor({ config, patch }: { config: DatabaseConfig; patch
         </div>
       </div>
       <Divider />
-      <Stat label="Max RPS (est)" value={(config.maxConnections * 5).toLocaleString()} />
+      <Stat label="Max RPS (est)" value={(config.maxConnections * 5 * (1 + config.readReplicas)).toLocaleString()} />
       <Stat label="Cost per hour" value={`$${cost.toFixed(3)}`} />
     </div>
   )
@@ -352,6 +358,86 @@ function CdnConfigEditor({ config, patch }: { config: CdnConfig; patch: (p: Part
   )
 }
 
+function NoSqlConfigEditor({ config, patch }: { config: NoSqlConfig; patch: (p: Partial<NoSqlConfig>) => void }) {
+  const isOnDemand = config.capacityMode === 'on-demand'
+  const costPerHour = isOnDemand
+    ? NOSQL_ON_DEMAND_COST_PER_RPS_HOUR * 100
+    : (config.rcuCapacity * NOSQL_RCU_COST_PER_HOUR + config.wcuCapacity * NOSQL_WCU_COST_PER_HOUR) * config.globalTables
+  return (
+    <div className="space-y-4">
+      <div>
+        <Label>Capacity Mode</Label>
+        <Select
+          value={config.capacityMode}
+          onChange={(v) => patch({ capacityMode: v as NoSqlConfig['capacityMode'] })}
+          options={[
+            { value: 'provisioned', label: 'Provisioned — fixed RCU/WCU' },
+            { value: 'on-demand',   label: 'On-Demand — auto-scale, higher cost' },
+          ]}
+        />
+      </div>
+      {!isOnDemand && (
+        <>
+          <div>
+            <Label>Read Capacity (RCU/sec)</Label>
+            <NumberInput value={config.rcuCapacity} onChange={(v) => patch({ rcuCapacity: Math.max(1, v) })} min={1} max={40_000} step={100} />
+          </div>
+          <div>
+            <Label>Write Capacity (WCU/sec)</Label>
+            <NumberInput value={config.wcuCapacity} onChange={(v) => patch({ wcuCapacity: Math.max(1, v) })} min={1} max={40_000} step={100} />
+          </div>
+        </>
+      )}
+      <div>
+        <Label>Global Tables (Regions)</Label>
+        <NumberInput value={config.globalTables} onChange={(v) => patch({ globalTables: Math.max(1, v) })} min={1} max={5} />
+        <p className="text-[10px] text-ink-3 mt-1">// Data replicated across N regions</p>
+      </div>
+      <Divider />
+      {!isOnDemand && (
+        <Stat label="Max RPS (est)" value={(config.rcuCapacity + config.wcuCapacity).toLocaleString()} />
+      )}
+      <Stat label="Cost per hour" value={`$${costPerHour.toFixed(3)}`} />
+    </div>
+  )
+}
+
+function ObjectStorageConfigEditor({ config, patch }: { config: ObjectStorageConfig; patch: (p: Partial<ObjectStorageConfig>) => void }) {
+  const costPerHour = config.replication === 'cross-region'
+    ? OBJECT_STORAGE_COST_PER_HOUR * 2
+    : OBJECT_STORAGE_COST_PER_HOUR
+  return (
+    <div className="space-y-4">
+      <div>
+        <Label>Storage Class</Label>
+        <Select
+          value={config.storageClass}
+          onChange={(v) => patch({ storageClass: v as ObjectStorageConfig['storageClass'] })}
+          options={[
+            { value: 'standard',          label: 'Standard — frequent access' },
+            { value: 'infrequent-access', label: 'Infrequent Access — lower cost' },
+          ]}
+        />
+      </div>
+      <div>
+        <Label>Replication</Label>
+        <Select
+          value={config.replication}
+          onChange={(v) => patch({ replication: v as ObjectStorageConfig['replication'] })}
+          options={[
+            { value: 'none',         label: 'Single-Region' },
+            { value: 'cross-region', label: 'Cross-Region — 2× cost, higher durability' },
+          ]}
+        />
+      </div>
+      <Divider />
+      <Stat label="Latency"      value="~50ms first byte" />
+      <Stat label="Throughput"   value="Effectively unlimited" />
+      <Stat label="Cost per hour" value={`$${costPerHour.toFixed(3)}`} />
+    </div>
+  )
+}
+
 // ── Edge config panel ────────────────────────────────────────────────────────
 
 function EdgeConfigPanel({ edgeId }: { edgeId: string }) {
@@ -470,8 +556,10 @@ export function ConfigPanel() {
         {data.componentType === 'queue'         && <QueueConfigEditor        config={data.config as QueueConfig}        patch={patch} />}
         {data.componentType === 'api-gateway'   && <ApiGatewayConfigEditor   config={data.config as ApiGatewayConfig}   patch={patch} />}
         {data.componentType === 'k8s-fleet'     && <K8sFleetConfigEditor     config={data.config as K8sFleetConfig}     patch={patch} />}
-        {data.componentType === 'kafka'         && <KafkaConfigEditor        config={data.config as KafkaConfig}        patch={patch} />}
-        {data.componentType === 'cdn'           && <CdnConfigEditor          config={data.config as CdnConfig}          patch={patch} />}
+        {data.componentType === 'kafka'          && <KafkaConfigEditor         config={data.config as KafkaConfig}         patch={patch} />}
+        {data.componentType === 'cdn'            && <CdnConfigEditor           config={data.config as CdnConfig}           patch={patch} />}
+        {data.componentType === 'nosql'          && <NoSqlConfigEditor         config={data.config as NoSqlConfig}         patch={patch} />}
+        {data.componentType === 'object-storage' && <ObjectStorageConfigEditor config={data.config as ObjectStorageConfig} patch={patch} />}
       </div>
 
       <div className="px-4 py-3 border-t border-edge-dim">

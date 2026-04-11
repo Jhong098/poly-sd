@@ -1,4 +1,4 @@
-export type ComponentType = 'client' | 'server' | 'database' | 'cache' | 'load-balancer' | 'queue' | 'api-gateway' | 'k8s-fleet' | 'kafka' | 'cdn'
+export type ComponentType = 'client' | 'server' | 'database' | 'cache' | 'load-balancer' | 'queue' | 'api-gateway' | 'k8s-fleet' | 'kafka' | 'cdn' | 'nosql' | 'object-storage'
 
 // ── Per-component config shapes ────────────────────────────────────────────
 
@@ -63,7 +63,19 @@ export type CdnConfig = {
   ttlSeconds: number           // edge cache TTL
 }
 
-export type ComponentConfig = ClientConfig | ServerConfig | DatabaseConfig | CacheConfig | LoadBalancerConfig | QueueConfig | ApiGatewayConfig | K8sFleetConfig | KafkaConfig | CdnConfig
+export type NoSqlConfig = {
+  capacityMode: 'provisioned' | 'on-demand'
+  rcuCapacity: number   // provisioned read capacity units/sec
+  wcuCapacity: number   // provisioned write capacity units/sec
+  globalTables: number  // regions (1 = single-region)
+}
+
+export type ObjectStorageConfig = {
+  storageClass: 'standard' | 'infrequent-access'
+  replication: 'none' | 'cross-region'
+}
+
+export type ComponentConfig = ClientConfig | ServerConfig | DatabaseConfig | CacheConfig | LoadBalancerConfig | QueueConfig | ApiGatewayConfig | K8sFleetConfig | KafkaConfig | CdnConfig | NoSqlConfig | ObjectStorageConfig
 
 // ── Instance pricing ────────────────────────────────────────────────────────
 
@@ -115,6 +127,17 @@ export const KAFKA_MAX_RPS_PER_PARTITION = 10_000
 
 /** CDN: cost per region per hour (CloudFront-like flat rate). */
 export const CDN_COST_PER_REGION_HOUR = 0.008
+
+/** NoSQL (DynamoDB-like): cost per read/write capacity unit per hour. */
+export const NOSQL_RCU_COST_PER_HOUR = 0.00013
+export const NOSQL_WCU_COST_PER_HOUR = 0.00065
+/** On-demand NoSQL max RPS (effectively unlimited). */
+export const NOSQL_ON_DEMAND_MAX_RPS = 100_000
+/** On-demand NoSQL cost per RPS per hour (simplified). */
+export const NOSQL_ON_DEMAND_COST_PER_RPS_HOUR = 0.001
+
+/** Object Storage (S3-like): flat hourly rate covering storage + requests. */
+export const OBJECT_STORAGE_COST_PER_HOUR = 0.003
 
 // ── Default configs ─────────────────────────────────────────────────────────
 
@@ -168,6 +191,16 @@ export const DEFAULT_CONFIGS: Record<ComponentType, ComponentConfig> = {
     regions: 3,
     ttlSeconds: 3600,
   } satisfies CdnConfig,
+  nosql: {
+    capacityMode: 'provisioned',
+    rcuCapacity: 1000,
+    wcuCapacity: 200,
+    globalTables: 1,
+  } satisfies NoSqlConfig,
+  'object-storage': {
+    storageClass: 'standard',
+    replication: 'none',
+  } satisfies ObjectStorageConfig,
 }
 
 // ── Visual metadata ─────────────────────────────────────────────────────────
@@ -241,5 +274,17 @@ export const COMPONENT_META: Record<ComponentType, ComponentMeta> = {
     description: 'Edge caching layer. Serves cached responses from PoPs near users. Drastically reduces origin load.',
     accentColor: 'lime',
     tier: 3,
+  },
+  nosql: {
+    label: 'NoSQL',
+    description: 'Key-value / document store (DynamoDB-like). Provisioned or on-demand capacity. Near-constant low latency at any scale.',
+    accentColor: 'fuchsia',
+    tier: 4,
+  },
+  'object-storage': {
+    label: 'Object Storage',
+    description: 'Durable blob storage (S3-like). Effectively unlimited throughput. Optimised for large objects, not random access.',
+    accentColor: 'rose',
+    tier: 4,
   },
 }
