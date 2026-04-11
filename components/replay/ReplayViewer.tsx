@@ -2,10 +2,9 @@
 
 import { useState } from 'react'
 import { ReactFlow, Background, Controls, MiniMap, BackgroundVariant, ReactFlowProvider } from '@xyflow/react'
-import { Trophy, XCircle, CheckCircle2, ArrowLeft, ChevronRight, Share2, Check, Download, FileText } from 'lucide-react'
+import { Trophy, XCircle, CheckCircle2, ArrowLeft, ChevronRight, Share2, Check, Download } from 'lucide-react'
 import type { ReplayRow } from '@/lib/actions/replays'
 import { exportArchitecturePng } from '@/lib/exportPng'
-import { generateBrief } from '@/lib/brief'
 import type { Challenge } from '@/lib/challenges/types'
 import type { ComponentNode, ComponentEdge } from '@/lib/store/architectureStore'
 import { ClientNode }       from '@/components/nodes/ClientNode'
@@ -77,7 +76,6 @@ export function ReplayViewer({ replay, challenge }: { replay: ReplayRow; challen
   const nodes = architecture.nodes as ComponentNode[]
   const edges = architecture.edges as ComponentEdge[]
   const [shareState, setShareState] = useState<'idle' | 'copied' | 'error'>('idle')
-  const [briefState, setBriefState] = useState<'idle' | 'copied'>('idle')
   const [exporting, setExporting] = useState(false)
 
   const date = new Date(created_at).toLocaleDateString('en-US', {
@@ -99,15 +97,7 @@ export function ReplayViewer({ replay, challenge }: { replay: ReplayRow; challen
       .catch(() => setShareState('error'))
   }
 
-  function handleCopyBrief() {
-    const brief = generateBrief(nodes, edges, challenge)
-    navigator.clipboard.writeText(brief).then(() => {
-      setBriefState('copied')
-      setTimeout(() => setBriefState('idle'), 2500)
-    })
-  }
-
-  return (
+return (
     <ReactFlowProvider>
       <div className="flex flex-col h-full w-full overflow-hidden bg-base">
         {/* Top bar */}
@@ -253,18 +243,6 @@ export function ReplayViewer({ replay, challenge }: { replay: ReplayRow; challen
               </div>
             )}
 
-            {/* Design brief */}
-            <div className="px-4 py-4 border-t border-edge-dim">
-              <button
-                onClick={handleCopyBrief}
-                className="w-full flex items-center justify-center gap-1.5 px-3 py-2 border border-edge bg-surface hover:bg-overlay text-ink-2 text-[11px] font-bold uppercase tracking-wider transition-colors"
-              >
-                {briefState === 'copied'
-                  ? <><Check size={12} className="text-ok" /> Copied!</>
-                  : <><FileText size={12} /> Copy Design Brief</>
-                }
-              </button>
-            </div>
           </div>
         </div>
       </div>
