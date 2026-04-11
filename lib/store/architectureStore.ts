@@ -62,6 +62,7 @@ type ArchitectureState = {
   updateNodeLabel: (nodeId: string, label: string) => void
   updateEdgeSplitWeight: (edgeId: string, weight: number) => void
   initFromStarterGraph: (nodes: StarterNode[], edges: StarterEdge[]) => void
+  loadDraft: (nodes: ComponentNode[], edges: ComponentEdge[]) => void
   clearCanvas: () => void
 }
 
@@ -161,5 +162,15 @@ export const useArchitectureStore = create<ArchitectureState>((set, get) => ({
     }))
 
     set({ nodes, edges, selectedNodeId: null, selectedEdgeId: null, _nodeCounter: starterNodes.length })
+  },
+
+  loadDraft: (nodes, edges) => {
+    // Derive _nodeCounter from max numeric suffix in existing node IDs
+    const maxCounter = nodes.reduce((max, n) => {
+      const parts = n.id.split('-')
+      const num = parseInt(parts[parts.length - 1], 10)
+      return isNaN(num) ? max : Math.max(max, num)
+    }, 0)
+    set({ nodes, edges, selectedNodeId: null, selectedEdgeId: null, _nodeCounter: maxCounter })
   },
 }))

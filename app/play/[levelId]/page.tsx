@@ -10,13 +10,14 @@ import { useSimStore } from '@/lib/store/simStore'
 import { ChallengeLayout } from '@/components/canvas/ChallengeLayout'
 import { getDraft } from '@/lib/actions/drafts'
 import { readLocalDraft, clearLocalDraft } from '@/lib/draft'
+import type { ComponentNode, ComponentEdge } from '@/lib/store/architectureStore'
 
 export default function PlayPage({ params }: { params: Promise<{ levelId: string }> }) {
   const { levelId } = use(params)
   const challenge = CHALLENGE_MAP.get(levelId)
 
   const { setActiveChallenge } = useChallengeStore()
-  const { initFromStarterGraph, clearCanvas } = useArchitectureStore()
+  const { initFromStarterGraph, clearCanvas, loadDraft } = useArchitectureStore()
   const { stopSimulation, setDuration, setWaypoints } = useSimStore()
   const [ready, setReady] = useState(false)
 
@@ -27,6 +28,8 @@ export default function PlayPage({ params }: { params: Promise<{ levelId: string
 
   useEffect(() => {
     if (!challenge) return
+    // Wait for Clerk auth to resolve before running resume/restart paths
+    if ((resume || restart) && userId === undefined) return
     let cancelled = false
 
     async function init() {
@@ -35,22 +38,26 @@ export default function PlayPage({ params }: { params: Promise<{ levelId: string
       setDuration(challenge.trafficConfig.durationMs)
       setWaypoints(challenge.trafficConfig.waypoints)
 
-      if (restart && userId) {
-        // Clear localStorage draft and load starter graph
-        clearLocalDraft(userId, challenge.id)
+      function loadStarter() {
         if (challenge.starterNodes?.length) {
           initFromStarterGraph(challenge.starterNodes, challenge.starterEdges ?? [])
         } else {
           clearCanvas()
         }
+      }
+
+      if (restart && userId) {
+        // Clear localStorage draft and load starter graph
+        clearLocalDraft(userId, challenge.id)
+        loadStarter()
       } else if (resume && userId) {
         // Pick the most recent draft between localStorage and Supabase
         const local = readLocalDraft(userId, challenge.id)
-        let db: { nodes: unknown[]; edges: unknown[]; saved_at: string } | null = null
+        let db: { nodes: ComponentNode[]; edges: ComponentEdge[]; saved_at: string } | null = null
         try {
-          db = await getDraft(challenge.id)
-        } catch {
-          // Supabase unavailable — fall back to local
+          db = await getDraft(challenge.id) as typeof db
+        } catch (err) {
+          console.warn('getDraft failed, falling back to localStorage:', err)
         }
         if (cancelled) return
 
@@ -59,25 +66,16 @@ export default function PlayPage({ params }: { params: Promise<{ levelId: string
 
         if (localTime === 0 && dbTime === 0) {
           // No draft found — fall back to starter graph
-          if (challenge.starterNodes?.length) {
-            initFromStarterGraph(challenge.starterNodes, challenge.starterEdges ?? [])
-          } else {
-            clearCanvas()
-          }
+          loadStarter()
         } else if (localTime >= dbTime && local) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          initFromStarterGraph(local.nodes as any, local.edges as any)
+          // localStorage is more recent (or tied — local updates more frequently)
+          loadDraft(local.nodes, local.edges)
         } else if (db) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          initFromStarterGraph(db.nodes as any, db.edges as any)
+          loadDraft(db.nodes, db.edges)
         }
       } else {
         // Normal visit — load starter graph
-        if (challenge.starterNodes?.length) {
-          initFromStarterGraph(challenge.starterNodes, challenge.starterEdges ?? [])
-        } else {
-          clearCanvas()
-        }
+        loadStarter()
       }
 
       if (!cancelled) setReady(true)
@@ -91,7 +89,7 @@ export default function PlayPage({ params }: { params: Promise<{ levelId: string
       setActiveChallenge(null)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [levelId])
+  }, [levelId, resume, restart, userId])
 
   if (!challenge) return notFound()
   if (!ready) {
