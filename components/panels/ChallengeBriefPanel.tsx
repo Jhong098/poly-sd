@@ -3,6 +3,8 @@
 import { CheckCircle2, XCircle, Clock, AlertTriangle, DollarSign } from 'lucide-react'
 import { useChallengeStore } from '@/lib/store/challengeStore'
 import { useSimStore } from '@/lib/store/simStore'
+import type { Challenge } from '@/lib/challenges/types'
+import type { ChaosType } from '@/sim/types'
 
 function SlaRow({
   icon: Icon,
@@ -30,6 +32,98 @@ function SlaRow({
           {' '}{current}
         </span>
       )}
+    </div>
+  )
+}
+
+const CHAOS_COLOR: Record<ChaosType, string> = {
+  'node-failure':  'var(--color-err)',
+  'latency-spike': 'var(--color-warn)',
+  'traffic-surge': 'var(--color-hot)',
+}
+
+const CHAOS_LABEL: Record<ChaosType, string> = {
+  'node-failure':  'FAIL',
+  'latency-spike': 'SLOW',
+  'traffic-surge': 'SURGE',
+}
+
+function ChaosTimeline({ challenge, currentTimeMs }: { challenge: Challenge; currentTimeMs: number | null }) {
+  const schedule = challenge.chaosSchedule
+  if (!schedule?.length) return null
+
+  const totalMs = challenge.trafficConfig.durationMs
+  const nodeLabels = new Map(challenge.starterNodes?.map((n) => [n.id, n.label ?? n.id]) ?? [])
+  const playheadPct = currentTimeMs !== null ? Math.min((currentTimeMs / totalMs) * 100, 100) : null
+
+  return (
+    <div className="px-4 py-3 border-b border-edge-dim">
+      <p className="text-[10px] font-bold text-cyan uppercase tracking-widest mb-2">// Chaos Schedule</p>
+
+      {/* Timeline bar */}
+      <div className="relative h-4 bg-surface border border-edge-dim overflow-hidden">
+        {schedule.map((event) => {
+          const startPct = (event.startSimMs / totalMs) * 100
+          const widthPct = (event.durationMs / totalMs) * 100
+          const isActive = currentTimeMs !== null
+            && currentTimeMs >= event.startSimMs
+            && currentTimeMs < event.startSimMs + event.durationMs
+          return (
+            <div
+              key={event.id}
+              className="absolute top-0 h-full transition-opacity duration-200"
+              style={{
+                left: `${startPct}%`,
+                width: `${Math.max(widthPct, 2)}%`,
+                background: CHAOS_COLOR[event.type],
+                opacity: isActive ? 1 : 0.45,
+              }}
+            />
+          )
+        })}
+
+        {/* Playhead */}
+        {playheadPct !== null && (
+          <div
+            className="absolute top-0 w-px h-full bg-ink z-10 pointer-events-none"
+            style={{ left: `${playheadPct}%` }}
+          />
+        )}
+      </div>
+
+      {/* Time axis ticks */}
+      <div className="flex justify-between mt-0.5 mb-2">
+        <span className="text-[9px] text-ink-3">0s</span>
+        <span className="text-[9px] text-ink-3">{(totalMs / 1000).toFixed(0)}s</span>
+      </div>
+
+      {/* Event legend */}
+      <div className="space-y-1">
+        {schedule.map((event) => {
+          const startSec = (event.startSimMs / 1000).toFixed(0)
+          const endSec   = ((event.startSimMs + event.durationMs) / 1000).toFixed(0)
+          const isActive = currentTimeMs !== null
+            && currentTimeMs >= event.startSimMs
+            && currentTimeMs < event.startSimMs + event.durationMs
+          return (
+            <div key={event.id} className="flex items-center gap-1.5">
+              <div
+                className="w-1.5 h-1.5 flex-shrink-0 rounded-sm"
+                style={{ background: CHAOS_COLOR[event.type] }}
+              />
+              <span className={`text-[10px] font-bold flex-shrink-0 ${isActive ? 'text-ink' : 'text-ink-3'}`}>
+                {CHAOS_LABEL[event.type]}
+              </span>
+              <span className="text-[10px] text-ink-3 truncate flex-1">
+                {nodeLabels.get(event.nodeId) ?? event.nodeId}
+              </span>
+              <span className="text-[9px] text-ink-3 flex-shrink-0">
+                {startSec}s–{endSec}s
+              </span>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -105,6 +199,9 @@ export function ChallengeBriefPanel() {
           isActive={isActive}
         />
       </div>
+
+      {/* Chaos timeline */}
+      <ChaosTimeline challenge={activeChallenge} currentTimeMs={snap?.simTimeMs ?? null} />
 
       {/* Concepts */}
       <div className="px-4 py-3 border-b border-edge-dim">
