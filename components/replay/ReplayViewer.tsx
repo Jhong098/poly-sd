@@ -2,9 +2,8 @@
 
 import { useState } from 'react'
 import { ReactFlow, Background, Controls, MiniMap, BackgroundVariant, ReactFlowProvider } from '@xyflow/react'
-import { Trophy, XCircle, CheckCircle2, ArrowLeft, ChevronRight, Share2, Check, Download } from 'lucide-react'
+import { Trophy, XCircle, CheckCircle2, ArrowLeft, ChevronRight, Share2, Check } from 'lucide-react'
 import type { ReplayRow } from '@/lib/actions/replays'
-import { exportArchitecturePng } from '@/lib/exportPng'
 import type { Challenge } from '@/lib/challenges/types'
 import type { ComponentNode, ComponentEdge } from '@/lib/store/architectureStore'
 import { ClientNode }       from '@/components/nodes/ClientNode'
@@ -76,17 +75,10 @@ export function ReplayViewer({ replay, challenge }: { replay: ReplayRow; challen
   const nodes = architecture.nodes as ComponentNode[]
   const edges = architecture.edges as ComponentEdge[]
   const [shareState, setShareState] = useState<'idle' | 'copied' | 'error'>('idle')
-  const [exporting, setExporting] = useState(false)
 
   const date = new Date(created_at).toLocaleDateString('en-US', {
     month: 'short', day: 'numeric', year: 'numeric',
   })
-
-  function handleExport() {
-    setExporting(true)
-    const filename = challenge ? `${challenge.id}-architecture` : 'architecture'
-    exportArchitecturePng(filename).finally(() => setExporting(false))
-  }
 
   function handleCopyLink() {
     navigator.clipboard.writeText(window.location.href)
@@ -134,13 +126,6 @@ return (
               Try it <ChevronRight size={12} />
             </a>
           )}
-          <button
-            onClick={handleExport}
-            disabled={exporting}
-            className="flex items-center gap-1.5 px-3 py-2 border border-edge bg-surface hover:bg-overlay text-ink-2 text-[11px] font-bold uppercase tracking-wider transition-colors disabled:opacity-50"
-          >
-            <Download size={12} /> {exporting ? 'Exporting…' : 'PNG'}
-          </button>
           <button
             onClick={handleCopyLink}
             className="flex items-center gap-1.5 px-3 py-2 border border-edge bg-surface hover:bg-overlay text-ink-2 text-[11px] font-bold uppercase tracking-wider transition-colors"

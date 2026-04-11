@@ -105,8 +105,8 @@ Goal: Players can share solutions and compare with others.
 - Public replay viewer (read-only canvas + metric playback)
 - "Compare solutions" view after level completion
 - Leaderboard per level (top 10 by each scoring dimension)
-- Architecture PNG export
-- "System design brief" auto-generation (text description of architecture)
+- ~~Architecture PNG export~~ (descoped)
+- ~~"System design brief" auto-generation~~ (descoped)
 
 ---
 

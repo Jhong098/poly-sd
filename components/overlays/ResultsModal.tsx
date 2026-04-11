@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useEffect, useTransition } from 'react'
-import { CheckCircle2, XCircle, RotateCcw, ChevronRight, Trophy, Share2, Check, ExternalLink, Download } from 'lucide-react'
-import { exportArchitecturePng } from '@/lib/exportPng'
+import { CheckCircle2, XCircle, RotateCcw, ChevronRight, Trophy, Share2, Check, ExternalLink } from 'lucide-react'
 import { useChallengeStore } from '@/lib/store/challengeStore'
 import { useSimStore } from '@/lib/store/simStore'
 import { useArchitectureStore } from '@/lib/store/architectureStore'
@@ -93,7 +92,6 @@ export function ResultsModal() {
   const simStatus = useSimStore((s) => s.status)
   const { nodes, edges, initFromStarterGraph } = useArchitectureStore()
   const [shareState, setShareState] = useState<'idle' | 'sharing' | 'copied' | 'error'>('idle')
-  const [exporting, setExporting] = useState(false)
   const [, startTransition] = useTransition()
 
   if (!evalResult || simStatus !== 'complete' || !activeChallenge) return null
@@ -114,11 +112,6 @@ export function ResultsModal() {
     if (challenge.starterNodes || challenge.starterEdges) {
       initFromStarterGraph(challenge.starterNodes ?? [], challenge.starterEdges ?? [])
     }
-  }
-
-  function handleExport() {
-    setExporting(true)
-    exportArchitecturePng(`${challenge.id}-architecture`).finally(() => setExporting(false))
   }
 
   function handleClose() {
@@ -232,15 +225,6 @@ export function ResultsModal() {
               ? <><XCircle size={13} className="text-err" /> Error</>
               : <><Share2 size={13} /> Share</>
             }
-          </button>
-
-          {/* PNG export */}
-          <button
-            onClick={handleExport}
-            disabled={exporting}
-            className="flex items-center gap-1.5 px-3 py-2 border border-edge bg-surface hover:bg-overlay text-ink-2 text-[11px] font-bold uppercase tracking-wider transition-colors disabled:opacity-50"
-          >
-            <Download size={13} /> PNG
           </button>
 
           {result.passed && (
