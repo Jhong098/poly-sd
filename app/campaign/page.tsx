@@ -14,6 +14,7 @@ const TIERS = [
   { id: 0, label: 'Tutorial',              color: 'text-ink-3'   },
   { id: 1, label: 'Tier 1 — Foundations', color: 'text-cyan'    },
   { id: 2, label: 'Tier 2 — Reliability', color: 'text-hot'     },
+  { id: 3, label: 'Tier 3 — Resilience',  color: 'text-violet'  },
 ]
 
 function ChallengeCard({
@@ -212,7 +213,7 @@ export default async function CampaignPage() {
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto px-8 py-8 space-y-10">
           {TIERS.map((tier) => {
-            const challenges = CHALLENGES.filter((c) => c.tier === tier.id)
+            const challenges = CHALLENGES.filter((c) => c.tier === tier.id).sort((a, b) => a.order - b.order)
             if (challenges.length === 0) return null
             const tierPassed = challenges.filter((c) => completionMap.get(c.id)?.passed).length
 
@@ -245,7 +246,7 @@ export default async function CampaignPage() {
           <section className="opacity-40">
             <div className="flex items-center gap-3 mb-4">
               <h2 className="text-[11px] font-bold uppercase tracking-widest text-ink-3">
-                Tier 3 — Distributed Data
+                Tier 4 — Distributed Data
               </h2>
               <div className="flex-1 h-px bg-edge-dim" />
               <Lock size={11} className="text-ink-3" />
@@ -253,7 +254,7 @@ export default async function CampaignPage() {
             <div className="flex items-center gap-3 p-4 border border-edge-dim bg-raised">
               <Lock size={14} className="text-ink-3 flex-shrink-0" />
               <p className="text-[12px] text-ink-3">
-                Complete Tier 2 to unlock replication, sharding, and consensus protocols.
+                Complete Tier 3 to unlock replication, sharding, and consensus protocols.
               </p>
             </div>
           </section>

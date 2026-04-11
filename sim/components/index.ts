@@ -15,8 +15,14 @@ export function computeNode(
   clientRps?: number,
   chaos?: ChaosEvent,
 ): NodeSnapshot {
-  // Node failure: zero output, full errors
+  // Node failure: zero output, full errors.
+  // Exception: multi-AZ databases — standby promotes automatically. Model as 2× latency
+  // (promotion overhead) with no errors, matching real AWS Multi-AZ ~30s failover behavior.
   if (chaos?.type === 'node-failure') {
+    if (node.componentType === 'database' && (node.config as DatabaseConfig).multiAz) {
+      const snap = computeDatabase(node, inputRps, 2)
+      return { ...snap, activeChaosType: 'node-failure' }
+    }
     return {
       id: node.id,
       inputRps,
@@ -221,31 +227,36 @@ function computeApiGateway(node: SimNode, inputRps: number, chaos?: ChaosEvent):
   const rateLimitedRps = Math.min(inputRps, cfg.maxRps)
   const rateDropRate = inputRps > cfg.maxRps ? (inputRps - cfg.maxRps) / inputRps : 0
 
-  // Circuit breaker: if enabled and a latency-spike chaos is active on this node,
-  // the GW fast-fails (low latency, high error) rather than passing timeouts downstream.
-  // In normal operation, circuit breaker adds no overhead.
+  // Circuit breaker logic when a latency-spike is active on this node:
+  //   CB enabled  → fast-fail: returns immediately (5ms, no downstream forwarding).
+  //                 Models: GW detects downstream is unhealthy, short-circuits with fallback.
+  //   CB disabled → timeout propagation: requests hang until cfg.timeoutMs before returning.
+  //                 Models: GW blindly waits for the slow downstream, stalling the caller.
   const hasChaos = chaos?.type === 'latency-spike'
   const circuitOpen = cfg.circuitBreakerEnabled && hasChaos
   if (circuitOpen) {
     return {
       id: node.id,
       inputRps,
-      outputRps: 0,
+      outputRps: 0,                 // absorbs requests — does NOT forward to slow downstream
       utilization: rho,
-      latencyMs: 5,          // fast-fail: GW returns error immediately
-      errorRate: 1,
+      latencyMs: 5,                 // fast-fail: returns fallback immediately
+      errorRate: 0.02,              // small error rate — returning stale/empty response
       costPerHour: GATEWAY_COST_PER_HOUR,
-      status: 'saturated',   // show as red — circuit is open
+      status: 'hot',                // circuit is open
+      activeChaosType: 'latency-spike',
     }
   }
 
-  // Normal operation: ~2ms overhead, pass through rate-limited traffic
+  // When slow (CB disabled + latency-spike): requests hang until timeout before caller gives up
+  const latencyMs = hasChaos ? cfg.timeoutMs : 2
+
   return {
     id: node.id,
     inputRps,
     outputRps: rateLimitedRps * 0.9999,
     utilization: rho,
-    latencyMs: 2,
+    latencyMs,
     errorRate: rateDropRate + 0.0001,
     costPerHour: GATEWAY_COST_PER_HOUR,
     status: rateDropRate > 0.1 ? 'hot' : statusFromRho(rho, inputRps),
