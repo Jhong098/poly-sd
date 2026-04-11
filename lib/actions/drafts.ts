@@ -62,12 +62,14 @@ export async function getDraft(challengeId: string): Promise<DraftRow | null> {
   if (!userId) return null
 
   const db = createAdminClient()
-  const { data } = await db
+  const { data, error } = await db
     .from('challenge_drafts')
     .select('nodes, edges, saved_at')
     .eq('user_id', userId)
     .eq('challenge_id', challengeId)
     .single()
 
+  // PGRST116 = "no rows found" — not an error, just no draft yet
+  if (error && error.code !== 'PGRST116') throw new Error(`getDraft failed: ${error.message}`)
   return (data as DraftRow) ?? null
 }
