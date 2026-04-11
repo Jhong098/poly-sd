@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { CheckCircle2, Lock, Play, RotateCcw } from 'lucide-react'
+import { CheckCircle2, Lock, Play, RotateCcw, Trophy } from 'lucide-react'
 import { auth } from '@clerk/nextjs/server'
 import { CHALLENGES } from '@/lib/challenges/definitions'
 import { getMyCompletions } from '@/lib/actions/completions'
@@ -31,6 +31,8 @@ function ChallengeCard({
   }
   const colors = tierColors[challenge.tier] ?? tierColors[1]
   const passed = completion?.passed
+  // A passed challenge always shows as completed — draft only matters for incomplete work
+  const showDraftButtons = hasDraft && !passed
 
   const cardBody = (
     <>
@@ -86,15 +88,15 @@ function ChallengeCard({
   const cardClass = `
     group relative flex flex-col gap-3 p-5 border
     bg-raised transition-colors
-    ${hasDraft
-      ? passed ? 'border-ok/30 cursor-default' : 'border-edge-dim cursor-default'
+    ${showDraftButtons
+      ? 'border-edge-dim cursor-default'
       : passed
         ? 'border-ok/30 hover:border-ok/50'
         : `border-edge-dim ${colors.hover}`
     }
   `
 
-  if (hasDraft) {
+  if (showDraftButtons) {
     return (
       <div className={cardClass}>
         {cardBody}
@@ -111,18 +113,66 @@ function ChallengeCard({
           >
             <RotateCcw size={11} /> Restart
           </Link>
+          <Link
+            href={`/leaderboard/${challenge.id}`}
+            className="flex items-center gap-1.5 px-3 py-2 border border-edge bg-surface hover:bg-overlay text-ink-2 text-[11px] font-bold uppercase tracking-wider transition-colors"
+          >
+            <Trophy size={11} />
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  // Passed challenges: clicking loads the winning solution; Restart resets to starter
+  if (passed) {
+    return (
+      <div className={cardClass}>
+        {cardBody}
+        <div className="flex gap-2 pt-1">
+          <Link
+            href={`/play/${challenge.id}?resume=true`}
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 border border-ok/40 bg-ok/5 hover:bg-ok/10 text-ok text-[11px] font-bold uppercase tracking-wider transition-colors"
+          >
+            <Play size={11} /> View Solution
+          </Link>
+          <Link
+            href={`/play/${challenge.id}?restart=true`}
+            className="flex items-center gap-1.5 px-3 py-2 border border-edge bg-surface hover:bg-overlay text-ink-2 text-[11px] font-bold uppercase tracking-wider transition-colors"
+          >
+            <RotateCcw size={11} /> Restart
+          </Link>
+          <Link
+            href={`/leaderboard/${challenge.id}`}
+            className="flex items-center gap-1.5 px-3 py-2 border border-edge bg-surface hover:bg-overlay text-ink-2 text-[11px] font-bold uppercase tracking-wider transition-colors"
+          >
+            <Trophy size={11} />
+          </Link>
         </div>
       </div>
     )
   }
 
   return (
-    <Link
-      href={`/play/${challenge.id}`}
-      className={cardClass}
-    >
-      {cardBody}
-    </Link>
+    <div className={cardClass}>
+      <Link href={`/play/${challenge.id}`} className="flex flex-col gap-3 flex-1">
+        {cardBody}
+      </Link>
+      <div className="flex gap-2 pt-1">
+        <Link
+          href={`/play/${challenge.id}`}
+          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 border border-edge bg-surface hover:bg-overlay text-ink-2 text-[11px] font-bold uppercase tracking-wider transition-colors"
+        >
+          <Play size={11} /> Play
+        </Link>
+        <Link
+          href={`/leaderboard/${challenge.id}`}
+          className="flex items-center gap-1.5 px-3 py-2 border border-edge bg-surface hover:bg-overlay text-ink-2 text-[11px] font-bold uppercase tracking-wider transition-colors"
+        >
+          <Trophy size={11} />
+        </Link>
+      </div>
+    </div>
   )
 }
 

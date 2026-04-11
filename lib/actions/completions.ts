@@ -36,18 +36,20 @@ export async function recordCompletion(
   // Check for existing completion to avoid overwriting a better score
   const { data: existing } = await db
     .from('challenge_completions')
-    .select('id, score')
+    .select('id, score, passed')
     .eq('user_id', userId)
     .eq('challenge_id', challengeId)
     .single()
 
-  const existingScore = (existing as { id: string; score: number } | null)?.score ?? -1
-  if (existingScore >= result.scores.total) return
+  const existingRow = existing as { id: string; score: number; passed: boolean } | null
+  const existingScore = existingRow?.score ?? -1
+  // Only skip if existing record already passed with equal or better score
+  if (existingRow?.passed && existingScore >= result.scores.total) return
 
   const challenge = CHALLENGE_MAP.get(challengeId)
   const tier = challenge?.tier ?? 1
 
-  await db.from('challenge_completions').upsert(
+  const { error: upsertError } = await db.from('challenge_completions').upsert(
     {
       user_id: userId,
       challenge_id: challengeId,
@@ -59,11 +61,12 @@ export async function recordCompletion(
     },
     { onConflict: 'user_id,challenge_id' },
   )
+  if (upsertError) throw new Error(`recordCompletion upsert failed: ${upsertError.message}`)
 
   if (!result.passed) return
 
-  // Award XP: incremental (new score - old score contribution)
-  const isFirstPass = existingScore < 0
+  // Award XP on first successful pass (even if they had a prior failed attempt)
+  const isFirstPass = !existingRow?.passed
   const xpGained = isFirstPass ? xpForCompletion(tier, result.scores.total) : 0
   if (xpGained <= 0) return
 
@@ -73,6 +76,35 @@ export async function recordCompletion(
   await db.from('profiles')
     .update({ xp: currentXp + xpGained, updated_at: new Date().toISOString() })
     .eq('id', userId)
+}
+
+export type LeaderboardEntry = {
+  rank: number
+  username: string | null
+  score: number
+  completed_at: string
+}
+
+/** Fetch top 25 passed completions for a challenge (public leaderboard). */
+export async function getLeaderboard(challengeId: string): Promise<LeaderboardEntry[]> {
+  const db = createAdminClient()
+  const { data } = await db
+    .from('challenge_completions')
+    .select('score, completed_at, profiles(username)')
+    .eq('challenge_id', challengeId)
+    .eq('passed', true)
+    .order('score', { ascending: false })
+    .limit(25)
+
+  if (!data) return []
+
+  type Row = { score: number; completed_at: string; profiles: { username: string | null }[] | null }
+  return (data as unknown as Row[]).map((row, i) => ({
+    rank: i + 1,
+    username: (Array.isArray(row.profiles) ? row.profiles[0]?.username : (row.profiles as { username: string | null } | null)?.username) ?? null,
+    score: row.score,
+    completed_at: row.completed_at,
+  }))
 }
 
 /** Fetch all completions for the current user. */

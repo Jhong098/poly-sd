@@ -56,6 +56,19 @@ export async function getChallengeDrafts(): Promise<DraftSummary[]> {
   return (data ?? []) as DraftSummary[]
 }
 
+/** Delete the draft for the current user + challenge (e.g. after passing). */
+export async function deleteDraft(challengeId: string): Promise<void> {
+  const { userId } = await auth()
+  if (!userId) return
+
+  const db = createAdminClient()
+  await db
+    .from('challenge_drafts')
+    .delete()
+    .eq('user_id', userId)
+    .eq('challenge_id', challengeId)
+}
+
 /** Fetch the full draft (nodes + edges + saved_at) for a single challenge. */
 export async function getDraft(challengeId: string): Promise<DraftRow | null> {
   const { userId } = await auth()
