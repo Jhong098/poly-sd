@@ -8,6 +8,7 @@ export type ProfileRow = {
   email: string | null
   username: string | null
   xp: number
+  is_challenge_author: boolean
   created_at: string
   updated_at: string
 }

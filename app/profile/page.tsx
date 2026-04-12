@@ -34,11 +34,19 @@ export default async function ProfilePage() {
             </div>
             <div>
               <h1 className="text-[15px] font-bold text-ink">{profile.username ?? profile.email ?? 'Anonymous'}</h1>
-              <div className="flex items-center gap-2 mt-0.5">
+              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                 <Star size={12} className="text-warn" />
                 <span className="text-[12px] font-bold text-warn">{level.title}</span>
                 <span className="text-edge-strong">·</span>
                 <span className="text-[12px] text-ink-3">Level {level.level}</span>
+                {profile.is_challenge_author && (
+                  <>
+                    <span className="text-edge-strong">·</span>
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-cyan/10 border border-cyan/30 text-[10px] font-bold text-cyan uppercase tracking-widest">
+                      ⬡ Challenge Author
+                    </span>
+                  </>
+                )}
               </div>
             </div>
           </div>
