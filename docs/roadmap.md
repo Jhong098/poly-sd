@@ -2,7 +2,7 @@
 
 ## Phases
 
-### Phase 0 — Scaffold (1 week)
+### Phase 0 — Scaffold (1 week) ✅ Complete
 
 Goal: A working canvas where you can drag components and connect them. No simulation. Proves the core UX is viable.
 
@@ -21,7 +21,7 @@ Goal: A working canvas where you can drag components and connect them. No simula
 
 ---
 
-### Phase 1 — Simulation Core (3–4 weeks)
+### Phase 1 — Simulation Core (3–4 weeks) ✅ Complete
 
 Goal: The sim engine works. You can design an architecture, click Run, and see realistic metrics.
 
@@ -44,7 +44,7 @@ Goal: The sim engine works. You can design an architecture, click Run, and see r
 
 ---
 
-### Phase 2 — First Levels (1–2 weeks)
+### Phase 2 — First Levels (1–2 weeks) ✅ Complete
 
 Goal: The Tutorial and Tier 1 levels are playable. Win conditions work. Players can "complete" a level.
 
@@ -63,7 +63,7 @@ Goal: The Tutorial and Tier 1 levels are playable. Win conditions work. Players 
 
 ---
 
-### Phase 3 — Auth & Persistence (1 week)
+### Phase 3 — Auth & Persistence (1 week) ✅ Complete
 
 Goal: Players can sign in, save architectures, and resume progress across sessions.
 
@@ -78,7 +78,7 @@ Goal: Players can sign in, save architectures, and resume progress across sessio
 
 ---
 
-### Phase 4 — Polish & Chaos (2 weeks)
+### Phase 4 — Polish & Chaos (2 weeks) ✅ Complete
 
 Goal: The game feels good. Chaos events are implemented. Tier 2 levels complete.
 
@@ -96,7 +96,7 @@ Goal: The game feels good. Chaos events are implemented. Tier 2 levels complete.
 
 ---
 
-### Phase 5 — Social (2 weeks)
+### Phase 5 — Social (2 weeks) ✅ Complete
 
 Goal: Players can share solutions and compare with others.
 
@@ -110,16 +110,16 @@ Goal: Players can share solutions and compare with others.
 
 ---
 
-### Phase 6 — Content Completion (2–3 weeks)
+### Phase 6 — Content Completion (2–3 weeks) 🔄 In Progress (25/28 levels)
 
 Goal: All 28 levels implemented. Full campaign is playable.
 
 **Deliverables**
-- Tier 3 levels: 3-1 through 3-6 (resilience)
-- Tier 4 levels: 4-1 through 4-5 (distributed data)
-- Tier 5 levels: 5-1 through 5-4 (global systems)
-- All remaining components: Serverless, NoSQL, Service Mesh, GeoDNS, Object Storage, Distributed Cache
-- Sandbox mode (all components unlocked, no win condition)
+- Tier 3 levels: 3-1 through 3-6 (resilience) ✅
+- Tier 4 levels: 4-1 through 4-5 (distributed data) — 4 of 5 complete
+- Tier 5 levels: 5-1 through 5-4 (global systems) — 2 of 4 complete
+- All remaining components: NoSQL, Object Storage ✅; Serverless, Service Mesh, GeoDNS, Distributed Cache — not yet
+- Sandbox mode (all components unlocked, no win condition) ✅
 - Architect level display on profile
 
 ---
@@ -137,16 +137,16 @@ Goal: All 28 levels implemented. Full campaign is playable.
 
 ## Timeline Summary
 
-| Phase | Scope | Duration |
-|-------|-------|----------|
-| 0 | Canvas scaffold | 1 week |
-| 1 | Simulation engine | 3–4 weeks |
-| 2 | Tutorial + Tier 1 levels | 1–2 weeks |
-| 3 | Auth + persistence | 1 week |
-| 4 | Polish + chaos + Tier 2 | 2 weeks |
-| 5 | Social features | 2 weeks |
-| 6 | Full content (Tiers 3–5) | 2–3 weeks |
-| **Total MVP** | **Playable + shareable + 28 levels** | **12–15 weeks solo** |
+| Phase | Scope | Duration | Status |
+|-------|-------|----------|--------|
+| 0 | Canvas scaffold | 1 week | ✅ Complete |
+| 1 | Simulation engine | 3–4 weeks | ✅ Complete |
+| 2 | Tutorial + Tier 1 levels | 1–2 weeks | ✅ Complete |
+| 3 | Auth + persistence | 1 week | ✅ Complete |
+| 4 | Polish + chaos + Tier 2 | 2 weeks | ✅ Complete |
+| 5 | Social features | 2 weeks | ✅ Complete |
+| 6 | Full content (Tiers 3–5) | 2–3 weeks | 🔄 25/28 levels |
+| **Total MVP** | **Playable + shareable + 28 levels** | **12–15 weeks solo** | |
 
 With 2 engineers: 7–8 weeks. Split: one owns canvas + levels, one owns sim engine + backend.
 

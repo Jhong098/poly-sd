@@ -197,9 +197,3 @@ Shared replays are viewable (read-only canvas + replay of sim metrics) by anyone
 
 After passing a level: "See how others solved it." Shows an overlay of top solutions by dimension (fastest, cheapest, most resilient, simplest). Each solution is viewable as a replay.
 
-### Architecture export
-
-Export your architecture as:
-- A PNG diagram (for presentations/interviews)
-- A JSON definition (for import back into sandbox)
-- A "system design brief" — auto-generated text description of your architecture

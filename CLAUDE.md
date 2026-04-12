@@ -29,7 +29,7 @@ The sim uses a **flow-based model**, not discrete event simulation. Each compone
 
 ## Current phase
 
-Design. No code yet. Start implementation from [Roadmap Phase 0](docs/roadmap.md).
+Implementation — Phases 0–6 complete. The app is fully playable: canvas, simulation engine, full campaign (25 levels across Tutorial through Tier 5), auth (Clerk), persistence (Supabase), chaos events, replay sharing, and leaderboards are all live. See [Roadmap](docs/roadmap.md) for phase-by-phase completion status.
 
 ## Key design docs
 

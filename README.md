@@ -27,4 +27,4 @@ Poly Bridge works because the physics simulation is honest — your bridge fails
 
 ## Status
 
-Design phase. See [Roadmap](docs/roadmap.md).
+Live — Phases 0–6 complete. Full campaign playable (25 levels across Tutorial + Tiers 1–5), simulation engine running in a Web Worker, auth + persistence via Clerk + Supabase, replay sharing, and per-level leaderboards. See [Roadmap](docs/roadmap.md) for phase-by-phase details.

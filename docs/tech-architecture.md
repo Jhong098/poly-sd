@@ -4,13 +4,13 @@
 
 | Layer | Technology | Rationale |
 |-------|-----------|-----------|
-| Framework | Next.js 14 (App Router) + TypeScript | Full-stack, Vercel-native, React ecosystem |
+| Framework | Next.js 16.2.2 (App Router) + TypeScript + React 19 | Full-stack, Vercel-native, React ecosystem |
 | Canvas | React Flow (xyflow) v12 | Purpose-built for node graph editors. Handles drag-drop, connections, custom nodes/edges, minimap, zoom/pan. Saves ~3 weeks of canvas plumbing. |
 | Packet animation | SVG `animateMotion` → Pixi.js (if needed) | Start simple, upgrade when perf requires. See Animation section. |
 | Simulation engine | TypeScript in Web Worker | Client-side (no server cost per sim), isolated from render thread |
 | State management | Zustand | Lightweight, no boilerplate, ideal for game state |
 | Styling | Tailwind CSS v4 | Rapid iteration |
-| Real-time charts | uPlot | High-frequency metric updates (10fps sim snapshots) without React rerender cost |
+| Real-time charts | Custom SVG sparklines | Inline SVG polylines per metric; lightweight, no extra dependency |
 | Auth | Clerk | Best developer experience, handles OAuth providers |
 | Database | Supabase (Postgres) | Auth + DB + Storage + Realtime in one. Free tier covers early scale. |
 | Deployment | Vercel | Zero config, global CDN, preview deployments |
@@ -22,34 +22,41 @@
 ```
 poly-sd/
 ├── app/                          # Next.js App Router
-│   ├── (game)/
-│   │   ├── campaign/             # Level selection screen
-│   │   ├── play/[levelId]/       # Main game canvas
-│   │   └── sandbox/              # Sandbox mode
-│   ├── (marketing)/
-│   │   └── page.tsx              # Landing page
-│   ├── api/
-│   │   ├── architectures/        # Save/load/share
-│   │   └── leaderboard/          # Score submission
+│   ├── campaign/                 # Level selection / campaign map
+│   ├── play/[levelId]/           # Main game canvas
+│   ├── sandbox/                  # Sandbox mode (all components unlocked)
+│   ├── replay/[id]/              # Public replay viewer
+│   ├── leaderboard/[challengeId]/# Per-level leaderboard
+│   ├── challenge/[id]/solutions/ # Post-completion solution comparison
+│   ├── profile/                  # XP, architect level, completion history
+│   ├── sign-in/ sign-up/         # Clerk auth pages
+│   ├── page.tsx                  # Landing page
 │   └── layout.tsx
 ├── components/
-│   ├── canvas/                   # React Flow canvas, palette, edges
-│   ├── nodes/                    # Custom React Flow node renderers (one per component type)
-│   ├── panels/                   # Config panel, metrics dashboard, challenge brief
-│   └── ui/                       # Shared UI primitives
+│   ├── canvas/                   # React Flow canvas, palette, top bar
+│   ├── nodes/                    # Custom node renderers (one per component type)
+│   ├── panels/                   # ChallengeBriefPanel, ConfigPanel, MetricsPanel, ResultsModal
+│   ├── overlays/                 # ResultsModal, TutorialCallout
+│   └── nav/                      # SiteNav
 ├── sim/
 │   ├── worker.ts                 # Web Worker entry point
 │   ├── engine.ts                 # Core simulation loop
 │   ├── components/               # Per-component simulation logic
 │   ├── graph.ts                  # Graph topology resolution
+│   ├── chaos.ts                  # Chaos event helpers
+│   ├── traffic.ts                # Traffic curve generation
 │   └── types.ts                  # Shared types (also used by UI)
 ├── lib/
-│   ├── challenges/               # Level definitions (JSON/TS)
-│   ├── store/                    # Zustand stores
-│   └── supabase/                 # DB client + queries
+│   ├── challenges/               # Level definitions (definitions.ts, evaluator.ts, types.ts)
+│   ├── store/                    # Zustand stores (architectureStore, simStore, challengeStore)
+│   ├── supabase/                 # DB client + server actions
+│   ├── draft.ts                  # Draft save/load logic
+│   ├── xp.ts                     # XP calculation
+│   └── components/               # Shared React components
+├── supabase/
+│   └── schema.sql                # Postgres schema (profiles, completions, replays)
 ├── docs/                         # Design documents (this folder)
-└── public/
-    └── assets/                   # Component icons, sounds
+└── public/                       # Static assets
 ```
 
 ---
@@ -165,38 +172,50 @@ challengeStore: {
 ## Database Schema
 
 ```sql
--- Stored architectures (save slots + shared replays)
+-- User profile / progression (user_id = Clerk userId, e.g. "user_2abc...")
+CREATE TABLE profiles (
+  id          TEXT PRIMARY KEY,       -- Clerk userId
+  email       TEXT,
+  username    TEXT,
+  xp          INTEGER NOT NULL DEFAULT 0,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Saved architectures (sandbox save slots)
 CREATE TABLE architectures (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id     UUID REFERENCES auth.users,
-  challenge_id TEXT,                  -- null = sandbox
-  name        TEXT,
-  graph       JSONB NOT NULL,         -- React Flow nodes + edges + config
-  is_public   BOOLEAN DEFAULT false,
-  created_at  TIMESTAMPTZ DEFAULT now()
+  user_id     TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  name        TEXT NOT NULL DEFAULT 'Untitled',
+  nodes       JSONB NOT NULL DEFAULT '[]',  -- React Flow nodes
+  edges       JSONB NOT NULL DEFAULT '[]',  -- React Flow edges
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Challenge completion records
+-- Challenge completion records — one row per (user, challenge), upserted to keep best score
 CREATE TABLE challenge_completions (
-  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id         UUID REFERENCES auth.users,
-  challenge_id    TEXT NOT NULL,
-  architecture_id UUID REFERENCES architectures,
-  score_total     INTEGER,
-  score_perf      INTEGER,
-  score_resilience INTEGER,
-  score_cost      INTEGER,
-  score_simplicity INTEGER,
-  sim_result      JSONB,              -- full sim result snapshot
-  completed_at    TIMESTAMPTZ DEFAULT now()
+  id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id               TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  challenge_id          TEXT NOT NULL,
+  passed                BOOLEAN NOT NULL,
+  score                 INTEGER NOT NULL DEFAULT 0,
+  metrics               JSONB NOT NULL DEFAULT '{}',  -- p99, error rate, cost, etc.
+  architecture_snapshot JSONB,
+  completed_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT unique_user_challenge UNIQUE (user_id, challenge_id)
 );
 
--- User profile / progression
-CREATE TABLE profiles (
-  user_id     UUID PRIMARY KEY REFERENCES auth.users,
-  xp          INTEGER DEFAULT 0,
-  architect_level TEXT DEFAULT 'junior',
-  updated_at  TIMESTAMPTZ DEFAULT now()
+-- Shared replays — one row per share link
+CREATE TABLE replays (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id      TEXT REFERENCES profiles(id) ON DELETE SET NULL,  -- null = guest
+  challenge_id TEXT,                 -- null = sandbox share
+  architecture JSONB NOT NULL DEFAULT '{}',
+  eval_result  JSONB NOT NULL DEFAULT '{}',
+  score        INTEGER NOT NULL DEFAULT 0,
+  is_public    BOOLEAN NOT NULL DEFAULT true,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ```
 
