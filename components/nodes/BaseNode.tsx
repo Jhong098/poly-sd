@@ -85,6 +85,7 @@ export function BaseNode({ id, data, selected, icon, stats, hideLiveMetrics }: B
 
   return (
     <div
+      data-testid={`node-${data.componentType}`}
       className={`
         relative w-52 border border-edge bg-surface
         transition-all duration-200

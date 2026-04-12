@@ -53,11 +53,13 @@ function Select({ value, onChange, options }: {
   )
 }
 
-function NumberInput({ value, onChange, min, max, step = 1 }: {
+function NumberInput({ value, onChange, min, max, step = 1, 'data-testid': testId }: {
   value: number; onChange: (v: number) => void; min: number; max: number; step?: number
+  'data-testid'?: string
 }) {
   return (
     <input type="number" value={value} min={min} max={max} step={step}
+      data-testid={testId}
       onChange={(e) => onChange(Number(e.target.value))}
       className="w-full bg-surface border border-edge px-2.5 py-1.5 text-[12px] text-ink focus:outline-none focus:border-edge-strong" />
   )
@@ -143,7 +145,7 @@ function ServerConfigEditor({ config, patch }: { config: ServerConfig; patch: (p
           options={Object.entries(SERVER_INSTANCES).map(([k, v]) => ({ value: k, label: `${v.label} — ${v.maxRps} RPS · $${v.costPerHour}/hr` }))} />
       </div>
       <div><Label>Instance Count</Label>
-        <NumberInput value={config.instanceCount} onChange={(v) => patch({ instanceCount: v })} min={1} max={50} /></div>
+        <NumberInput value={config.instanceCount} onChange={(v) => patch({ instanceCount: v })} min={1} max={50} data-testid="config-instanceCount" /></div>
       <div><Label>Base Latency</Label>
         <Slider value={config.baseLatencyMs} onChange={(v) => patch({ baseLatencyMs: v })} min={5} max={500} step={5} format={(v) => `${v}ms`} /></div>
       <Divider />
@@ -517,7 +519,7 @@ export function ConfigPanel() {
 
   if (selectedEdgeId && !selectedNodeId) {
     return (
-      <aside className="w-64 flex-shrink-0 h-full bg-raised border-l border-edge overflow-y-auto">
+      <aside data-testid="config-panel" className="w-64 flex-shrink-0 h-full bg-raised border-l border-edge overflow-y-auto">
         <EdgeConfigPanel edgeId={selectedEdgeId} />
       </aside>
     )
@@ -525,7 +527,7 @@ export function ConfigPanel() {
 
   if (!selectedNode) {
     return (
-      <aside className="w-64 flex-shrink-0 h-full bg-raised border-l border-edge flex flex-col items-center justify-center">
+      <aside data-testid="config-panel" className="w-64 flex-shrink-0 h-full bg-raised border-l border-edge flex flex-col items-center justify-center">
         <div className="text-center px-6">
           <p className="text-[10px] text-ink-3 uppercase tracking-widest mb-1">// Config</p>
           <p className="text-[11px] text-ink-3">Select a node or connection</p>
@@ -540,7 +542,7 @@ export function ConfigPanel() {
   function patch(p: Partial<typeof data.config>) { updateNodeConfig(nodeId, p) }
 
   return (
-    <aside className="w-64 flex-shrink-0 h-full bg-raised border-l border-edge flex flex-col overflow-y-auto">
+    <aside data-testid="config-panel" className="w-64 flex-shrink-0 h-full bg-raised border-l border-edge flex flex-col overflow-y-auto">
       <div className="px-4 pt-4 pb-3 border-b border-edge-dim">
         <p className="text-[10px] font-bold text-cyan uppercase tracking-widest">// {meta.label}</p>
         <input value={data.label} onChange={(e) => updateNodeLabel(selectedNode.id, e.target.value)}

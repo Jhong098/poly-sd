@@ -59,6 +59,7 @@ function PaletteCard({ item }: { item: PaletteItem }) {
     <div
       draggable
       onDragStart={onDragStart}
+      data-testid={`palette-item-${item.type}`}
       className="flex items-center gap-3 px-3 py-2.5 border border-edge bg-surface hover:bg-overlay cursor-grab active:cursor-grabbing transition-colors duration-150 select-none"
       style={{ borderLeftWidth: 2, borderLeftColor: color }}
     >

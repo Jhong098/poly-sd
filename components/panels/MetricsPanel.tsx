@@ -80,7 +80,7 @@ export function MetricsPanel() {
     'var(--color-edge-strong)'
 
   return (
-    <div className="h-[88px] flex-shrink-0 border-t border-edge bg-raised px-6 flex items-center gap-8">
+    <div data-testid="metrics-panel" className="h-[88px] flex-shrink-0 border-t border-edge bg-raised px-6 flex items-center gap-8">
       {/* Status dot + sim time */}
       <div className="flex flex-col items-center gap-1 mr-2">
         <div className="w-1.5 h-1.5 rounded-full" style={{ background: statusDotColor }} />

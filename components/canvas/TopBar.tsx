@@ -330,6 +330,7 @@ export function TopBar() {
           <button
             onClick={startSimulation}
             disabled={!canRun}
+            data-testid="run-button"
             className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan hover:bg-cyan/90 disabled:bg-surface disabled:text-ink-3 disabled:cursor-not-allowed text-base text-[11px] font-bold uppercase tracking-wider transition-colors"
           >
             <Play size={11} />
@@ -394,7 +395,7 @@ export function TopBar() {
                 background: isRunning ? 'var(--color-ok)' : isPaused ? 'var(--color-warn)' : 'var(--color-cyan)',
               }}
             />
-            <span className="text-[10px] text-ink-3 uppercase tracking-wider">
+            <span className="text-[10px] text-ink-3 uppercase tracking-wider" data-testid="sim-status">
               {isRunning ? 'Running' : isPaused ? 'Paused' : 'Complete'}
             </span>
           </div>

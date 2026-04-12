@@ -136,7 +136,7 @@ export function ResultsModal() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-base/80 overflow-y-auto py-8">
+    <div data-testid="results-modal" className="fixed inset-0 z-50 flex items-center justify-center bg-base/80 overflow-y-auto py-8">
       <div
         className="w-[420px] bg-raised border border-edge overflow-hidden"
         style={{ borderTopWidth: 2, borderTopColor: result.passed ? 'var(--color-ok)' : 'var(--color-err)' }}
@@ -149,7 +149,7 @@ export function ResultsModal() {
               : <XCircle size={24} className="text-err" />
             }
             <div>
-              <p className={`text-[16px] font-bold ${result.passed ? 'text-ok' : 'text-err'}`}>
+              <p data-testid="result-status" className={`text-[16px] font-bold ${result.passed ? 'text-ok' : 'text-err'}`}>
                 {result.passed ? 'Challenge Passed' : 'Not Quite'}
               </p>
               <p className="text-[11px] text-ink-3">{challenge.title}</p>
