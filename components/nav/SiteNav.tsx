@@ -6,8 +6,9 @@ import { LayoutGrid } from 'lucide-react'
 import { SignInButton, SignUpButton, UserButton, useAuth } from '@clerk/nextjs'
 
 const NAV_LINKS = [
-  { href: '/campaign', label: 'Campaign' },
-  { href: '/sandbox',  label: 'Free Play' },
+  { href: '/campaign',  label: 'Campaign'  },
+  { href: '/community', label: 'Community' },
+  { href: '/sandbox',   label: 'Free Play' },
 ]
 
 export function SiteNav() {
