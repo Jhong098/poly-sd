@@ -31,9 +31,13 @@ test.describe('Challenge flow', () => {
     await dropOntoCanvas(page, 'server', 200)
     await page.waitForSelector('[data-testid="node-server"]')
 
-    // Connect Client → Server using React Flow handles
-    const sourceHandle = page.locator('.react-flow__handle-source').first()
-    const targetHandle = page.locator('.react-flow__handle-target').first()
+    // Wait for both nodes to be fully rendered before connecting
+    await page.waitForSelector('[data-testid="node-client"]')
+    await page.waitForSelector('[data-testid="node-server"]')
+
+    // Scope handles to specific nodes to avoid DOM-order ambiguity
+    const sourceHandle = page.locator('[data-testid="node-client"] .react-flow__handle-source')
+    const targetHandle = page.locator('[data-testid="node-server"] .react-flow__handle-target')
     await sourceHandle.dragTo(targetHandle)
 
     await runSimAndWaitForResult(page)
