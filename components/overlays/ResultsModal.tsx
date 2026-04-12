@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useTransition } from 'react'
-import { CheckCircle2, XCircle, RotateCcw, ChevronRight, Trophy, Share2, Check, ExternalLink } from 'lucide-react'
+import { CheckCircle2, XCircle, RotateCcw, ChevronRight, Trophy, Share2, Check, ExternalLink, ThumbsUp } from 'lucide-react'
+import { upvoteCommunityChallenge, incrementPassCount } from '@/lib/actions/community-challenges'
 import { useChallengeStore } from '@/lib/store/challengeStore'
 import { useSimStore } from '@/lib/store/simStore'
 import { useArchitectureStore } from '@/lib/store/architectureStore'
@@ -93,11 +94,24 @@ export function ResultsModal() {
   const { nodes, edges, initFromStarterGraph } = useArchitectureStore()
   const [shareState, setShareState] = useState<'idle' | 'sharing' | 'copied' | 'error'>('idle')
   const [, startTransition] = useTransition()
+  const [upvoted, setUpvoted] = useState(false)
+  const [upvoteCount, setUpvoteCount] = useState<number | null>(null)
+  const [, startUpvoteTransition] = useTransition()
 
   if (!evalResult || simStatus !== 'complete' || !activeChallenge) return null
 
   const result: EvalResult = evalResult
   const challenge = activeChallenge
+
+  const isCommunityChallenge = challenge.id.startsWith('community:')
+  const communityUuid = isCommunityChallenge ? challenge.id.slice('community:'.length) : null
+
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() => {
+    if (result.passed && communityUuid) {
+      incrementPassCount(communityUuid)
+    }
+  }, [result.passed, communityUuid])
 
   const sortedChallenges = [...CHALLENGES].sort((a, b) =>
     a.tier !== b.tier ? a.tier - b.tier : a.order - b.order
@@ -226,6 +240,27 @@ export function ResultsModal() {
               : <><Share2 size={13} /> Share</>
             }
           </button>
+
+          {result.passed && communityUuid && (
+            <button
+              onClick={() => {
+                startUpvoteTransition(async () => {
+                  const res = await upvoteCommunityChallenge(communityUuid)
+                  if ('error' in res) return
+                  setUpvoted(res.upvoted)
+                  setUpvoteCount(res.upvoteCount)
+                })
+              }}
+              className={`flex items-center gap-1.5 px-3 py-2 border text-[11px] font-bold uppercase tracking-wider transition-colors
+                ${upvoted
+                  ? 'border-cyan bg-cyan/10 text-cyan'
+                  : 'border-edge bg-surface hover:bg-overlay text-ink-2'
+                }`}
+            >
+              <ThumbsUp size={13} />
+              {upvoteCount !== null ? upvoteCount : 'Upvote'}
+            </button>
+          )}
 
           {result.passed && (
             <a
