@@ -843,7 +843,101 @@ export const CHALLENGES: Challenge[] = [
     ],
   },
 
+  {
+    id: '4-5',
+    tier: 4,
+    order: 4,
+    title: 'CAP Theorem',
+    narrative:
+      'You\'re building a distributed likes counter. Your primary database is in us-east-1 and ' +
+      'a replica syncs to eu-west-1. A network partition severs the link between them for two minutes. ' +
+      'The business question: do you keep accepting writes on both sides (availability), ' +
+      'or stop writes on the replica until the partition heals (consistency)?',
+    objective:
+      'Survive a 2-minute network partition (simulated as replica node failure) without violating your SLA. ' +
+      'You choose the tradeoff: a consistent CP architecture (primary-only writes during partition) ' +
+      'or an available AP architecture (NoSQL with eventual consistency). Both pass — but choose deliberately.',
+    trafficConfig: {
+      durationMs: 180_000,
+      waypoints: presetToWaypoints('steady', 2000, 1, 180_000),
+    },
+    slaTargets: { p99LatencyMs: 200, errorRate: 0.05 },
+    budgetPerHour: 1.00,
+    allowedComponents: ['client', 'server', 'database', 'nosql', 'cache', 'load-balancer'],
+    conceptsTaught: ['CAP theorem', 'consistency vs availability', 'network partitions', 'eventual consistency', 'CP vs AP tradeoff'],
+    hints: [
+      'CAP theorem: during a network partition you must choose Consistency (CP) or Availability (AP).',
+      'CP approach: use Multi-AZ on a single primary DB. When the replica is unreachable, writes go to the primary only — consistent but the replica\'s region is degraded.',
+      'AP approach: replace the DB with a NoSQL store (globalTables = 2). Both regions keep accepting writes during the partition — available but potentially inconsistent until healed.',
+      'The error rate SLA is lenient (5%) to allow for either choice — but your architecture must survive the full 3-minute simulation.',
+      'NoSQL on-demand mode never rejects writes due to capacity — it\'s inherently AP-leaning.',
+    ],
+    starterNodes: [
+      { id: 'client-1',  type: 'client',   position: { x: 60,  y: 200 }, label: 'Users',              config: { rps: 2000, preset: 'steady', peakMultiplier: 1 } },
+      { id: 'srv-1',     type: 'server',   position: { x: 280, y: 200 }, label: 'App Server',          config: { instanceType: 'm5.large', instanceCount: 2, baseLatencyMs: 20 } },
+      { id: 'db-primary',type: 'database', position: { x: 520, y: 120 }, label: 'DB Primary (us-east)',config: { instanceType: 'db.r5.large', readReplicas: 0, maxConnections: 500, multiAz: false } },
+      { id: 'db-replica',type: 'database', position: { x: 520, y: 300 }, label: 'DB Replica (eu-west)',config: { instanceType: 'db.t3.medium', readReplicas: 0, maxConnections: 300, multiAz: false } },
+    ],
+    starterEdges: [
+      { source: 'client-1',   target: 'srv-1'      },
+      { source: 'srv-1',      target: 'db-primary' },
+      { source: 'srv-1',      target: 'db-replica' },
+    ],
+    chaosSchedule: [
+      makeChaosEvent('db-replica', 'node-failure', 60_000, 120_000),
+    ],
+  },
+
   // ── Tier 5: Global Systems ──────────────────────────────────────────────────
+
+  {
+    id: '5-1',
+    tier: 5,
+    order: 0,
+    title: 'Multi-Region Active-Active',
+    narrative:
+      'Your platform now serves users in both the US and Europe. ' +
+      'EU users are experiencing 300ms+ latency because all your infrastructure is in us-east-1. ' +
+      'Then at t=3min, a full region failure takes down your us-east deployment. ' +
+      'You need global coverage, low latency everywhere, and survival when an entire region drops.',
+    objective:
+      'Serve 10,000 RPS globally with p99 < 150ms. Survive a full us-east region failure at t=180s. ' +
+      'Use a CDN with multiple PoPs to serve users from nearby edges, and a globally replicated ' +
+      'data store so the EU region can take over when us-east goes down.',
+    trafficConfig: {
+      durationMs: 300_000,
+      waypoints: presetToWaypoints('steady', 10_000, 1, 300_000),
+    },
+    slaTargets: { p99LatencyMs: 150, errorRate: 0.01 },
+    budgetPerHour: 5.00,
+    allowedComponents: ['client', 'server', 'database', 'cache', 'load-balancer', 'cdn', 'nosql', 'k8s-fleet', 'api-gateway'],
+    conceptsTaught: ['multi-region active-active', 'global routing via CDN', 'cross-region data replication', 'regional failover', 'latency vs consistency tradeoff'],
+    hints: [
+      'A CDN with multiple regions (PoPs) routes users to the nearest edge — this is your GeoDNS equivalent.',
+      'Set CDN regions ≥ 4 and a high hit rate to keep most traffic at the edge (< 50ms globally).',
+      'Cache misses and API calls still need to reach a backend. Use a K8s Fleet to auto-scale the origin.',
+      'For the database, NoSQL with globalTables = 2 gives you active-active cross-region replication — if us-east fails, eu-west\'s replica keeps serving reads and writes.',
+      'When the us-east fleet fails at t=180s, the CDN stops routing cache misses there. Your EU replica must handle all DB traffic for 60 seconds.',
+    ],
+    starterNodes: [
+      { id: 'client-1', type: 'client',       position: { x: 60,  y: 200 }, label: 'Global Users',        config: { rps: 10_000, preset: 'steady', peakMultiplier: 1 } },
+      { id: 'lb-1',     type: 'load-balancer',position: { x: 260, y: 200 }, label: 'Global LB',           config: { algorithm: 'round-robin' } },
+      { id: 'fleet-us', type: 'k8s-fleet',    position: { x: 480, y: 120 }, label: 'App Fleet (us-east)', config: { instanceType: 'm5.large', minReplicas: 2, maxReplicas: 8, targetUtilization: 0.7 } },
+      { id: 'fleet-eu', type: 'k8s-fleet',    position: { x: 480, y: 300 }, label: 'App Fleet (eu-west)', config: { instanceType: 'm5.large', minReplicas: 2, maxReplicas: 8, targetUtilization: 0.7 } },
+      { id: 'db-1',     type: 'database',     position: { x: 700, y: 200 }, label: 'Primary DB (us-east)',config: { instanceType: 'db.r5.large', readReplicas: 0, maxConnections: 500, multiAz: false } },
+    ],
+    starterEdges: [
+      { source: 'client-1', target: 'lb-1'     },
+      { source: 'lb-1',     target: 'fleet-us' },
+      { source: 'lb-1',     target: 'fleet-eu' },
+      { source: 'fleet-us', target: 'db-1'     },
+      { source: 'fleet-eu', target: 'db-1'     },
+    ],
+    chaosSchedule: [
+      makeChaosEvent('fleet-us', 'node-failure', 180_000, 60_000),
+      makeChaosEvent('db-1',     'node-failure', 180_000, 60_000),
+    ],
+  },
 
   {
     id: '5-2',
@@ -930,6 +1024,45 @@ export const CHALLENGES: Challenge[] = [
       makeChaosEvent('srv-1',    'node-failure',   60_000, 120_000),
       makeChaosEvent('db-1',     'node-failure',   60_000, 120_000),
       makeChaosEvent('svc-down', 'latency-spike',  60_000, 120_000, 50),
+    ],
+  },
+
+  {
+    id: '5-4',
+    tier: 5,
+    order: 3,
+    title: 'The Final Boss',
+    narrative:
+      'You\'re the architect of a real-time multiplayer game backend. ' +
+      '50,000 concurrent players. Sub-100ms latency globally. 99.99% uptime. $10/hr budget. ' +
+      'No hints. No guided callouts. Everything you\'ve learned across the previous 27 levels applies here. ' +
+      'At t=90s a traffic surge doubles your load. At t=150s two app servers crash simultaneously. ' +
+      'At t=210s your cache gets flushed cold. Survive all three.',
+    objective:
+      'Handle 50,000 RPS with p99 < 100ms and error rate < 0.5%, under $10/hr budget. ' +
+      'Survive three consecutive chaos events without violating SLA.',
+    trafficConfig: {
+      durationMs: 300_000,
+      waypoints: presetToWaypoints('steady', 50_000, 1, 300_000),
+    },
+    slaTargets: { p99LatencyMs: 100, errorRate: 0.005 },
+    budgetPerHour: 10.00,
+    allowedComponents: 'all',
+    conceptsTaught: [
+      'systems thinking at scale',
+      'defence in depth',
+      'multi-layer caching',
+      'autoscaling under burst',
+      'chaos resilience',
+    ],
+    hints: [],
+    starterNodes: [
+      { id: 'client-1', type: 'client', position: { x: 60, y: 250 }, label: 'Global Players', config: { rps: 50_000, preset: 'steady', peakMultiplier: 2 } },
+    ],
+    starterEdges: [],
+    chaosSchedule: [
+      makeChaosEvent('client-1', 'traffic-surge',  90_000,  30_000, 2),
+      makeChaosEvent('client-1', 'traffic-surge', 210_000,  15_000, 1.5),
     ],
   },
 ]
