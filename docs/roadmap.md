@@ -110,21 +110,21 @@ Goal: Players can share solutions and compare with others.
 
 ---
 
-### Phase 6 — Content Completion (2–3 weeks) 🔄 In Progress (25/28 levels)
+### Phase 6 — Content Completion (2–3 weeks) ✅ Complete
 
 Goal: All 28 levels implemented. Full campaign is playable.
 
 **Deliverables**
 - Tier 3 levels: 3-1 through 3-6 (resilience) ✅
-- Tier 4 levels: 4-1 through 4-5 (distributed data) — 4 of 5 complete
-- Tier 5 levels: 5-1 through 5-4 (global systems) — 2 of 4 complete
-- All remaining components: NoSQL, Object Storage ✅; Serverless, Service Mesh, GeoDNS, Distributed Cache — not yet
+- Tier 4 levels: 4-1 through 4-5 (distributed data) ✅
+- Tier 5 levels: 5-1 through 5-4 (global systems) ✅
+- All remaining components: NoSQL, Object Storage ✅; ~~Serverless, Service Mesh, GeoDNS, Distributed Cache~~ (descoped)
 - Sandbox mode (all components unlocked, no win condition) ✅
-- Architect level display on profile
+- Architect level display on profile ✅
 
 ---
 
-### Phase 7 — Challenge Mode & Growth (post-launch)
+### Phase 7 — Challenge Mode & Growth 🔄 In Progress
 
 - Community challenge submissions
 - Competitive events (time-limited leaderboards)
@@ -145,7 +145,8 @@ Goal: All 28 levels implemented. Full campaign is playable.
 | 3 | Auth + persistence | 1 week | ✅ Complete |
 | 4 | Polish + chaos + Tier 2 | 2 weeks | ✅ Complete |
 | 5 | Social features | 2 weeks | ✅ Complete |
-| 6 | Full content (Tiers 3–5) | 2–3 weeks | 🔄 25/28 levels |
+| 6 | Full content (Tiers 3–5) | 2–3 weeks | ✅ Complete |
+| 7 | Challenge mode & growth | ongoing | 🔄 In Progress |
 | **Total MVP** | **Playable + shareable + 28 levels** | **12–15 weeks solo** | |
 
 With 2 engineers: 7–8 weeks. Split: one owns canvas + levels, one owns sim engine + backend.
