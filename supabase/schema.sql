@@ -100,6 +100,8 @@ $$;
 
 create table if not exists public.community_challenges (
   id                  uuid        primary key default gen_random_uuid(),
+  -- 'author_id' (not 'user_id') is intentional — distinguishes the challenge creator FK
+  -- from the generic user_id convention used in join/completion tables.
   author_id           text        not null references public.profiles(id) on delete cascade,
   title               text        not null,
   narrative           text        not null,
@@ -108,6 +110,7 @@ create table if not exists public.community_challenges (
   traffic_config      jsonb       not null,
   sla_targets         jsonb       not null,
   budget_per_hour     numeric     not null,
+  -- '"all"' is a JSON string scalar matching the TS type ComponentType[] | 'all'
   allowed_components  jsonb       not null default '"all"',
   concepts_taught     jsonb       not null default '[]',
   hints               jsonb       not null default '[]',
@@ -119,15 +122,16 @@ create table if not exists public.community_challenges (
   pass_count          integer     not null default 0,
   upvote_count        integer     not null default 0,
   created_at          timestamptz not null default now(),
-  published_at        timestamptz
+  published_at        timestamptz,
+  constraint published_at_requires_status check (status = 'published' or published_at is null)
 );
 
 create index if not exists community_challenges_hot_idx
-  on public.community_challenges(status, upvote_count desc, attempt_count desc)
+  on public.community_challenges(upvote_count desc, attempt_count desc)
   where status = 'published';
 
 create index if not exists community_challenges_new_idx
-  on public.community_challenges(status, published_at desc)
+  on public.community_challenges(published_at desc)
   where status = 'published';
 
 create table if not exists public.community_challenge_upvotes (
@@ -137,9 +141,14 @@ create table if not exists public.community_challenge_upvotes (
   primary key (challenge_id, user_id)
 );
 
+create index if not exists community_challenge_upvotes_user_id_idx
+  on public.community_challenge_upvotes(user_id);
+
 alter table public.profiles
   add column if not exists is_challenge_author boolean not null default false;
 
+-- Authors access their own drafts only via the service role (used by all server actions).
+-- No anon-key author UI exists yet. If one is added, add an author_id = auth.uid() policy.
 -- RLS for community challenges — public read, service role writes
 alter table public.community_challenges enable row level security;
 create policy "community_challenges_select" on public.community_challenges
@@ -149,7 +158,8 @@ alter table public.community_challenge_upvotes enable row level security;
 create policy "community_upvotes_select" on public.community_challenge_upvotes
   for select using (true);
 
--- Community challenge atomic counters
+-- Denormalized counters for fast feed sorting. Accepted eventual consistency trade-off:
+-- upvote_count may drift from community_challenge_upvotes if rows are bulk-deleted.
 
 create or replace function public.increment_community_upvote(challenge_id_input uuid)
 returns void language sql security definer as $$
