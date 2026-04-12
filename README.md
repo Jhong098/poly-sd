@@ -1,5 +1,8 @@
 # Poly-SD
 
+[![CI](https://github.com/Jhong098/poly-sd/actions/workflows/ci.yml/badge.svg)](https://github.com/Jhong098/poly-sd/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/Jhong098/poly-sd/graph/badge.svg)](https://codecov.io/gh/Jhong098/poly-sd)
+
 > A visual sandbox game for learning distributed systems design — inspired by Poly Bridge.
 
 You're given a system design challenge: handle 50K RPS, hit p99 < 200ms, stay under $800/mo, survive an AZ outage. You have a palette of cloud components — load balancers, caches, databases, queues — to drag, drop, connect, and configure. Hit simulate. Watch traffic flow. Watch things break. Iterate.

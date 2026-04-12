@@ -24,7 +24,13 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - run: pnpm test:unit:run
+      - run: pnpm test:unit:coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage/lcov.info
+          fail_ci_if_error: false
 
   e2e-tests:
     name: E2E Tests
