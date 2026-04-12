@@ -36,6 +36,7 @@ test.describe('Canvas smoke', () => {
   })
 
   test('simulation runs and completes', async ({ page }) => {
+    test.setTimeout(120_000)  // sim can take up to 60s at 1× speed
     await dropOntoCanvas(page, 'server')
     await page.waitForSelector('[data-testid="node-server"]')
 
