@@ -1,5 +1,6 @@
 import type { SimGraph, SimSnapshot, NodeSnapshot, EdgeSnapshot, ChaosEvent } from './types'
 import { computeNode, type ComponentState } from './components'
+import type { DatabaseConfig } from '@/lib/components/definitions'
 
 /**
  * Resolve one tick.
@@ -59,19 +60,35 @@ export function resolveGraph(
     )
     nodeSnaps[nodeId] = snap
 
-    // Distribute output to outgoing edges using split weights
+    // Distribute output to outgoing edges using split weights.
+    // Health-check behaviour: skip edges to nodes with active node-failure chaos
+    // so a load balancer naturally reroutes around failed backends.
+    // Exception: multi-AZ databases survive node-failure (standby promotion).
     const outgoing = graph.edges.filter((e) => e.source === nodeId)
     if (outgoing.length > 0) {
-      const totalWeight = outgoing.reduce((s, e) => s + (e.splitWeight ?? 1), 0)
+      const isNodeFailing = (targetId: string): boolean => {
+        if (chaosMap[targetId]?.type !== 'node-failure') return false
+        const targetNode = graph.nodes.find((n) => n.id === targetId)
+        if (targetNode?.componentType === 'database') {
+          if ((targetNode.config as DatabaseConfig).multiAz) return false
+        }
+        return true
+      }
+
+      const healthyEdges = outgoing.filter((e) => !isNodeFailing(e.target))
+      const routingPool  = healthyEdges.length > 0 ? healthyEdges : outgoing
+      const totalWeight  = routingPool.reduce((s, e) => s + (e.splitWeight ?? 1), 0)
+
       for (const edge of outgoing) {
-        const fraction = (edge.splitWeight ?? 1) / totalWeight
+        const failing    = isNodeFailing(edge.target)
+        const fraction   = failing ? 0 : (edge.splitWeight ?? 1) / totalWeight
         const throughput = snap.outputRps * fraction
         edgeThroughput[edge.id] = throughput
         edgeSnaps[edge.id] = {
           id: edge.id,
           throughputRps: throughput,
           latencyMs: snap.latencyMs,
-          dropRate: snap.errorRate,
+          dropRate: failing ? 1 : snap.errorRate,
         }
       }
     }
@@ -85,10 +102,17 @@ export function resolveGraph(
 
   const sourceIds = new Set(graph.edges.map((e) => e.source))
   const egressIds = graph.nodes.map((n) => n.id).filter((id) => !sourceIds.has(id))
+  // Only count egress nodes that actually received traffic. A failed node that
+  // the load balancer health-checked out of rotation has inputRps=0 and should
+  // not drag up the system error rate — from users' perspective those requests
+  // never reached it.
+  const activeEgressIds = egressIds.filter((id) => (nodeSnaps[id]?.inputRps ?? 0) > 0)
   const systemErrorRate =
-    egressIds.length > 0
-      ? egressIds.reduce((s, id) => s + (nodeSnaps[id]?.errorRate ?? 0), 0) / egressIds.length
-      : 0
+    activeEgressIds.length > 0
+      ? activeEgressIds.reduce((s, id) => s + (nodeSnaps[id]?.errorRate ?? 0), 0) / activeEgressIds.length
+      : egressIds.length > 0
+        ? egressIds.reduce((s, id) => s + (nodeSnaps[id]?.errorRate ?? 0), 0) / egressIds.length
+        : 0
 
   // Total ingress = sum of all client outputs (or global if no clients)
   const totalIngress = hasClients
