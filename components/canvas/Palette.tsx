@@ -1,6 +1,6 @@
 'use client'
 
-import { Users, Server, Database, Zap, Shuffle, List, Shield, Layers, Radio, Globe } from 'lucide-react'
+import { Users, Server, Database, Zap, Shuffle, List, Shield, Layers, Radio, Globe, Box, HardDrive } from 'lucide-react'
 import { COMPONENT_META, type ComponentType } from '@/lib/components/definitions'
 
 type PaletteItem = {
@@ -22,10 +22,12 @@ const TIER2_ITEMS: PaletteItem[] = [
 ]
 
 const TIER3_ITEMS: PaletteItem[] = [
-  { type: 'api-gateway', icon: <Shield size={16} />, shortDesc: 'Rate limit & circuit breaker' },
-  { type: 'k8s-fleet',   icon: <Layers size={16} />, shortDesc: 'Auto-scaling pod fleet'       },
-  { type: 'kafka',       icon: <Radio  size={16} />, shortDesc: 'Distributed event stream'     },
-  { type: 'cdn',         icon: <Globe  size={16} />, shortDesc: 'Edge cache, global PoPs'       },
+  { type: 'api-gateway',    icon: <Shield    size={16} />, shortDesc: 'Rate limit & circuit breaker' },
+  { type: 'k8s-fleet',      icon: <Layers    size={16} />, shortDesc: 'Auto-scaling pod fleet'       },
+  { type: 'kafka',          icon: <Radio     size={16} />, shortDesc: 'Distributed event stream'     },
+  { type: 'cdn',            icon: <Globe     size={16} />, shortDesc: 'Edge cache, global PoPs'      },
+  { type: 'nosql',          icon: <Box       size={16} />, shortDesc: 'High-throughput key-value DB' },
+  { type: 'object-storage', icon: <HardDrive size={16} />, shortDesc: 'Durable blob storage (S3)'   },
 ]
 
 // Maps accentColor → design system color variable
@@ -40,6 +42,8 @@ const TYPE_COLOR_VAR: Record<string, string> = {
   indigo:  'var(--color-node-k8s)',
   teal:    'var(--color-node-kafka)',
   lime:    'var(--color-node-cdn)',
+  fuchsia: 'var(--color-node-nosql)',
+  rose:    'var(--color-node-object-storage)',
 }
 
 function PaletteCard({ item }: { item: PaletteItem }) {
