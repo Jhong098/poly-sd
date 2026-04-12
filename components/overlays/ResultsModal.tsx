@@ -98,20 +98,21 @@ export function ResultsModal() {
   const [upvoteCount, setUpvoteCount] = useState<number | null>(null)
   const [, startUpvoteTransition] = useTransition()
 
+  // Derived before early return so the effect below can access them unconditionally
+  // (hooks must not be called after a conditional return)
+  const isCommunityChallenge = activeChallenge?.id.startsWith('community:') ?? false
+  const communityUuid = isCommunityChallenge ? activeChallenge!.id.slice('community:'.length) : null
+
+  useEffect(() => {
+    if (evalResult?.passed && communityUuid) {
+      incrementPassCount(communityUuid)
+    }
+  }, [evalResult?.passed, communityUuid])
+
   if (!evalResult || simStatus !== 'complete' || !activeChallenge) return null
 
   const result: EvalResult = evalResult
   const challenge = activeChallenge
-
-  const isCommunityChallenge = challenge.id.startsWith('community:')
-  const communityUuid = isCommunityChallenge ? challenge.id.slice('community:'.length) : null
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  useEffect(() => {
-    if (result.passed && communityUuid) {
-      incrementPassCount(communityUuid)
-    }
-  }, [result.passed, communityUuid])
 
   const sortedChallenges = [...CHALLENGES].sort((a, b) =>
     a.tier !== b.tier ? a.tier - b.tier : a.order - b.order

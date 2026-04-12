@@ -52,8 +52,12 @@ export default function CommunityPlayPage({ params }: { params: Promise<{ id: st
     return () => {
       cancelled = true
       stopSimulation()
+      clearCanvas()
       setActiveChallenge(null)
     }
+    // Zustand store methods (stopSimulation, setActiveChallenge, etc.) have stable
+    // identity guaranteed by Zustand — omitting them avoids a spurious re-fetch on
+    // every render without any correctness risk.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
