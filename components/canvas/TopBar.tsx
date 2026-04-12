@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { Play, Pause, Square, LayoutGrid, ChevronDown, Plus, X, Save, Check, ChevronLeft, Share2 } from 'lucide-react'
+import { useState, useTransition, useEffect } from 'react'
+import { Play, Pause, Square, LayoutGrid, ChevronDown, Plus, X, Save, Check, ChevronLeft, Share2, Upload } from 'lucide-react'
 import Link from 'next/link'
 import { UserButton, SignInButton, useAuth } from '@clerk/nextjs'
 import { useSimStore } from '@/lib/store/simStore'
@@ -12,6 +12,9 @@ import { createReplay } from '@/lib/actions/replays'
 import { presetToWaypoints } from '@/sim/types'
 import type { TrafficPreset } from '@/lib/components/definitions'
 import type { EvalResult } from '@/lib/challenges/types'
+import { PublishWizard } from '@/components/challenge/PublishWizard'
+import { checkCanPublish } from '@/lib/actions/community-challenges'
+import { COMMUNITY_PUBLISH_MIN_COMPLETIONS } from '@/lib/config'
 
 const SPEED_OPTIONS = [1, 5, 10] as const
 
@@ -231,11 +234,18 @@ export function TopBar() {
   const [showSave, setShowSave] = useState(false)
   const [shareState, setShareState] = useState<'idle' | 'sharing' | 'copied' | 'error'>('idle')
   const [, startShareTransition] = useTransition()
+  const [showPublish, setShowPublish] = useState(false)
+  const [canPublish, setCanPublish] = useState(false)
 
   const { isSignedIn } = useAuth()
   const { nodes, edges } = useArchitectureStore()
   const { activeChallenge, evalResult } = useChallengeStore()
   const { status, speed, trafficConfig, history, nodeSnapshots, setSpeed, startSimulation, pauseSimulation, resumeSimulation, stopSimulation } = useSimStore()
+
+  useEffect(() => {
+    if (!isSignedIn || activeChallenge) return
+    checkCanPublish().then(setCanPublish)
+  }, [isSignedIn, activeChallenge])
 
   function handleShare() {
     setShareState('sharing')
@@ -420,6 +430,24 @@ export function TopBar() {
           </button>
         )}
 
+        {isSignedIn && !activeChallenge && status === 'complete' && (
+          canPublish ? (
+            <button
+              onClick={() => setShowPublish(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 border border-edge bg-raised hover:bg-overlay text-ink-3 hover:text-ink-2 text-[11px] font-bold uppercase tracking-wider transition-colors"
+            >
+              <Upload size={12} /> Publish
+            </button>
+          ) : (
+            <span
+              title={`Complete ${COMMUNITY_PUBLISH_MIN_COMPLETIONS} campaign levels to publish challenges`}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 border border-edge-dim text-ink-off text-[11px] font-bold uppercase tracking-wider cursor-not-allowed"
+            >
+              <Upload size={12} /> Publish
+            </span>
+          )
+        )}
+
         {isSignedIn && nodes.length > 0 && (
           <div className="relative">
             <button
@@ -442,6 +470,19 @@ export function TopBar() {
           </SignInButton>
         )}
       </div>
+      {showPublish && (
+        <PublishWizard
+          nodes={nodes}
+          edges={edges}
+          trafficConfig={trafficConfig}
+          simP99={history.length > 0 ? history[history.length - 1].systemP99LatencyMs : 0}
+          simCost={history.length > 0 ? history[history.length - 1].systemCostPerHour : 0}
+          onClose={() => setShowPublish(false)}
+          onPublished={() => {
+            setShowPublish(false)
+          }}
+        />
+      )}
     </header>
   )
 }
