@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import React from 'react'
 import { CheckCircle2, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { publishCommunityChallenge } from '@/lib/actions/community-challenges'
 import type { ComponentNode, ComponentEdge } from '@/lib/store/architectureStore'
@@ -50,21 +51,28 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 // ── Field components ──────────────────────────────────────────────────────────
 
 function Field({
+  id,
   label,
   required,
   children,
 }: {
+  id?: string
   label: string
   required?: boolean
   children: React.ReactNode
 }) {
   return (
     <div className="space-y-1">
-      <label className="text-[11px] font-bold text-ink-2 uppercase tracking-wider">
+      <label
+        htmlFor={id}
+        className="text-[11px] font-bold text-ink-2 uppercase tracking-wider"
+      >
         {label}
         {required && <span className="text-err ml-0.5">*</span>}
       </label>
-      {children}
+      {id && React.isValidElement(children)
+        ? React.cloneElement(children as React.ReactElement<{ id?: string }>, { id })
+        : children}
     </div>
   )
 }
@@ -89,7 +97,7 @@ function StepIdentity({
     <div className="space-y-4">
       <SectionLabel>Identity</SectionLabel>
 
-      <Field label="Title" required>
+      <Field id="challenge-title" label="Title" required>
         <input
           className={inputCls}
           placeholder="Give your challenge a name"
@@ -99,7 +107,7 @@ function StepIdentity({
         />
       </Field>
 
-      <Field label="Story Framing" required>
+      <Field id="challenge-narrative" label="Story Framing" required>
         <textarea
           className={`${inputCls} resize-none`}
           rows={3}
@@ -109,7 +117,7 @@ function StepIdentity({
         />
       </Field>
 
-      <Field label="Objective" required>
+      <Field id="challenge-objective" label="Objective" required>
         <textarea
           className={`${inputCls} resize-none`}
           rows={3}
@@ -146,7 +154,7 @@ function StepSLA({
         Pre-filled from your last sim run. Adjust to set the pass threshold.
       </p>
 
-      <Field label="p99 Latency Target (ms)" required>
+      <Field id="sla-p99" label="p99 Latency Target (ms)" required>
         <input
           type="number"
           min={1}
@@ -156,7 +164,7 @@ function StepSLA({
         />
       </Field>
 
-      <Field label="Error Rate Target (%)" required>
+      <Field id="sla-error-rate" label="Error Rate Target (%)" required>
         <input
           type="number"
           min={0}
@@ -168,7 +176,7 @@ function StepSLA({
         />
       </Field>
 
-      <Field label="Budget ($/hr)" required>
+      <Field id="sla-budget" label="Budget ($/hr)" required>
         <input
           type="number"
           min={0}
