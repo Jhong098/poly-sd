@@ -71,6 +71,8 @@ export function rowToChallenge(row: CommunityRow): Challenge {
     allowedComponents,
     conceptsTaught: [],
     hints: (row.hints as string[]) ?? [],
+    starterNodes: (row.starter_nodes as Challenge['starterNodes']) ?? [],
+    starterEdges: (row.starter_edges as Challenge['starterEdges']) ?? [],
   }
 }
 
@@ -130,20 +132,12 @@ export async function publishCommunityChallenge(
 
   const newId = (data as { id: string }).id
 
-  // Flip is_challenge_author to true only if it's currently false
-  const { data: prof } = await db
+  // Flip is_challenge_author to true only if it's currently false (single unconditional upsert)
+  await db
     .from('profiles')
-    .select('is_challenge_author')
+    .update({ is_challenge_author: true })
     .eq('id', userId)
-    .single()
-
-  const profile = prof as { is_challenge_author: boolean } | null
-  if (profile && !profile.is_challenge_author) {
-    await db
-      .from('profiles')
-      .update({ is_challenge_author: true, updated_at: new Date().toISOString() })
-      .eq('id', userId)
-  }
+    .eq('is_challenge_author', false)
 
   return { id: newId }
 }
@@ -243,7 +237,7 @@ export async function upvoteCommunityChallenge(
 
   // Check for an existing upvote
   const { data: existing } = await db
-    .from('community_upvotes')
+    .from('community_challenge_upvotes')
     .select('id')
     .eq('user_id', userId)
     .eq('challenge_id', uuid)
@@ -253,17 +247,22 @@ export async function upvoteCommunityChallenge(
 
   if (existing) {
     // Remove upvote
-    await db
-      .from('community_upvotes')
+    const { error: deleteError } = await db
+      .from('community_challenge_upvotes')
       .delete()
-      .eq('user_id', userId)
       .eq('challenge_id', uuid)
+      .eq('user_id', userId)
+    if (deleteError) return { error: deleteError.message }
 
     await db.rpc('decrement_community_upvote', { challenge_id: uuid })
     upvoted = false
   } else {
     // Add upvote
-    await db.from('community_upvotes').insert({ user_id: userId, challenge_id: uuid })
+    const { error: insertError } = await db
+      .from('community_challenge_upvotes')
+      .insert({ challenge_id: uuid, user_id: userId })
+    if (insertError) return { error: insertError.message }
+
     await db.rpc('increment_community_upvote', { challenge_id: uuid })
     upvoted = true
   }
