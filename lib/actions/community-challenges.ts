@@ -46,7 +46,7 @@ type CommunityRow = Record<string, unknown>
 // ── rowToChallenge ────────────────────────────────────────────────────────────
 
 /** Converts a DB row into a Challenge object. ID is prefixed with 'community:'. */
-export function rowToChallenge(row: CommunityRow): Challenge {
+function rowToChallenge(row: CommunityRow): Challenge {
   const allowedRaw = row.allowed_components as string[] | 'all' | null
   const allowedComponents: ComponentType[] | 'all' =
     allowedRaw === 'all' || allowedRaw == null
