@@ -1,6 +1,7 @@
 'use client'
 
 import { useSimStore } from '@/lib/store/simStore'
+import { useChallengeStore } from '@/lib/store/challengeStore'
 
 // ── Sparkline ────────────────────────────────────────────────────────────────
 
@@ -27,6 +28,7 @@ function Metric({
   valueColor,
   sparkValues,
   sparkColor,
+  tooltip,
 }: {
   label: string
   value: string
@@ -34,9 +36,10 @@ function Metric({
   valueColor: string
   sparkValues?: number[]
   sparkColor: string
+  tooltip?: string
 }) {
   return (
-    <div className="flex flex-col gap-0.5 min-w-[80px]">
+    <div className="relative group flex flex-col gap-0.5 min-w-[80px]">
       <p className="text-[9px] text-ink-3 uppercase tracking-widest">{label}</p>
       <div className="flex items-baseline gap-1">
         <span className="text-[18px] font-bold leading-none" style={{ color: valueColor }}>{value}</span>
@@ -44,6 +47,11 @@ function Metric({
       </div>
       {sparkValues && sparkValues.length > 1 && (
         <Sparkline values={sparkValues} stroke={sparkColor} />
+      )}
+      {tooltip && (
+        <div className="absolute bottom-full left-0 mb-2 w-64 bg-raised border border-edge px-3 py-2 text-[11px] text-ink leading-relaxed z-30 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 shadow-xl">
+          {tooltip}
+        </div>
       )}
     </div>
   )
@@ -55,6 +63,7 @@ export function MetricsPanel() {
   const status = useSimStore((s) => s.status)
   const snap = useSimStore((s) => s.currentSnapshot)
   const history = useSimStore((s) => s.history)
+  const activeChallenge = useChallengeStore((s) => s.activeChallenge)
 
   if (status === 'idle') return null
 
@@ -70,6 +79,32 @@ export function MetricsPanel() {
 
   const latencyColor = p99 < 200 ? 'var(--color-ok)' : p99 < 500 ? 'var(--color-warn)' : 'var(--color-err)'
   const errorColor   = err < 0.001 ? 'var(--color-ok)' : err < 0.01 ? 'var(--color-warn)' : 'var(--color-err)'
+  const isBeginnerLevel = activeChallenge != null && activeChallenge.tier <= 1
+
+  const p99Tooltip = (isBeginnerLevel && snap) ? [
+    `p99 latency — 99% of requests completed faster than this. Target: ${activeChallenge!.slaTargets.p99LatencyMs}ms.`,
+    p99 > activeChallenge!.slaTargets.p99LatencyMs
+      ? ` Yours is ${Math.round(p99)}ms — ${(p99 / activeChallenge!.slaTargets.p99LatencyMs).toFixed(1)}× over target. Something in your architecture is backed up.`
+      : ` Yours is ${Math.round(p99)}ms — within target.`,
+  ].join('') : undefined
+
+  const errTooltip = (isBeginnerLevel && snap) ? [
+    `Error rate — the fraction of requests that failed. Target: under ${(activeChallenge!.slaTargets.errorRate * 100).toFixed(1)}%.`,
+    err > activeChallenge!.slaTargets.errorRate
+      ? ` Yours is ${(err * 100).toFixed(2)}% — over target. A saturated component is dropping requests.`
+      : ` Yours is ${(err * 100).toFixed(2)}% — within target.`,
+  ].join('') : undefined
+
+  const rpsTooltip = isBeginnerLevel
+    ? 'Throughput — requests per second flowing through your system. Higher is better, as long as latency and error rate stay within target.'
+    : undefined
+
+  const costTooltip = (isBeginnerLevel && snap) ? [
+    `Cost — estimated hourly cost of your architecture. Budget: $${activeChallenge!.budgetPerHour.toFixed(2)}/hr.`,
+    cost > activeChallenge!.budgetPerHour
+      ? ` Currently over budget ($${cost.toFixed(3)}/hr). Remove or downgrade components.`
+      : ` Within budget.`,
+  ].join('') : undefined
 
   const simTimeSec = snap ? (snap.simTimeMs / 1000).toFixed(0) : '0'
 
@@ -96,6 +131,7 @@ export function MetricsPanel() {
         valueColor="var(--color-cyan)"
         sparkValues={rpsVals}
         sparkColor="var(--color-cyan)"
+        tooltip={rpsTooltip}
       />
       <Metric
         label="P99 Latency"
@@ -104,6 +140,7 @@ export function MetricsPanel() {
         valueColor={snap ? latencyColor : 'var(--color-ink-3)'}
         sparkValues={p99Vals}
         sparkColor={p99 < 200 ? 'var(--color-ok)' : p99 < 500 ? 'var(--color-warn)' : 'var(--color-err)'}
+        tooltip={p99Tooltip}
       />
       <Metric
         label="Error Rate"
@@ -112,6 +149,7 @@ export function MetricsPanel() {
         valueColor={snap ? errorColor : 'var(--color-ink-3)'}
         sparkValues={errorVals}
         sparkColor={err < 0.001 ? 'var(--color-ok)' : err < 0.01 ? 'var(--color-warn)' : 'var(--color-err)'}
+        tooltip={errTooltip}
       />
       <Metric
         label="Cost"
@@ -120,6 +158,7 @@ export function MetricsPanel() {
         valueColor="var(--color-ink-2)"
         sparkValues={costVals}
         sparkColor="var(--color-ink-3)"
+        tooltip={costTooltip}
       />
 
       {/* Node utilization breakdown */}
