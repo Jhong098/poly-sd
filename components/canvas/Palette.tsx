@@ -46,7 +46,7 @@ const TYPE_COLOR_VAR: Record<string, string> = {
   rose:    'var(--color-node-object-storage)',
 }
 
-function PaletteCard({ item }: { item: PaletteItem }) {
+function PaletteCard({ item, pulse }: { item: PaletteItem; pulse?: boolean }) {
   const meta = COMPONENT_META[item.type]
   const color = TYPE_COLOR_VAR[meta.accentColor] ?? 'var(--color-edge-strong)'
 
@@ -60,8 +60,9 @@ function PaletteCard({ item }: { item: PaletteItem }) {
       draggable
       onDragStart={onDragStart}
       data-testid={`palette-item-${item.type}`}
-      className="flex items-center gap-3 px-3 py-2.5 border border-edge bg-surface hover:bg-overlay cursor-grab active:cursor-grabbing transition-colors duration-150 select-none"
-      style={{ borderLeftWidth: 2, borderLeftColor: color }}
+      className={`flex items-center gap-3 px-3 py-2.5 border bg-surface hover:bg-overlay cursor-grab active:cursor-grabbing transition-colors duration-150 select-none
+  ${pulse ? 'border-cyan animate-pulse shadow-[0_0_8px_var(--color-cyan)]' : 'border-edge'}`}
+      style={{ borderLeftWidth: 2, borderLeftColor: pulse ? 'var(--color-cyan)' : color }}
     >
       <span style={{ color }} className="flex-shrink-0">{item.icon}</span>
       <div className="min-w-0">
@@ -78,7 +79,13 @@ const ALL_TIERS = [
   { label: 'Tier 3 — Advanced',    items: TIER3_ITEMS },
 ]
 
-export function Palette({ allowedTypes }: { allowedTypes?: ComponentType[] | 'all' }) {
+export function Palette({
+  allowedTypes,
+  pulseType,
+}: {
+  allowedTypes?: ComponentType[] | 'all'
+  pulseType?: ComponentType
+}) {
   const allow = allowedTypes === 'all' || allowedTypes === undefined
     ? null
     : new Set(allowedTypes)
@@ -102,7 +109,7 @@ export function Palette({ allowedTypes }: { allowedTypes?: ComponentType[] | 'al
           </p>
           <div className="space-y-1.5">
             {tier.items.map((item) => (
-              <PaletteCard key={item.type} item={item} />
+              <PaletteCard key={item.type} item={item} pulse={pulseType === item.type} />
             ))}
           </div>
         </div>

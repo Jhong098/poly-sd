@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { ReactFlowProvider } from '@xyflow/react'
 import { TopBar }             from './TopBar'
@@ -10,6 +10,7 @@ import { ConfigPanel }        from '@/components/panels/ConfigPanel'
 import { MetricsPanel }       from '@/components/panels/MetricsPanel'
 import { ChallengeBriefPanel }from '@/components/panels/ChallengeBriefPanel'
 import { ResultsModal }       from '@/components/overlays/ResultsModal'
+import { ConceptPrimerModal } from '@/components/overlays/ConceptPrimerModal'
 import { TutorialCallout }   from '@/components/overlays/TutorialCallout'
 import { useChallengeStore }  from '@/lib/store/challengeStore'
 import { useArchitectureStore } from '@/lib/store/architectureStore'
@@ -23,6 +24,20 @@ export function ChallengeLayout() {
   const nodes = useArchitectureStore((s) => s.nodes)
   const edges = useArchitectureStore((s) => s.edges)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const [primerDismissed, setPrimerDismissed] = useState(false) // reserved for future use
+
+  // Reset primer dismissed state when challenge changes
+  useEffect(() => {
+    setPrimerDismissed(false)
+  }, [activeChallenge?.id])
+
+  // Compute palette pulse: show pulse if the Tutorial-specified component hasn't been placed yet
+  const guidedType = activeChallenge?.guidedPulseComponent
+  const hasPlacedGuided = useArchitectureStore((s) =>
+    guidedType ? s.nodes.some((n) => n.data.componentType === guidedType) : true
+  )
+  const pulseType = (!hasPlacedGuided && guidedType) ? guidedType : undefined
 
   useEffect(() => {
     if (!activeChallenge || !userId) return
@@ -38,11 +53,17 @@ export function ChallengeLayout() {
 
   return (
     <ReactFlowProvider>
+      {activeChallenge && (
+        <ConceptPrimerModal
+          challenge={activeChallenge}
+          onDismiss={() => setPrimerDismissed(true)}
+        />
+      )}
       <div className="flex flex-col h-full w-full overflow-hidden">
         <TopBar />
         <div className="flex flex-1 overflow-hidden">
           <ChallengeBriefPanel />
-          <Palette allowedTypes={allowedTypes as ComponentType[] | 'all'} />
+          <Palette allowedTypes={allowedTypes as ComponentType[] | 'all'} pulseType={pulseType} />
           <main className="flex-1 relative overflow-hidden">
             <GameCanvas />
             <TutorialCallout />
