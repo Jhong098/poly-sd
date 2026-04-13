@@ -235,10 +235,10 @@ export async function upvoteCommunityChallenge(
 
   const db = createAdminClient()
 
-  // Check for an existing upvote
+  // Check for an existing upvote (no id column — use challenge_id from composite PK)
   const { data: existing } = await db
     .from('community_challenge_upvotes')
-    .select('id')
+    .select('challenge_id')
     .eq('user_id', userId)
     .eq('challenge_id', uuid)
     .single()

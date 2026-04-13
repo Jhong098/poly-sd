@@ -161,30 +161,30 @@ create policy "community_upvotes_select" on public.community_challenge_upvotes
 -- Denormalized counters for fast feed sorting. Accepted eventual consistency trade-off:
 -- upvote_count may drift from community_challenge_upvotes if rows are bulk-deleted.
 
-create or replace function public.increment_community_upvote(challenge_id_input uuid)
+create or replace function public.increment_community_upvote(challenge_id uuid)
 returns void language sql security definer as $$
   update public.community_challenges
   set upvote_count = upvote_count + 1
-  where id = challenge_id_input;
+  where id = challenge_id;
 $$;
 
-create or replace function public.decrement_community_upvote(challenge_id_input uuid)
+create or replace function public.decrement_community_upvote(challenge_id uuid)
 returns void language sql security definer as $$
   update public.community_challenges
   set upvote_count = greatest(0, upvote_count - 1)
-  where id = challenge_id_input;
+  where id = challenge_id;
 $$;
 
-create or replace function public.increment_community_attempt(challenge_id_input uuid)
+create or replace function public.increment_community_attempt(challenge_id uuid)
 returns void language sql security definer as $$
   update public.community_challenges
   set attempt_count = attempt_count + 1
-  where id = challenge_id_input;
+  where id = challenge_id;
 $$;
 
-create or replace function public.increment_community_pass(challenge_id_input uuid)
+create or replace function public.increment_community_pass(challenge_id uuid)
 returns void language sql security definer as $$
   update public.community_challenges
   set pass_count = pass_count + 1
-  where id = challenge_id_input;
+  where id = challenge_id;
 $$;
