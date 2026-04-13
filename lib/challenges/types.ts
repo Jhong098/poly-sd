@@ -1,6 +1,18 @@
 import type { ComponentType, ComponentConfig } from '@/lib/components/definitions'
 import type { TrafficConfig, ChaosEvent } from '@/sim/types'
 
+export type DiagramType = 'scaling' | 'caching' | 'load-balancing' | 'async-queue' | 'redundancy' | 'budget'
+
+export type FailureCondition =
+  | 'db_saturated'
+  | 'server_saturated'
+  | 'cache_miss_rate_high'
+  | 'latency_exceeded'
+  | 'error_rate_exceeded'
+  | 'budget_exceeded'
+  | 'no_redundancy'
+  | 'queue_overflow'
+
 export type SlaTargets = {
   p99LatencyMs: number
   errorRate: number        // max acceptable fraction (0.01 = 1%)
@@ -35,6 +47,13 @@ export type Challenge = {
   starterNodes?: StarterNode[]
   starterEdges?: StarterEdge[]
   chaosSchedule?: ChaosEvent[]    // auto-injected events (for scripted challenges)
+  conceptPrimer?: {
+    title: string
+    explanation: string   // 2–3 plain-English sentences
+    diagramType: DiagramType
+  }
+  failureHints?: Partial<Record<FailureCondition, string>>  // authored per level (Tutorial only)
+  guidedPulseComponent?: ComponentType                       // Tutorial only — which palette item to pulse
 }
 
 export type ScoreBreakdown = {
