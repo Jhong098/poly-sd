@@ -21,6 +21,7 @@ const COMPONENT_NAMES: Partial<Record<ComponentType, string>> = {
   kafka:          'Kafka cluster',
   cdn:            'CDN',
   nosql:          'NoSQL database',
+  'object-storage': 'object storage',
 }
 
 const OBLIQUE_SUGGESTIONS: Partial<Record<ComponentType, string>> = {
@@ -95,7 +96,9 @@ export function generateFailureDiagnosis(
   } else if (bottleneckType && inputRps !== null && outputRps !== null) {
     why = `Your ${componentName} was receiving ${inputRps.toLocaleString()} RPS but could only process ${outputRps.toLocaleString()} RPS. Excess requests queued up, driving p99 latency to ${Math.round(result.metrics.p99LatencyMs)}ms against a ${challenge.slaTargets.p99LatencyMs}ms target.`
   } else {
-    why = `The system p99 latency reached ${Math.round(result.metrics.p99LatencyMs)}ms, ${Math.round(result.metrics.p99LatencyMs / challenge.slaTargets.p99LatencyMs)}× over the ${challenge.slaTargets.p99LatencyMs}ms target.`
+    const target = challenge.slaTargets.p99LatencyMs
+    const ratio = target > 0 ? `${Math.round(result.metrics.p99LatencyMs / target)}×` : 'far'
+    why = `The system p99 latency reached ${Math.round(result.metrics.p99LatencyMs)}ms, ${ratio} over the ${target}ms target.`
   }
 
   // What to try — authored for Tutorial, algorithmic for Tier 1+
