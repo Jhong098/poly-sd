@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { X, BookOpen } from 'lucide-react'
 import type { Challenge, DiagramType } from '@/lib/challenges/types'
 
@@ -153,13 +153,10 @@ function hasSeen(challengeId: string): boolean {
 type Props = { challenge: Challenge; onDismiss: () => void }
 
 export function ConceptPrimerModal({ challenge, onDismiss }: Props) {
-  const [visible, setVisible] = useState(false)
-
-  useEffect(() => {
-    if (!challenge.conceptPrimer) return
-    if (hasSeen(challenge.id)) return
-    setVisible(true)
-  }, [challenge.id, challenge.conceptPrimer])
+  const [visible, setVisible] = useState(() => {
+    if (!challenge.conceptPrimer) return false
+    return !hasSeen(challenge.id)
+  })
 
   if (!visible || !challenge.conceptPrimer) return null
 

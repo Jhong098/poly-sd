@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { ReactFlowProvider } from '@xyflow/react'
 import { TopBar }             from './TopBar'
@@ -25,13 +25,6 @@ export function ChallengeLayout() {
   const edges = useArchitectureStore((s) => s.edges)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const [primerDismissed, setPrimerDismissed] = useState(false) // reserved for future use
-
-  // Reset primer dismissed state when challenge changes
-  useEffect(() => {
-    setPrimerDismissed(false)
-  }, [activeChallenge?.id])
-
   // Compute palette pulse: show pulse if the Tutorial-specified component hasn't been placed yet
   const guidedType = activeChallenge?.guidedPulseComponent
   const hasPlacedGuided = useArchitectureStore((s) =>
@@ -55,8 +48,9 @@ export function ChallengeLayout() {
     <ReactFlowProvider>
       {activeChallenge && (
         <ConceptPrimerModal
+          key={activeChallenge.id}
           challenge={activeChallenge}
-          onDismiss={() => setPrimerDismissed(true)}
+          onDismiss={() => {}}
         />
       )}
       <div className="flex flex-col h-full w-full overflow-hidden">
