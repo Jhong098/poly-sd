@@ -35,11 +35,8 @@ jobs:
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-latest
-    # E2E tests require env secrets — skip gracefully if not configured
-    if: >
-      vars.E2E_ENABLED == 'true' ||
-      (secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY != '' &&
-       secrets.NEXT_PUBLIC_SUPABASE_URL != '')
+    # E2E tests require env secrets — set vars.E2E_ENABLED = 'true' in repo settings to enable
+    if: vars.E2E_ENABLED == 'true'
     env:
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
       CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
