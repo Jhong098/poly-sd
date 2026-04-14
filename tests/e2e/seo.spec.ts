@@ -26,11 +26,17 @@ test('OG image route returns an image', async ({ request }) => {
   expect(response.headers()['content-type']).toMatch(/image\/png/)
 })
 
-test('robots.txt disallows auth routes', async ({ request }) => {
+test('robots.txt blocks private and gameplay routes', async ({ request }) => {
   const response = await request.get('/robots.txt')
   expect(response.status()).toBe(200)
   const body = await response.text()
-  expect(body).toContain('Disallow: /campaign')
-  expect(body).toContain('Disallow: /sign-in')
   expect(body).toContain('Allow: /')
+  expect(body).toContain('Disallow: /campaign')
+  expect(body).toContain('Disallow: /challenge')
+  expect(body).toContain('Disallow: /sandbox')
+  expect(body).toContain('Disallow: /play')
+  expect(body).toContain('Disallow: /profile')
+  expect(body).toContain('Disallow: /replay')
+  expect(body).toContain('Disallow: /sign-in')
+  expect(body).toContain('Disallow: /sign-up')
 })
