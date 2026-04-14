@@ -23,6 +23,11 @@ export const CHALLENGES: Challenge[] = [
     budgetPerHour: 1.0,
     allowedComponents: ['client', 'server'],
     conceptsTaught: ['request flow', 'latency', 'error rate'],
+    conceptPrimer: {
+      title: 'Request Flow',
+      diagramType: 'load-balancing',
+      explanation: 'Every user action — clicking a button, loading a page — becomes a request that travels from a client to your servers. Latency is how long that round trip takes. Error rate is how often requests fail completely. These are the two numbers that determine whether your users are happy.',
+    },
     hints: [
       'Drag a Client node and a Server node onto the canvas.',
       'Draw a connection from the Client to the Server.',
@@ -52,6 +57,16 @@ export const CHALLENGES: Challenge[] = [
     budgetPerHour: 0.5,
     allowedComponents: ['client', 'server'],
     conceptsTaught: ['vertical scaling', 'horizontal scaling', 'instance types'],
+    conceptPrimer: {
+      title: 'Scaling',
+      diagramType: 'scaling',
+      explanation: 'Each server can only handle so many requests per second before it runs out of CPU and memory. When demand exceeds capacity, requests queue up and latency climbs. You can scale vertically (bigger server) or horizontally (more servers) — both work, but they have different cost profiles.',
+    },
+    guidedPulseComponent: 'server',
+    failureHints: {
+      server_saturated: 'Your server is at maximum capacity. Try upgrading the instance type in the config panel (click the server node), or drag a second server from the palette and connect it to the client.',
+      latency_exceeded: 'High latency usually means a component is handling more requests than it can process. Click each node to see its utilization. The one above 80% is your problem.',
+    },
     hints: [
       'A t3.micro handles 50 RPS max — 100 RPS will saturate it.',
       'Try upgrading the instance type to t3.small or t3.medium.',
@@ -84,6 +99,16 @@ export const CHALLENGES: Challenge[] = [
     budgetPerHour: 1.0,
     allowedComponents: ['client', 'server'],
     conceptsTaught: ['traffic spikes', 'over-provisioning', 'peak capacity planning'],
+    conceptPrimer: {
+      title: 'Traffic Spikes',
+      diagramType: 'scaling',
+      explanation: 'Traffic is rarely steady. A flash sale, a viral post, or a morning rush can send 5–10× normal traffic in seconds. Systems designed for average load will saturate during spikes. You need headroom — extra capacity that sits idle most of the time but absorbs the peak.',
+    },
+    guidedPulseComponent: 'server',
+    failureHints: {
+      server_saturated: 'Your server saturated during the spike. You need more capacity headroom. Try upgrading the server or adding a second one before running again.',
+      latency_exceeded: 'The spike overwhelmed your architecture. Which component went red? That\'s your bottleneck. Increase its capacity so it can handle peak traffic.',
+    },
     hints: [
       'Watch the traffic curve — RPS peaks at 500 at the midpoint.',
       'You need enough total capacity to handle the peak, not just the baseline.',
@@ -112,6 +137,15 @@ export const CHALLENGES: Challenge[] = [
     budgetPerHour: 0.5,
     allowedComponents: ['client', 'server', 'database'],
     conceptsTaught: ['database connections', 'latency stacking', 'connection pools'],
+    conceptPrimer: {
+      title: 'The Database Bottleneck',
+      diagramType: 'caching',
+      explanation: 'Databases are powerful but slow. Every query takes time, and a database can only handle so many simultaneous connections. When all your servers hammer one database, connection exhaustion and query queuing drive latency through the roof. The fix is to reduce how many requests reach the database — or increase how many it can handle.',
+    },
+    failureHints: {
+      db_saturated: 'Your database is saturated — it is receiving more queries than it can process. Try upgrading the database instance type, or increase maxConnections in the config panel.',
+      latency_exceeded: 'Latency is stacking across your hops. Each arrow in your architecture adds delay. Check which component has the highest p99 and address it first.',
+    },
     hints: [
       'Every hop adds latency. Client → Server → DB means latencies add up.',
       'The database maxConnections setting throttles how many simultaneous queries it can handle.',
