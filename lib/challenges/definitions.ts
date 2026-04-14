@@ -180,6 +180,11 @@ export const CHALLENGES: Challenge[] = [
     budgetPerHour: 0.20,
     allowedComponents: ['client', 'server', 'database', 'cache'],
     conceptsTaught: ['cache-aside pattern', 'cache hit rate', 'read amplification reduction'],
+    conceptPrimer: {
+      title: 'Caching',
+      diagramType: 'caching',
+      explanation: 'A cache stores the results of recent database queries in fast memory. When the same data is requested again, the cache answers instantly — the database never sees the request. If 80% of reads hit the cache, your database only sees 20% of traffic. This is the single most effective way to reduce database load for read-heavy systems.',
+    },
     hints: [
       'Route: Client → Server → Cache → Database.',
       'The Cache passes through only cache-miss requests (1 - hitRate) to the DB.',
@@ -209,6 +214,11 @@ export const CHALLENGES: Challenge[] = [
     budgetPerHour: 0.50,
     allowedComponents: ['client', 'server', 'load-balancer'],
     conceptsTaught: ['horizontal scaling', 'load balancing', 'traffic distribution', 'edge weights'],
+    conceptPrimer: {
+      title: 'Load Balancing',
+      diagramType: 'load-balancing',
+      explanation: 'When one server can no longer handle your traffic, you add more servers and put a load balancer in front. The load balancer distributes incoming requests across all servers — each server handles a fraction of the total. This is horizontal scaling: adding more machines instead of making one machine bigger.',
+    },
     hints: [
       'A single m5.large handles 500 RPS — you need more.',
       'Place a Load Balancer between the Client and your servers.',
@@ -238,6 +248,11 @@ export const CHALLENGES: Challenge[] = [
     budgetPerHour: 0.80,
     allowedComponents: ['client', 'server', 'database', 'cache', 'load-balancer'],
     conceptsTaught: ['capacity planning', 'ramp traffic', 'cost vs. headroom'],
+    conceptPrimer: {
+      title: 'Capacity Planning',
+      diagramType: 'scaling',
+      explanation: 'Real traffic grows over time. You must design for the peak you expect — not the traffic you have today. Under-provision and you fail at the peak. Over-provision and you waste money at the baseline. The goal is to find the minimum architecture that can handle the highest expected load within budget.',
+    },
     hints: [
       'The ramp ends at 800 RPS. Your architecture must handle the peak.',
       'A Load Balancer + multiple servers gives you the throughput you need.',
@@ -267,6 +282,11 @@ export const CHALLENGES: Challenge[] = [
     budgetPerHour: 1.00,
     allowedComponents: ['client', 'server', 'database', 'cache', 'load-balancer'],
     conceptsTaught: ['spike handling', 'cache as buffer', 'over-provisioning trade-offs'],
+    conceptPrimer: {
+      title: 'Spikes and Buffers',
+      diagramType: 'caching',
+      explanation: 'Flash sales and viral moments send 5–10× normal traffic in seconds. A cache acts as a buffer: it absorbs the spike of reads so your database never sees the full load. Pair that with enough server capacity to handle peak RPS and you can survive almost any traffic event without failing SLAs.',
+    },
     hints: [
       'Peak is ~1,050 RPS. You need headroom above that.',
       'A high-hit-rate cache dramatically reduces DB pressure during spikes.',
