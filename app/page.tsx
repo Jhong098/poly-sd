@@ -112,19 +112,20 @@ export default function Home() {
               viewBox="0 0 560 120"
               xmlns="http://www.w3.org/2000/svg"
               className="w-full"
+              role="img"
               aria-label="Distributed system diagram: Load Balancer connected to Servers, Cache, and Database"
             >
-              {/* Edges */}
-              <line x1="120" y1="60" x2="158" y2="60" stroke="#334155" strokeWidth="1.5" markerEnd="url(#arrow)" />
-              <line x1="270" y1="60" x2="308" y2="60" stroke="#334155" strokeWidth="1.5" markerEnd="url(#arrow)" />
-              <line x1="420" y1="60" x2="458" y2="60" stroke="#334155" strokeWidth="1.5" markerEnd="url(#arrow)" />
-
               {/* Arrowhead marker */}
               <defs>
                 <marker id="arrow" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
                   <path d="M0,0 L0,6 L6,3 z" fill="#334155" />
                 </marker>
               </defs>
+
+              {/* Edges */}
+              <line x1="120" y1="60" x2="158" y2="60" stroke="#334155" strokeWidth="1.5" markerEnd="url(#arrow)" />
+              <line x1="270" y1="60" x2="308" y2="60" stroke="#334155" strokeWidth="1.5" markerEnd="url(#arrow)" />
+              <line x1="420" y1="60" x2="458" y2="60" stroke="#334155" strokeWidth="1.5" markerEnd="url(#arrow)" />
 
               {/* Load Balancer */}
               <rect x="10" y="42" width="110" height="36" rx="2" fill="#1e293b" stroke="#22d3ee" strokeWidth="1" />
