@@ -16,7 +16,7 @@ const ibmPlexSans = IBM_Plex_Sans({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
   title: "Poly-SD — Distributed Systems Design Game",
   description: "Learn distributed systems by building and simulating real architectures. Load balancing, caching, queues, sharding — a visual sandbox game with honest simulation.",
   openGraph: {
