@@ -104,6 +104,55 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Canvas preview */}
+        <section className="max-w-3xl mx-auto px-8 pb-12">
+          <p className="text-[11px] text-ink-3 font-bold uppercase tracking-widest mb-4">Your architecture, live.</p>
+          <div className="bg-raised border border-edge p-6">
+            <svg
+              viewBox="0 0 560 120"
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-full"
+              aria-label="Distributed system diagram: Load Balancer connected to Servers, Cache, and Database"
+            >
+              {/* Edges */}
+              <line x1="120" y1="60" x2="158" y2="60" stroke="#334155" strokeWidth="1.5" markerEnd="url(#arrow)" />
+              <line x1="270" y1="60" x2="308" y2="60" stroke="#334155" strokeWidth="1.5" markerEnd="url(#arrow)" />
+              <line x1="420" y1="60" x2="458" y2="60" stroke="#334155" strokeWidth="1.5" markerEnd="url(#arrow)" />
+
+              {/* Arrowhead marker */}
+              <defs>
+                <marker id="arrow" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+                  <path d="M0,0 L0,6 L6,3 z" fill="#334155" />
+                </marker>
+              </defs>
+
+              {/* Load Balancer */}
+              <rect x="10" y="42" width="110" height="36" rx="2" fill="#1e293b" stroke="#22d3ee" strokeWidth="1" />
+              <circle cx="22" cy="52" r="3" fill="#22d3ee" />
+              <text x="35" y="57" fill="#f1f5f9" fontSize="10" fontFamily="monospace">Load Balancer</text>
+              <text x="35" y="70" fill="#64748b" fontSize="8" fontFamily="monospace">nginx</text>
+
+              {/* Server */}
+              <rect x="160" y="42" width="110" height="36" rx="2" fill="#1e293b" stroke="#334155" strokeWidth="1" />
+              <circle cx="172" cy="52" r="3" fill="#4ade80" />
+              <text x="187" y="57" fill="#f1f5f9" fontSize="10" fontFamily="monospace">Server</text>
+              <text x="187" y="70" fill="#64748b" fontSize="8" fontFamily="monospace">2 replicas</text>
+
+              {/* Cache */}
+              <rect x="310" y="42" width="110" height="36" rx="2" fill="#1e293b" stroke="#334155" strokeWidth="1" />
+              <circle cx="322" cy="52" r="3" fill="#4ade80" />
+              <text x="337" y="57" fill="#f1f5f9" fontSize="10" fontFamily="monospace">Redis Cache</text>
+              <text x="337" y="70" fill="#64748b" fontSize="8" fontFamily="monospace">read-through</text>
+
+              {/* Database */}
+              <rect x="460" y="42" width="90" height="36" rx="2" fill="#1e293b" stroke="#334155" strokeWidth="1" />
+              <circle cx="472" cy="52" r="3" fill="#4ade80" />
+              <text x="487" y="57" fill="#f1f5f9" fontSize="10" fontFamily="monospace">Postgres</text>
+              <text x="487" y="70" fill="#64748b" fontSize="8" fontFamily="monospace">primary</text>
+            </svg>
+          </div>
+        </section>
+
         {/* Footer */}
         <footer className="border-t border-edge-dim px-8 py-5 text-center">
           <p className="text-[11px] text-ink-3 tracking-wider uppercase">Poly-SD · Distributed systems, made playable</p>

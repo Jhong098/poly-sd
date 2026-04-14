@@ -48,3 +48,9 @@ test('sitemap.xml contains the homepage URL', async ({ request }) => {
   expect(body).toContain('<loc>')
   expect(body).toContain('localhost:3000')
 })
+
+test('landing page shows canvas preview with node labels', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.locator('text=Load Balancer').first()).toBeVisible()
+  await expect(page.locator('text=Your architecture, live')).toBeVisible()
+})
