@@ -154,6 +154,24 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Concept chips */}
+        <section className="max-w-3xl mx-auto px-8 pb-16">
+          <div className="flex flex-wrap gap-2">
+            {[
+              'Load Balancing', 'Caching', 'Message Queues', 'Database Sharding',
+              'Circuit Breakers', 'Rate Limiting', 'Fault Tolerance', 'CDN',
+              'Horizontal Scaling', 'Read Replicas',
+            ].map((concept) => (
+              <span
+                key={concept}
+                className="px-3 py-1 border border-edge-dim text-ink-3 text-[11px] font-mono tracking-wider"
+              >
+                {concept}
+              </span>
+            ))}
+          </div>
+        </section>
+
         {/* Footer */}
         <footer className="border-t border-edge-dim px-8 py-5 text-center">
           <p className="text-[11px] text-ink-3 tracking-wider uppercase">Poly-SD · Distributed systems, made playable</p>

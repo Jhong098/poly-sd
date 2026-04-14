@@ -54,3 +54,9 @@ test('landing page shows canvas preview with node labels', async ({ page }) => {
   await expect(page.locator('text=Load Balancer').first()).toBeVisible()
   await expect(page.locator('text=Your architecture, live')).toBeVisible()
 })
+
+test('landing page shows distributed systems concept chips', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.locator('text=Message Queues')).toBeVisible()
+  await expect(page.locator('text=Circuit Breakers')).toBeVisible()
+})
