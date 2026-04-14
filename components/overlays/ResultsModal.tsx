@@ -3,6 +3,7 @@
 import { useState, useEffect, useTransition } from 'react'
 import { CheckCircle2, XCircle, RotateCcw, ChevronRight, Trophy, Share2, Check, ExternalLink, ThumbsUp } from 'lucide-react'
 import { upvoteCommunityChallenge, incrementPassCount } from '@/lib/actions/community-challenges'
+import { FailureDebrief } from '@/components/challenge/FailureDebrief'
 import { useChallengeStore } from '@/lib/store/challengeStore'
 import { useSimStore } from '@/lib/store/simStore'
 import { useArchitectureStore } from '@/lib/store/architectureStore'
@@ -197,6 +198,11 @@ export function ResultsModal() {
             passed={result.passedBudget}
           />
         </div>
+
+        {/* Failure debrief */}
+        {!result.passed && (
+          <FailureDebrief challenge={challenge} result={result} />
+        )}
 
         {/* Score breakdown */}
         {result.passed && (
