@@ -19,3 +19,9 @@ test.describe('SEO metadata', () => {
     await expect(twitterCard).toHaveAttribute('content', 'summary_large_image')
   })
 })
+
+test('OG image route returns an image', async ({ request }) => {
+  const response = await request.get('/opengraph-image')
+  expect(response.status()).toBe(200)
+  expect(response.headers()['content-type']).toMatch(/image\/png/)
+})
