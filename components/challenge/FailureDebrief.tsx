@@ -32,7 +32,7 @@ export function FailureDebrief({ challenge, result }: Props) {
   const diagnosis = generateFailureDiagnosis(result, history, challenge, nodeInfos, failedAttempts)
 
   return (
-    <div className="px-6 py-4 border-b border-edge-dim space-y-3">
+    <div data-testid="failure-debrief" className="px-6 py-4 border-b border-edge-dim space-y-3">
       <p className="text-[10px] font-bold text-warn uppercase tracking-widest">// What went wrong</p>
 
       <div className="flex items-start gap-2">
