@@ -23,6 +23,7 @@ export const metadata: Metadata = {
     title: "Poly-SD — Distributed Systems Design Game",
     description: "Learn distributed systems by building and simulating real architectures. Load balancing, caching, queues, sharding — a visual sandbox game with honest simulation.",
     type: "website",
+    url: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
     siteName: "Poly-SD",
   },
   twitter: {

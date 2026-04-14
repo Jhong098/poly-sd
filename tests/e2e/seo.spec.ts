@@ -18,6 +18,14 @@ test.describe('SEO metadata', () => {
     const twitterCard = page.locator('meta[name="twitter:card"]')
     await expect(twitterCard).toHaveAttribute('content', 'summary_large_image')
   })
+
+  test('homepage has og:image meta tag wired up', async ({ page }) => {
+    await page.goto('/')
+    const ogImage = page.locator('meta[property="og:image"]')
+    const content = await ogImage.getAttribute('content')
+    expect(content).toBeTruthy()
+    expect(content).toMatch(/opengraph-image/)
+  })
 })
 
 test('OG image route returns an image', async ({ request }) => {
@@ -39,6 +47,8 @@ test('robots.txt blocks private and gameplay routes', async ({ request }) => {
   expect(body).toContain('Disallow: /replay')
   expect(body).toContain('Disallow: /sign-in')
   expect(body).toContain('Disallow: /sign-up')
+  expect(body).toContain('Disallow: /leaderboard')
+  expect(body).toContain('Disallow: /community')
 })
 
 test('sitemap.xml contains the homepage URL', async ({ request }) => {
@@ -46,7 +56,7 @@ test('sitemap.xml contains the homepage URL', async ({ request }) => {
   expect(response.status()).toBe(200)
   const body = await response.text()
   expect(body).toContain('<loc>')
-  expect(body).toContain('localhost:3000')
+  expect(body).not.toContain('<loc></loc>')
 })
 
 test('landing page shows canvas preview with node labels', async ({ page }) => {

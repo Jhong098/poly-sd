@@ -15,6 +15,8 @@ export default function robots(): MetadataRoute.Robots {
         '/replay',
         '/sign-in',
         '/sign-up',
+        '/leaderboard',
+        '/community',
       ],
     },
     sitemap: `${base}/sitemap.xml`,
