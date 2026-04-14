@@ -174,3 +174,9 @@ export const useArchitectureStore = create<ArchitectureState>((set, get) => ({
     set({ nodes, edges, selectedNodeId: null, selectedEdgeId: null, _nodeCounter: maxCounter })
   },
 }))
+
+// Expose store for E2E tests (dev only — tree-shaken in production builds)
+if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ;(window as any).__architectureStore = useArchitectureStore
+}

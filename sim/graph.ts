@@ -107,7 +107,7 @@ export function resolveGraph(
   // not drag up the system error rate — from users' perspective those requests
   // never reached it.
   const activeEgressIds = egressIds.filter((id) => (nodeSnaps[id]?.inputRps ?? 0) > 0)
-  const systemErrorRate =
+  const routedErrorRate =
     activeEgressIds.length > 0
       ? activeEgressIds.reduce((s, id) => s + (nodeSnaps[id]?.errorRate ?? 0), 0) / activeEgressIds.length
       : egressIds.length > 0
@@ -118,6 +118,19 @@ export function resolveGraph(
   const totalIngress = hasClients
     ? Object.values(clientRpsMap).reduce((s, r) => s + r, 0)
     : globalIngressRps
+
+  // Client nodes with no outgoing edges generate traffic that goes nowhere — treat
+  // as 100% error (requests are dropped). Blend into systemErrorRate by RPS weight.
+  const unroutedClientRps = hasClients
+    ? graph.nodes
+        .filter((n) => n.componentType === 'client' && !graph.edges.some((e) => e.source === n.id))
+        .reduce((sum, n) => sum + (nodeSnaps[n.id]?.outputRps ?? 0), 0)
+    : 0
+  const systemErrorRate =
+    totalIngress > 0 && unroutedClientRps > 0
+      ? (unroutedClientRps / totalIngress) * 1.0 +
+        ((totalIngress - unroutedClientRps) / totalIngress) * routedErrorRate
+      : routedErrorRate
 
   return {
     simTimeMs,

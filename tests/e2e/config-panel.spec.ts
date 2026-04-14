@@ -45,8 +45,11 @@ test.describe('Config panel', () => {
     await input.fill('3')
     await input.press('Tab')
 
-    // Click away to deselect — panel reverts to placeholder (instanceCount input hidden)
-    await page.locator('.react-flow__pane').click()
+    // Click away to deselect — panel reverts to placeholder (instanceCount input hidden).
+    // Use position: { x: 10, y: 10 } to click the top-left corner of the pane, which is
+    // guaranteed to be empty canvas. The default center click lands on the node because
+    // fitView centers the single node in the viewport.
+    await page.locator('.react-flow__pane').click({ position: { x: 10, y: 10 } })
     await expect(page.locator('[data-testid="config-instanceCount"]')).not.toBeVisible({ timeout: 3_000 })
 
     // Click the node again

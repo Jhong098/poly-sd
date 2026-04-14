@@ -1,6 +1,6 @@
 'use client'
 
-import { use, useEffect, useState } from 'react'
+import { use, useEffect, useRef, useState } from 'react'
 import { notFound, useSearchParams } from 'next/navigation'
 import { useAuth } from '@clerk/nextjs'
 import { CHALLENGE_MAP } from '@/lib/challenges/definitions'
@@ -26,10 +26,24 @@ export default function PlayPage({ params }: { params: Promise<{ levelId: string
   const restart = searchParams.get('restart') === 'true'
   const { userId } = useAuth()
 
+  // Tracks which levelId has already been initialized for a normal visit.
+  // Prevents Clerk's userId transition (undefined → null) from re-running
+  // loadStarter() and resetting user-added canvas nodes.
+  const initializedLevelRef = useRef<string | null>(null)
+
   useEffect(() => {
     if (!challenge) return
     // Wait for Clerk auth to resolve before running resume/restart paths
     if ((resume || restart) && userId === undefined) return
+
+    // For normal visits, skip re-initialization when only userId changed.
+    // The cleanup from the previous run clears activeChallenge; restore it here.
+    if (!resume && !restart && initializedLevelRef.current === levelId) {
+      setActiveChallenge(challenge)
+      return
+    }
+
+    initializedLevelRef.current = levelId
     const c = challenge  // narrow Challenge | undefined → Challenge for closures
     let cancelled = false
 
@@ -86,11 +100,23 @@ export default function PlayPage({ params }: { params: Promise<{ levelId: string
 
     return () => {
       cancelled = true
-      stopSimulation()
+      // Do NOT call stopSimulation() here — the cleanup fires on every dep change,
+      // including Clerk's userId transition (undefined→null), which would kill a
+      // running simulation. stopSimulation() is called at the top of init() instead
+      // (handles level changes), and in the unmount-only effect below (handles
+      // navigating away from /play entirely).
       setActiveChallenge(null)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [levelId, resume, restart, userId])
+
+  // Stop the simulation when the player navigates away from /play entirely.
+  // This is separate from the main effect so it only runs on unmount, not on
+  // every dep change (which would kill a running sim on Clerk userId transitions).
+  useEffect(() => {
+    return stopSimulation
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   if (!challenge) return notFound()
   if (!ready) {

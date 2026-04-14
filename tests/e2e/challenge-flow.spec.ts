@@ -35,10 +35,25 @@ test.describe('Challenge flow', () => {
     await page.waitForSelector('[data-testid="node-client"]')
     await page.waitForSelector('[data-testid="node-server"]')
 
-    // Scope handles to specific nodes to avoid DOM-order ambiguity
-    const sourceHandle = page.locator('[data-testid="node-client"] .react-flow__handle-source')
-    const targetHandle = page.locator('[data-testid="node-server"] .react-flow__handle-target')
-    await sourceHandle.dragTo(targetHandle)
+    // Connect Client → Server via the dev-exposed store.
+    // React Flow v12 sets pointer-events:none on handles by default, so
+    // dragTo() can never pass its actionability check.
+    await page.evaluate(() => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const store = (window as any).__architectureStore
+      const { nodes, onConnect } = store.getState()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const client = nodes.find((n: any) => n.data.componentType === 'client')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const server = nodes.find((n: any) => n.data.componentType === 'server')
+      if (!client || !server) throw new Error('Could not find client or server nodes')
+      onConnect({ source: client.id, target: server.id, sourceHandle: null, targetHandle: null })
+    })
+    // Confirm the edge was created before proceeding
+    await page.waitForFunction(() => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (window as any).__architectureStore.getState().edges.length > 0
+    })
 
     await runSimAndWaitForResult(page)
 
