@@ -5,7 +5,18 @@ import { Trash2, XCircle, Zap, TrendingUp } from 'lucide-react'
 import { useArchitectureStore, type ComponentNodeData } from '@/lib/store/architectureStore'
 import { useSimStore } from '@/lib/store/simStore'
 import { COMPONENT_META } from '@/lib/components/definitions'
+import type { ComponentType } from '@/lib/components/definitions'
 import type { NodeStatus } from '@/sim/types'
+
+const COMPONENT_NAMES: Partial<Record<ComponentType, string>> = {
+  server:          'server',
+  database:        'database',
+  cache:           'cache',
+  'load-balancer': 'load balancer',
+  queue:           'queue',
+  'api-gateway':   'API gateway',
+  'k8s-fleet':     'auto-scaling fleet',
+}
 
 // Maps COMPONENT_META accentColor → design system CSS variable
 const TYPE_COLOR: Record<string, string> = {
@@ -87,7 +98,7 @@ export function BaseNode({ id, data, selected, icon, stats, hideLiveMetrics }: B
     <div
       data-testid={`node-${data.componentType}`}
       className={`
-        relative w-52 border border-edge bg-surface
+        relative group w-52 border border-edge bg-surface
         transition-all duration-200
         ${selected ? 'border-edge-strong' : ''}
         ${status === 'failed' ? 'opacity-60' : ''}
@@ -199,6 +210,21 @@ export function BaseNode({ id, data, selected, icon, stats, hideLiveMetrics }: B
           <div className="absolute top-1 right-1 flex items-center gap-1 bg-hot/20 border border-hot/40 px-1.5 py-0.5">
             <TrendingUp size={9} className="text-hot" />
             <span className="text-[8px] font-bold text-hot uppercase tracking-widest">SURGE</span>
+          </div>
+        </div>
+      )}
+
+      {/* Saturation callout — shown on hover for hot/saturated nodes during sim */}
+      {isSimulating && (status === 'hot' || status === 'saturated') && simSnap && (
+        <div className="absolute bottom-full left-0 mb-2 w-56 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+          <div
+            className="bg-raised border border-edge px-3 py-2 text-[11px] text-ink leading-relaxed shadow-xl"
+            style={{ borderTopWidth: 2, borderTopColor: status === 'saturated' ? 'var(--color-err)' : 'var(--color-hot)' }}
+          >
+            {status === 'saturated'
+              ? `This ${COMPONENT_NAMES[data.componentType] ?? meta.label.toLowerCase()} is receiving ${Math.round(simSnap.inputRps).toLocaleString()} RPS but can only process ${Math.round(simSnap.outputRps).toLocaleString()} RPS. Requests are queuing up.`
+              : `This ${COMPONENT_NAMES[data.componentType] ?? meta.label.toLowerCase()} is busy (${Math.round(simSnap.utilization * 100)}% capacity). Watch it — if traffic increases it will saturate.`
+            }
           </div>
         </div>
       )}
