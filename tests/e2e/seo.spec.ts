@@ -40,3 +40,11 @@ test('robots.txt blocks private and gameplay routes', async ({ request }) => {
   expect(body).toContain('Disallow: /sign-in')
   expect(body).toContain('Disallow: /sign-up')
 })
+
+test('sitemap.xml contains the homepage URL', async ({ request }) => {
+  const response = await request.get('/sitemap.xml')
+  expect(response.status()).toBe(200)
+  const body = await response.text()
+  expect(body).toContain('<loc>')
+  expect(body).toContain('localhost:3000')
+})
