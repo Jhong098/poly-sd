@@ -25,3 +25,12 @@ test('OG image route returns an image', async ({ request }) => {
   expect(response.status()).toBe(200)
   expect(response.headers()['content-type']).toMatch(/image\/png/)
 })
+
+test('robots.txt disallows auth routes', async ({ request }) => {
+  const response = await request.get('/robots.txt')
+  expect(response.status()).toBe(200)
+  const body = await response.text()
+  expect(body).toContain('Disallow: /campaign')
+  expect(body).toContain('Disallow: /sign-in')
+  expect(body).toContain('Allow: /')
+})
