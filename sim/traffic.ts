@@ -11,10 +11,17 @@ export function sampleTraffic(config: TrafficConfig, simTimeMs: number): number 
 
 /** Linear interpolation between sorted waypoints. */
 export function sampleWaypoints(waypoints: TrafficWaypoint[], simTimeMs: number): number {
-  if (waypoints.length === 0) return 0
-  if (waypoints.length === 1) return waypoints[0].rps
-
   const sorted = [...waypoints].sort((a, b) => a.timeMs - b.timeMs)
+  return sampleSortedWaypoints(sorted, simTimeMs)
+}
+
+/**
+ * Linear interpolation over a pre-sorted waypoints array.
+ * Caller is responsible for sorting — use this in hot loops after a one-time sort.
+ */
+export function sampleSortedWaypoints(sorted: TrafficWaypoint[], simTimeMs: number): number {
+  if (sorted.length === 0) return 0
+  if (sorted.length === 1) return sorted[0].rps
 
   if (simTimeMs <= sorted[0].timeMs) return sorted[0].rps
   if (simTimeMs >= sorted[sorted.length - 1].timeMs) return sorted[sorted.length - 1].rps

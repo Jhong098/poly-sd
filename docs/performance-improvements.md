@@ -37,12 +37,13 @@ adj[e.source] = [...(adj[e.source] ?? []), e.target]
 ```
 Spread creates a new array for every edge. Use `push()` instead.
 
-### 7. Traffic waypoints sorted every tick
+### ✅ 7. Traffic waypoints sorted every tick
 **File:** `sim/traffic.ts:18`
 ```ts
 const sorted = [...waypoints].sort((a, b) => a.timeMs - b.timeMs)
 ```
 Waypoints are static during simulation. Sort once at engine start and reuse, or pre-sort in `TrafficConfig`.
+*Fixed — `sampleSortedWaypoints` exported from `sim/traffic.ts` skips the sort. Engine sorts once into `sortedWaypoints` at creation and calls `sampleSortedWaypoints` each tick.*
 
 ### ✅ 8. Chaos events scanned O(nodes × events) per tick
 **File:** `sim/engine.ts:58-62`

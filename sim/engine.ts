@@ -1,7 +1,7 @@
 import type { SimGraph, SimSnapshot, TrafficConfig, ChaosEvent } from './types'
 import type { ClientConfig } from '@/lib/components/definitions'
 import { type ComponentState } from './components'
-import { sampleTraffic, sampleClientPreset } from './traffic'
+import { sampleSortedWaypoints, sampleClientPreset } from './traffic'
 import { resolveGraph, prepareGraph } from './graph'
 import { buildChaosMap } from './chaos'
 
@@ -28,6 +28,7 @@ export function createEngine(
   const chaosPool: ChaosEvent[] = [...chaosSchedule]
 
   const prepared = prepareGraph(graph)
+  const sortedWaypoints = [...traffic.waypoints].sort((a, b) => a.timeMs - b.timeMs)
 
   const componentState: Record<string, ComponentState> = {}
   for (const node of graph.nodes) componentState[node.id] = { queuedRequests: 0 }
@@ -59,7 +60,7 @@ export function createEngine(
     // Build per-node chaos modifier map for this tick — O(events) not O(nodes × events)
     const chaosMap = buildChaosMap(chaosPool, simTimeMs)
 
-    const globalRps = hasClients ? 0 : sampleTraffic(traffic, simTimeMs)
+    const globalRps = hasClients ? 0 : sampleSortedWaypoints(sortedWaypoints, simTimeMs)
     const snapshot = resolveGraph(graph, componentState, globalRps, simTimeMs, clientRpsMap, chaosMap, prepared)
     callbacks.onTick(snapshot)
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sampleWaypoints, sampleClientPreset } from '@/sim/traffic'
+import { sampleWaypoints, sampleSortedWaypoints, sampleClientPreset } from '@/sim/traffic'
 
 // ── sampleWaypoints ──────────────────────────────────────────────────────────
 
@@ -49,6 +49,35 @@ describe('sampleWaypoints', () => {
     ]
     expect(sampleWaypoints(wps, 15_000)).toBeCloseTo(150, 5)  // first segment
     expect(sampleWaypoints(wps, 45_000)).toBeCloseTo(150, 5)  // second segment
+  })
+})
+
+// ── sampleSortedWaypoints ─────────────────────────────────────────────────────
+
+describe('sampleSortedWaypoints', () => {
+  it('interpolates at the midpoint of a two-waypoint sorted array', () => {
+    const wps = [{ timeMs: 0, rps: 100 }, { timeMs: 60_000, rps: 200 }]
+    expect(sampleSortedWaypoints(wps, 30_000)).toBeCloseTo(150, 5)
+  })
+
+  it('clamps to first waypoint when before start', () => {
+    const wps = [{ timeMs: 5_000, rps: 100 }, { timeMs: 60_000, rps: 200 }]
+    expect(sampleSortedWaypoints(wps, 0)).toBe(100)
+  })
+
+  it('clamps to last waypoint when after end', () => {
+    const wps = [{ timeMs: 0, rps: 100 }, { timeMs: 60_000, rps: 200 }]
+    expect(sampleSortedWaypoints(wps, 90_000)).toBe(200)
+  })
+
+  it('picks the correct segment with three waypoints', () => {
+    const wps = [
+      { timeMs: 0,      rps: 0 },
+      { timeMs: 30_000, rps: 300 },
+      { timeMs: 60_000, rps: 0 },
+    ]
+    expect(sampleSortedWaypoints(wps, 15_000)).toBeCloseTo(150, 5)
+    expect(sampleSortedWaypoints(wps, 45_000)).toBeCloseTo(150, 5)
   })
 })
 
