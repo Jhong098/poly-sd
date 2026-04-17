@@ -19,6 +19,16 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
   title: "Poly-SD — Distributed Systems Design Game",
   description: "Learn distributed systems by building and simulating real architectures. Load balancing, caching, queues, sharding — a visual sandbox game with honest simulation.",
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon.ico" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+  },
+  manifest: "/site.webmanifest",
   openGraph: {
     title: "Poly-SD — Distributed Systems Design Game",
     description: "Learn distributed systems by building and simulating real architectures. Load balancing, caching, queues, sharding — a visual sandbox game with honest simulation.",
@@ -30,6 +40,9 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Poly-SD — Distributed Systems Design Game",
     description: "Learn distributed systems by building and simulating real architectures.",
+  },
+  other: {
+    "theme-color": "#0a110e",
   },
 };
 
