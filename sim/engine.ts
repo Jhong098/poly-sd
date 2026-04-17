@@ -2,7 +2,7 @@ import type { SimGraph, SimSnapshot, TrafficConfig, ChaosEvent } from './types'
 import type { ClientConfig } from '@/lib/components/definitions'
 import { type ComponentState } from './components'
 import { sampleTraffic, sampleClientPreset } from './traffic'
-import { resolveGraph } from './graph'
+import { resolveGraph, prepareGraph } from './graph'
 import { eventForNode } from './chaos'
 
 const TICK_SIM_MS = 200
@@ -26,6 +26,8 @@ export function createEngine(
 
   // Mutable chaos pool — starts with the schedule, grows via injectChaos()
   const chaosPool: ChaosEvent[] = [...chaosSchedule]
+
+  const prepared = prepareGraph(graph)
 
   const componentState: Record<string, ComponentState> = {}
   for (const node of graph.nodes) componentState[node.id] = { queuedRequests: 0 }
@@ -62,7 +64,7 @@ export function createEngine(
     }
 
     const globalRps = hasClients ? 0 : sampleTraffic(traffic, simTimeMs)
-    const snapshot = resolveGraph(graph, componentState, globalRps, simTimeMs, clientRpsMap, chaosMap)
+    const snapshot = resolveGraph(graph, componentState, globalRps, simTimeMs, clientRpsMap, chaosMap, prepared)
     callbacks.onTick(snapshot)
 
     simTimeMs += TICK_SIM_MS
