@@ -6,6 +6,7 @@ import { makeChaosEvent } from '@/sim/chaos'
 import { DEFAULT_TRAFFIC, presetToWaypoints } from '@/sim/types'
 import type { TrafficPreset } from '@/lib/components/definitions'
 import { useArchitectureStore } from './architectureStore'
+import { mergeSnapshotMap } from './snapshotMerge'
 import { useChallengeStore } from './challengeStore'
 import { evaluateChallenge } from '@/lib/challenges/evaluator'
 import { recordCompletion } from '@/lib/actions/completions'
@@ -101,14 +102,10 @@ export const useSimStore = create<SimState>((set, get) => ({
       const msg = e.data
       if (msg.type === 'TICK') {
         const { snapshot } = msg
-        const nodeSnapshots: Record<string, SimSnapshot['nodes'][number]> = {}
-        const edgeSnapshots: Record<string, SimSnapshot['edges'][number]> = {}
-        for (const n of snapshot.nodes) nodeSnapshots[n.id] = n
-        for (const ed of snapshot.edges) edgeSnapshots[ed.id] = ed
         set((s) => ({
           currentSnapshot: snapshot,
-          nodeSnapshots,
-          edgeSnapshots,
+          nodeSnapshots: mergeSnapshotMap(s.nodeSnapshots, snapshot.nodes),
+          edgeSnapshots: mergeSnapshotMap(s.edgeSnapshots, snapshot.edges),
           history: [...s.history.slice(-(MAX_HISTORY - 1)), snapshot],
         }))
       } else if (msg.type === 'COMPLETE') {
