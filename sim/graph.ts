@@ -187,7 +187,7 @@ export function topologicalSort(graph: SimGraph): string[] {
   for (const n of graph.nodes) { inDegree[n.id] = 0; adj[n.id] = [] }
   for (const e of graph.edges) {
     inDegree[e.target] = (inDegree[e.target] ?? 0) + 1
-    adj[e.source] = [...(adj[e.source] ?? []), e.target]
+    adj[e.source].push(e.target)
   }
 
   const queue = Object.entries(inDegree).filter(([, d]) => d === 0).map(([id]) => id)
@@ -201,7 +201,8 @@ export function topologicalSort(graph: SimGraph): string[] {
     }
   }
 
-  const remaining = graph.nodes.map((n) => n.id).filter((id) => !result.includes(id))
+  const visited = new Set(result)
+  const remaining = graph.nodes.map((n) => n.id).filter((id) => !visited.has(id))
   return [...result, ...remaining]
 }
 

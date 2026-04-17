@@ -23,14 +23,14 @@ Items marked ✅ are completed. Remaining items are grouped by priority.
 `targetIds`, `hasClients`, `fallbackIngressIds`, `egressIds` were recomputed every tick.
 *Fixed as part of `prepareGraph()`. Marking for completeness.*
 
-### 5. Topological sort has O(n²) remaining-node check
+### ✅ 5. Topological sort has O(n²) remaining-node check
 **File:** `sim/graph.ts:207` — `topologicalSort()`
 ```ts
 const remaining = graph.nodes.map((n) => n.id).filter((id) => !result.includes(id))
 ```
 `result.includes()` is O(n) per call → O(n²) total. Use a `Set` of visited IDs instead.
 
-### 6. Topological sort creates new arrays per edge
+### ✅ 6. Topological sort creates new arrays per edge
 **File:** `sim/graph.ts:193`
 ```ts
 adj[e.source] = [...(adj[e.source] ?? []), e.target]
