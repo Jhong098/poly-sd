@@ -73,13 +73,14 @@ const simSnap = useSimStore((s) => s.nodeSnapshots[id])
 Same root cause as #9: `s.edgeSnapshots[id]` returns a new object every tick.
 *Fixed by #19 — same `mergeSnapshotMap` fix covers edges.*
 
-### 11. MetricsPanel re-renders and recomputes sparklines every tick
+### ✅ 11. MetricsPanel re-renders and recomputes sparklines every tick
 **File:** `components/panels/MetricsPanel.tsx:65`
 ```ts
 const history = useSimStore((s) => s.history)
 ```
 History changes every tick. On each render, four `.map()` calls extract sparkline data.
 **Fix:** Memoize sparkline data arrays with `useMemo`.
+*Fixed — all four sparkline extractions combined into a single `useMemo([history])`. Skips recomputation on renders triggered by `status` or `currentSnapshot` changes.*
 
 ### 12. GameCanvas subscribes to entire architecture store
 **File:** `components/canvas/GameCanvas.tsx:76`

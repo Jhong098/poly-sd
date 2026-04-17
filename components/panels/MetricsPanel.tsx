@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import { useSimStore } from '@/lib/store/simStore'
 import { useChallengeStore } from '@/lib/store/challengeStore'
 
@@ -65,12 +66,14 @@ export function MetricsPanel() {
   const history = useSimStore((s) => s.history)
   const activeChallenge = useChallengeStore((s) => s.activeChallenge)
 
-  if (status === 'idle') return null
+  const { rpsVals, p99Vals, errorVals, costVals } = useMemo(() => ({
+    rpsVals:   history.map((s) => s.ingressRps),
+    p99Vals:   history.map((s) => s.systemP99LatencyMs),
+    errorVals: history.map((s) => s.systemErrorRate * 100),
+    costVals:  history.map((s) => s.systemCostPerHour),
+  }), [history])
 
-  const rpsVals   = history.map((s) => s.ingressRps)
-  const p99Vals   = history.map((s) => s.systemP99LatencyMs)
-  const errorVals = history.map((s) => s.systemErrorRate * 100)
-  const costVals  = history.map((s) => s.systemCostPerHour)
+  if (status === 'idle') return null
 
   const p99  = snap?.systemP99LatencyMs ?? 0
   const err  = snap?.systemErrorRate ?? 0
