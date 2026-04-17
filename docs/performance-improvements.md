@@ -44,7 +44,7 @@ const sorted = [...waypoints].sort((a, b) => a.timeMs - b.timeMs)
 ```
 Waypoints are static during simulation. Sort once at engine start and reuse, or pre-sort in `TrafficConfig`.
 
-### 8. Chaos events scanned O(nodes × events) per tick
+### ✅ 8. Chaos events scanned O(nodes × events) per tick
 **File:** `sim/engine.ts:58-62`
 ```ts
 for (const node of graph.nodes) {
@@ -52,6 +52,7 @@ for (const node of graph.nodes) {
 ```
 `eventForNode` → `activeEvents` filters ALL events, then filters by nodeId. O(nodes × chaosPoolSize) per tick.
 **Fix:** Filter active events once per tick, build a `nodeId → event` map, pass it in. (The engine already builds `chaosMap` — the inefficiency is inside `eventForNode` calling `activeEvents` redundantly for each node.)
+*Fixed — `buildChaosMap` in `sim/chaos.ts` does a single O(E) pass. Engine now calls `buildChaosMap(chaosPool, simTimeMs)` instead of the per-node loop.*
 
 ---
 

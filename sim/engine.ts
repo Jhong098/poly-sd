@@ -3,7 +3,7 @@ import type { ClientConfig } from '@/lib/components/definitions'
 import { type ComponentState } from './components'
 import { sampleTraffic, sampleClientPreset } from './traffic'
 import { resolveGraph, prepareGraph } from './graph'
-import { eventForNode } from './chaos'
+import { buildChaosMap } from './chaos'
 
 const TICK_SIM_MS = 200
 
@@ -56,12 +56,8 @@ export function createEngine(
       }
     }
 
-    // Build per-node chaos modifier map for this tick
-    const chaosMap: Record<string, ChaosEvent> = {}
-    for (const node of graph.nodes) {
-      const evt = eventForNode(chaosPool, node.id, simTimeMs)
-      if (evt) chaosMap[node.id] = evt
-    }
+    // Build per-node chaos modifier map for this tick — O(events) not O(nodes × events)
+    const chaosMap = buildChaosMap(chaosPool, simTimeMs)
 
     const globalRps = hasClients ? 0 : sampleTraffic(traffic, simTimeMs)
     const snapshot = resolveGraph(graph, componentState, globalRps, simTimeMs, clientRpsMap, chaosMap, prepared)

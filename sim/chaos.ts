@@ -19,6 +19,25 @@ export function eventForNode(
   return active.find((e) => e.type === 'node-failure') ?? active[0]
 }
 
+/**
+ * Build a nodeId → event map for all active events at simTimeMs in a single
+ * O(E) pass. Replaces the previous O(nodes × E) pattern of calling
+ * eventForNode (which called activeEvents) once per node.
+ * node-failure takes precedence over all other event types for the same node.
+ */
+export function buildChaosMap(
+  events: ChaosEvent[],
+  simTimeMs: number,
+): Record<string, ChaosEvent> {
+  const map: Record<string, ChaosEvent> = {}
+  for (const evt of events) {
+    if (simTimeMs < evt.startSimMs || simTimeMs >= evt.startSimMs + evt.durationMs) continue
+    const existing = map[evt.nodeId]
+    if (!existing || evt.type === 'node-failure') map[evt.nodeId] = evt
+  }
+  return map
+}
+
 /** Build a ChaosEvent with a generated id. */
 export function makeChaosEvent(
   nodeId: string,
