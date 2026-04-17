@@ -82,7 +82,7 @@ History changes every tick. On each render, four `.map()` calls extract sparklin
 **Fix:** Memoize sparkline data arrays with `useMemo`.
 *Fixed — all four sparkline extractions combined into a single `useMemo([history])`. Skips recomputation on renders triggered by `status` or `currentSnapshot` changes.*
 
-### 12. GameCanvas subscribes to entire architecture store
+### ✅ 12. GameCanvas subscribes to entire architecture store
 **File:** `components/canvas/GameCanvas.tsx:76`
 ```ts
 const { nodes, edges, onNodesChange, ... } = useArchitectureStore()
@@ -90,7 +90,7 @@ const { nodes, edges, onNodesChange, ... } = useArchitectureStore()
 Subscribes to all state including `selectedNodeId`/`selectedEdgeId`. Re-renders on every selection change even though it doesn't use selection state.
 **Fix:** Use individual selectors: `useArchitectureStore((s) => s.nodes)`, etc.
 
-### 13. TopBar subscribes to entire simStore
+### ✅ 13. TopBar subscribes to entire simStore
 **File:** `components/canvas/TopBar.tsx:243`
 ```ts
 const { status, speed, trafficConfig, history, nodeSnapshots, ... } = useSimStore()
@@ -98,14 +98,14 @@ const { status, speed, trafficConfig, history, nodeSnapshots, ... } = useSimStor
 Re-renders on every tick because `history` and `nodeSnapshots` change.
 **Fix:** Use individual selectors. Only subscribe to `history`/`nodeSnapshots` in subcomponents that need them.
 
-### 14. ConfigPanel subscribes to entire architecture store
+### ✅ 14. ConfigPanel subscribes to entire architecture store
 **File:** `components/panels/ConfigPanel.tsx:517`
 ```ts
 const { nodes, selectedNodeId, selectedEdgeId, ... } = useArchitectureStore()
 ```
 Re-renders on every node drag (position change) even when it only cares about the selected node's config.
 
-### 15. BaseNode subscribes to entire architecture store for removeNode
+### ✅ 15. BaseNode subscribes to entire architecture store for removeNode
 **File:** `components/nodes/BaseNode.tsx:67`
 ```ts
 const { removeNode } = useArchitectureStore()

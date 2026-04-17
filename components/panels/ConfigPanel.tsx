@@ -514,8 +514,20 @@ function EdgeConfigPanel({ edgeId }: { edgeId: string }) {
 // ── Main panel ───────────────────────────────────────────────────────────────
 
 export function ConfigPanel() {
-  const { nodes, selectedNodeId, selectedEdgeId, updateNodeConfig, updateNodeLabel } = useArchitectureStore()
-  const selectedNode = nodes.find((n) => n.id === selectedNodeId)
+  const selectedNodeId = useArchitectureStore((s) => s.selectedNodeId)
+  const selectedEdgeId = useArchitectureStore((s) => s.selectedEdgeId)
+  const updateNodeConfig = useArchitectureStore((s) => s.updateNodeConfig)
+  const updateNodeLabel = useArchitectureStore((s) => s.updateNodeLabel)
+  // Custom equality: ignore position changes — only re-render when the selected
+  // node's data (config/label) changes, not when the user drags it.
+  const selectedNode = useArchitectureStore(
+    (s) => s.nodes.find((n) => n.id === s.selectedNodeId) ?? null,
+    (prev, next) => {
+      if (prev === next) return true
+      if (!prev || !next) return prev === next
+      return prev.id === next.id && prev.data === next.data
+    },
+  )
 
   if (selectedEdgeId && !selectedNodeId) {
     return (

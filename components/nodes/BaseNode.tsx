@@ -64,7 +64,7 @@ type BaseNodeProps = NodeProps & {
 }
 
 export function BaseNode({ id, data, selected, icon, stats, hideLiveMetrics }: BaseNodeProps) {
-  const { removeNode } = useArchitectureStore()
+  const removeNode = useArchitectureStore((s) => s.removeNode)
   const simSnap = useSimStore((s) => s.nodeSnapshots[id])
   const simStatus = useSimStore((s) => s.status)
 

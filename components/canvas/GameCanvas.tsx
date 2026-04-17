@@ -27,6 +27,7 @@ import { NoSqlNode }        from '@/components/nodes/NoSqlNode'
 import { ObjectStorageNode } from '@/components/nodes/ObjectStorageNode'
 import { AnimatedEdge }     from '@/components/canvas/edges/AnimatedEdge'
 import { ChaosMenu }        from '@/components/canvas/ChaosMenu'
+import { useShallow } from 'zustand/shallow'
 import { useArchitectureStore, type ComponentNode } from '@/lib/store/architectureStore'
 import { useSimStore } from '@/lib/store/simStore'
 import type { ComponentType } from '@/lib/components/definitions'
@@ -73,7 +74,18 @@ export function GameCanvas() {
     nodes, edges,
     onNodesChange, onEdgesChange, onConnect,
     addNode, setSelectedNodeId, setSelectedEdgeId,
-  } = useArchitectureStore()
+  } = useArchitectureStore(
+    useShallow((s) => ({
+      nodes: s.nodes,
+      edges: s.edges,
+      onNodesChange: s.onNodesChange,
+      onEdgesChange: s.onEdgesChange,
+      onConnect: s.onConnect,
+      addNode: s.addNode,
+      setSelectedNodeId: s.setSelectedNodeId,
+      setSelectedEdgeId: s.setSelectedEdgeId,
+    }))
+  )
 
   const simStatus = useSimStore((s) => s.status)
   const isRunning = simStatus === 'running' || simStatus === 'paused'

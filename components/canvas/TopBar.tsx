@@ -236,11 +236,19 @@ export function TopBar() {
   const [, startShareTransition] = useTransition()
   const [showPublish, setShowPublish] = useState(false)
   const [canPublish, setCanPublish] = useState(false)
+  const [publishSnap, setPublishSnap] = useState<{ edges: import('@/lib/store/architectureStore').ComponentEdge[]; simP99: number; simCost: number } | null>(null)
 
   const { isSignedIn } = useAuth()
-  const { nodes, edges } = useArchitectureStore()
+  const nodes = useArchitectureStore((s) => s.nodes)
   const { activeChallenge, evalResult } = useChallengeStore()
-  const { status, speed, trafficConfig, history, nodeSnapshots, setSpeed, startSimulation, pauseSimulation, resumeSimulation, stopSimulation } = useSimStore()
+  const status = useSimStore((s) => s.status)
+  const speed = useSimStore((s) => s.speed)
+  const trafficConfig = useSimStore((s) => s.trafficConfig)
+  const setSpeed = useSimStore((s) => s.setSpeed)
+  const startSimulation = useSimStore((s) => s.startSimulation)
+  const pauseSimulation = useSimStore((s) => s.pauseSimulation)
+  const resumeSimulation = useSimStore((s) => s.resumeSimulation)
+  const stopSimulation = useSimStore((s) => s.stopSimulation)
 
   useEffect(() => {
     if (!isSignedIn || activeChallenge) return
@@ -250,6 +258,9 @@ export function TopBar() {
   function handleShare() {
     setShareState('sharing')
     startShareTransition(async () => {
+      // Access history/snapshots/edges lazily — not subscribed at render time
+      const { history, nodeSnapshots } = useSimStore.getState()
+      const { edges } = useArchitectureStore.getState()
       // For sandbox (no activeChallenge), build a minimal EvalResult from history
       let result: EvalResult
       if (evalResult) {
@@ -277,6 +288,19 @@ export function TopBar() {
       setShareState('copied')
       setTimeout(() => setShareState('idle'), 2500)
     })
+  }
+
+  function openPublishWizard() {
+    // Capture snapshot data at click time — no render-time subscription to history/edges needed
+    const { history } = useSimStore.getState()
+    const { edges } = useArchitectureStore.getState()
+    const snap = history.length > 0 ? history[history.length - 1] : null
+    setPublishSnap({
+      edges,
+      simP99: snap?.systemP99LatencyMs ?? 0,
+      simCost: snap?.systemCostPerHour ?? 0,
+    })
+    setShowPublish(true)
   }
 
   const hasClients = nodes.some((n) => n.data.componentType === 'client')
@@ -433,7 +457,7 @@ export function TopBar() {
         {isSignedIn && !activeChallenge && status === 'complete' && (
           canPublish ? (
             <button
-              onClick={() => setShowPublish(true)}
+              onClick={openPublishWizard}
               className="flex items-center gap-1.5 px-2.5 py-1.5 border border-edge bg-raised hover:bg-overlay text-ink-3 hover:text-ink-2 text-[11px] font-bold uppercase tracking-wider transition-colors"
             >
               <Upload size={12} /> Publish
@@ -470,13 +494,13 @@ export function TopBar() {
           </SignInButton>
         )}
       </div>
-      {showPublish && (
+      {showPublish && publishSnap && (
         <PublishWizard
           nodes={nodes}
-          edges={edges}
+          edges={publishSnap.edges}
           trafficConfig={trafficConfig}
-          simP99={history.length > 0 ? history[history.length - 1].systemP99LatencyMs : 0}
-          simCost={history.length > 0 ? history[history.length - 1].systemCostPerHour : 0}
+          simP99={publishSnap.simP99}
+          simCost={publishSnap.simCost}
           onClose={() => setShowPublish(false)}
           onPublished={() => {
             setShowPublish(false)
