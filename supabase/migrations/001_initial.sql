@@ -71,20 +71,25 @@ alter table public.architectures        enable row level security;
 alter table public.challenge_completions enable row level security;
 
 -- Profiles: anyone can read, only the service role can write (no user policy needed)
+drop policy if exists "profiles_select" on public.profiles;
 create policy "profiles_select" on public.profiles for select using (true);
 
 -- Architectures: users read their own
+drop policy if exists "architectures_select" on public.architectures;
 create policy "architectures_select" on public.architectures
   for select using (true);   -- broaden to user_id = auth.uid() if using anon key
 
 -- Completions: users read their own
+drop policy if exists "completions_select" on public.challenge_completions;
 create policy "completions_select" on public.challenge_completions
   for select using (true);
 
 -- Replays: public replays readable by anyone; anyone (including guests) can insert
 alter table public.replays enable row level security;
+drop policy if exists "replays_select" on public.replays;
 create policy "replays_select" on public.replays
   for select using (is_public = true);
+drop policy if exists "replays_insert" on public.replays;
 create policy "replays_insert" on public.replays
   for insert with check (true);
 
@@ -153,10 +158,12 @@ alter table public.profiles
 -- No anon-key author UI exists yet. If one is added, add an author_id = auth.uid() policy.
 -- RLS for community challenges — public read, service role writes
 alter table public.community_challenges enable row level security;
+drop policy if exists "community_challenges_select" on public.community_challenges;
 create policy "community_challenges_select" on public.community_challenges
   for select using (status = 'published');
 
 alter table public.community_challenge_upvotes enable row level security;
+drop policy if exists "community_upvotes_select" on public.community_challenge_upvotes;
 create policy "community_upvotes_select" on public.community_challenge_upvotes
   for select using (true);
 
