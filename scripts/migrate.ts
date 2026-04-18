@@ -32,7 +32,7 @@ async function main() {
     process.exit(1)
   }
 
-  const client = new Client({ connectionString, ssl: { rejectUnauthorized: false }, family: 4 })
+  const client = new Client({ connectionString, ssl: { rejectUnauthorized: false } })
   await client.connect()
 
   try {

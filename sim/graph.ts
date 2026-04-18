@@ -1,4 +1,4 @@
-import type { SimGraph, SimSnapshot, NodeSnapshot, EdgeSnapshot, ChaosEvent } from './types'
+import type { SimGraph, SimSnapshot, NodeSnapshot, EdgeSnapshot, ChaosEvent, SimNode, SimEdge } from './types'
 import { computeNode, type ComponentState } from './components'
 import type { DatabaseConfig } from '@/lib/components/definitions'
 

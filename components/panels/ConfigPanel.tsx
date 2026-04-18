@@ -1,6 +1,7 @@
 'use client'
 
 import { useArchitectureStore } from '@/lib/store/architectureStore'
+import { useShallow } from 'zustand/react/shallow'
 import { useSimStore } from '@/lib/store/simStore'
 import {
   type ClientConfig,
@@ -518,15 +519,14 @@ export function ConfigPanel() {
   const selectedEdgeId = useArchitectureStore((s) => s.selectedEdgeId)
   const updateNodeConfig = useArchitectureStore((s) => s.updateNodeConfig)
   const updateNodeLabel = useArchitectureStore((s) => s.updateNodeLabel)
-  // Custom equality: ignore position changes — only re-render when the selected
+  // useShallow: ignore position changes — only re-render when the selected
   // node's data (config/label) changes, not when the user drags it.
   const selectedNode = useArchitectureStore(
-    (s) => s.nodes.find((n) => n.id === s.selectedNodeId) ?? null,
-    (prev, next) => {
-      if (prev === next) return true
-      if (!prev || !next) return prev === next
-      return prev.id === next.id && prev.data === next.data
-    },
+    useShallow((s) => {
+      const node = s.nodes.find((n) => n.id === s.selectedNodeId)
+      if (!node) return null
+      return { id: node.id, data: node.data }
+    }),
   )
 
   if (selectedEdgeId && !selectedNodeId) {
