@@ -15,7 +15,16 @@ async function dropOntoCanvas(page: Page, componentType: string, offsetX = 0) {
   }, { type: componentType, offsetX })
 }
 
+async function dismissConceptPrimerIfVisible(page: Page) {
+  const modal = page.locator('[data-testid="concept-primer-modal"]')
+  if (await modal.isVisible()) {
+    await modal.locator('button', { hasText: "Got it, let's play" }).click()
+    await expect(modal).not.toBeVisible({ timeout: 5_000 })
+  }
+}
+
 async function runSimAndWaitForResult(page: Page) {
+  await dismissConceptPrimerIfVisible(page)
   await page.locator('[data-testid="run-button"]').click()
   await expect(page.locator('[data-testid="results-modal"]')).toBeVisible({ timeout: 90_000 })
 }
