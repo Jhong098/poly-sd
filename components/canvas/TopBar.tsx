@@ -266,7 +266,7 @@ export function TopBar() {
       if (evalResult) {
         result = evalResult
       } else {
-        const snap = history.length > 0 ? history[history.length - 1] : null
+        const snap = history.last() ?? null
         const componentCount = Object.keys(nodeSnapshots).length
         result = {
           passed: false,
@@ -294,7 +294,7 @@ export function TopBar() {
     // Capture snapshot data at click time — no render-time subscription to history/edges needed
     const { history } = useSimStore.getState()
     const { edges } = useArchitectureStore.getState()
-    const snap = history.length > 0 ? history[history.length - 1] : null
+    const snap = history.last() ?? null
     setPublishSnap({
       edges,
       simP99: snap?.systemP99LatencyMs ?? 0,

@@ -12,6 +12,7 @@ import { evaluateChallenge } from '@/lib/challenges/evaluator'
 import { recordCompletion } from '@/lib/actions/completions'
 import { saveDraft } from '@/lib/actions/drafts'
 import { WorkerManager } from './workerManager'
+import { RingBuffer } from './ringBuffer'
 
 // Persistent worker — created once, reused across simulation runs.
 const workerManager = new WorkerManager(
@@ -27,7 +28,7 @@ type SimState = {
   trafficConfig: TrafficConfig
   speed: number
   currentSnapshot: SimSnapshot | null
-  history: SimSnapshot[]
+  history: RingBuffer<SimSnapshot>
   nodeSnapshots: Record<string, SimSnapshot['nodes'][number]>
   edgeSnapshots: Record<string, SimSnapshot['edges'][number]>
 
@@ -51,7 +52,7 @@ export const useSimStore = create<SimState>((set, get) => ({
   trafficConfig: DEFAULT_TRAFFIC,
   speed: 5,
   currentSnapshot: null,
-  history: [],
+  history: new RingBuffer<SimSnapshot>(MAX_HISTORY),
   nodeSnapshots: {},
   edgeSnapshots: {},
 
@@ -112,7 +113,7 @@ export const useSimStore = create<SimState>((set, get) => ({
             currentSnapshot: snapshot,
             nodeSnapshots: mergeSnapshotMap(s.nodeSnapshots, snapshot.nodes),
             edgeSnapshots: mergeSnapshotMap(s.edgeSnapshots, snapshot.edges),
-            history: [...s.history.slice(-(MAX_HISTORY - 1)), snapshot],
+            history: s.history.push(snapshot),
           }))
         } else if (msg.type === 'COMPLETE') {
           set({ status: 'complete' })
@@ -121,7 +122,7 @@ export const useSimStore = create<SimState>((set, get) => ({
           if (activeChallenge) {
             const { history, nodeSnapshots } = get()
             const componentCount = Object.keys(nodeSnapshots).length
-            const result = evaluateChallenge(activeChallenge, history, componentCount)
+            const result = evaluateChallenge(activeChallenge, history.toArray(), componentCount)
             setEvalResult(result)
             // Persist completion (fire-and-forget — UI already has the result)
             const { nodes: completionNodes, edges: completionEdges } = useArchitectureStore.getState()
@@ -152,7 +153,7 @@ export const useSimStore = create<SimState>((set, get) => ({
       chaosSchedule: activeChallenge?.chaosSchedule ?? [],
     } satisfies WorkerInbound)
 
-    set({ status: 'running', history: [], currentSnapshot: null, nodeSnapshots: {}, edgeSnapshots: {} })
+    set({ status: 'running', history: new RingBuffer<SimSnapshot>(MAX_HISTORY), currentSnapshot: null, nodeSnapshots: {}, edgeSnapshots: {} })
   },
 
   pauseSimulation: () => {
@@ -168,7 +169,7 @@ export const useSimStore = create<SimState>((set, get) => ({
   stopSimulation: () => {
     // Send STOP to the engine but keep the worker alive for reuse
     workerManager.worker?.postMessage({ type: 'STOP' } satisfies WorkerInbound)
-    set({ status: 'idle', currentSnapshot: null, history: [], nodeSnapshots: {}, edgeSnapshots: {} })
+    set({ status: 'idle', currentSnapshot: null, history: new RingBuffer<SimSnapshot>(MAX_HISTORY), nodeSnapshots: {}, edgeSnapshots: {} })
   },
 
   injectChaos: (nodeId, type, durationMs = 15_000, magnitude = 5) => {
@@ -181,6 +182,6 @@ export const useSimStore = create<SimState>((set, get) => ({
   destroyWorker: () => {
     workerManager.worker?.postMessage({ type: 'STOP' } satisfies WorkerInbound)
     workerManager.dispose()
-    set({ status: 'idle', currentSnapshot: null, history: [], nodeSnapshots: {}, edgeSnapshots: {} })
+    set({ status: 'idle', currentSnapshot: null, history: new RingBuffer<SimSnapshot>(MAX_HISTORY), nodeSnapshots: {}, edgeSnapshots: {} })
   },
 }))

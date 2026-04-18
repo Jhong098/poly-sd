@@ -29,7 +29,7 @@ export function FailureDebrief({ challenge, result }: Props) {
     label: n.data.label,
   }))
 
-  const diagnosis = generateFailureDiagnosis(result, history, challenge, nodeInfos, failedAttempts)
+  const diagnosis = generateFailureDiagnosis(result, history.toArray(), challenge, nodeInfos, failedAttempts)
 
   return (
     <div data-testid="failure-debrief" className="px-6 py-4 border-b border-edge-dim space-y-3">

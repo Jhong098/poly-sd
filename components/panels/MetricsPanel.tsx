@@ -66,12 +66,15 @@ export function MetricsPanel() {
   const history = useSimStore((s) => s.history)
   const activeChallenge = useChallengeStore((s) => s.activeChallenge)
 
-  const { rpsVals, p99Vals, errorVals, costVals } = useMemo(() => ({
-    rpsVals:   history.map((s) => s.ingressRps),
-    p99Vals:   history.map((s) => s.systemP99LatencyMs),
-    errorVals: history.map((s) => s.systemErrorRate * 100),
-    costVals:  history.map((s) => s.systemCostPerHour),
-  }), [history])
+  const { rpsVals, p99Vals, errorVals, costVals } = useMemo(() => {
+    const arr = history.toArray()
+    return {
+      rpsVals:   arr.map((s) => s.ingressRps),
+      p99Vals:   arr.map((s) => s.systemP99LatencyMs),
+      errorVals: arr.map((s) => s.systemErrorRate * 100),
+      costVals:  arr.map((s) => s.systemCostPerHour),
+    }
+  }, [history])
 
   if (status === 'idle') return null
 

@@ -126,12 +126,10 @@ Structured cloning of all node + edge snapshots at 10fps. For 20 nodes/edges, ~4
 Worker creation involves parsing/compiling/instantiating. Previous worker is terminated first.
 *Fixed — `WorkerManager` in `lib/store/workerManager.ts` lazily creates the Worker once and reuses it across simulation runs. `startSimulation` sends STOP then START to the existing worker. `stopSimulation` sends STOP without terminating. `destroyWorker` action available for final cleanup.*
 
-### 18. History array rebuilt every tick via spread
-**File:** `lib/store/simStore.ts:112`
-```ts
-history: [...s.history.slice(-(MAX_HISTORY - 1)), snapshot]
-```
-Creates a new 60-element array every tick. A ring buffer would avoid allocation.
+### ✅ 18. History array rebuilt every tick via spread
+**File:** `lib/store/simStore.ts`
+Creates a new 60-element array every tick.
+*Fixed — `RingBuffer<T>` in `lib/store/ringBuffer.ts` uses a shared pre-allocated backing array. `push()` is O(1) with no array allocation in the tick reducer; consumers call `.toArray()` or `.last()` only at read sites (MetricsPanel, evaluator, TopBar, FailureDebrief). 13 unit tests.*
 
 ### ✅ 19. nodeSnapshots/edgeSnapshots maps rebuilt from scratch every tick
 **File:** `lib/store/simStore.ts:104-106`
