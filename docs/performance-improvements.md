@@ -121,13 +121,10 @@ Subscribes to all changes. Should be `useArchitectureStore((s) => s.removeNode)`
 Structured cloning of all node + edge snapshots at 10fps. For 20 nodes/edges, ~40 objects cloned every 50ms.
 **Fix:** Consider `Transferable` (ArrayBuffer) for the hot path, or only send deltas.
 
-### 17. New Worker created on every simulation start
-**File:** `lib/store/simStore.ts:98`
-```ts
-const worker = new Worker(new URL('@/sim/worker.ts', import.meta.url), { type: 'module' })
-```
+### ✅ 17. New Worker created on every simulation start
+**File:** `lib/store/simStore.ts`
 Worker creation involves parsing/compiling/instantiating. Previous worker is terminated first.
-**Fix:** Keep a persistent worker. Send STOP then START to reuse it.
+*Fixed — `WorkerManager` in `lib/store/workerManager.ts` lazily creates the Worker once and reuses it across simulation runs. `startSimulation` sends STOP then START to the existing worker. `stopSimulation` sends STOP without terminating. `destroyWorker` action available for final cleanup.*
 
 ### 18. History array rebuilt every tick via spread
 **File:** `lib/store/simStore.ts:112`

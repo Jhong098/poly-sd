@@ -11,6 +11,12 @@ import { useChallengeStore } from './challengeStore'
 import { evaluateChallenge } from '@/lib/challenges/evaluator'
 import { recordCompletion } from '@/lib/actions/completions'
 import { saveDraft } from '@/lib/actions/drafts'
+import { WorkerManager } from './workerManager'
+
+// Persistent worker — created once, reused across simulation runs.
+const workerManager = new WorkerManager(
+  () => new Worker(new URL('@/sim/worker.ts', import.meta.url), { type: 'module' })
+)
 
 export type SimStatus = 'idle' | 'running' | 'paused' | 'complete'
 
@@ -24,7 +30,6 @@ type SimState = {
   history: SimSnapshot[]
   nodeSnapshots: Record<string, SimSnapshot['nodes'][number]>
   edgeSnapshots: Record<string, SimSnapshot['edges'][number]>
-  worker: Worker | null
 
   // Traffic config actions
   setDuration: (ms: number) => void
@@ -38,6 +43,7 @@ type SimState = {
   resumeSimulation: () => void
   stopSimulation: () => void
   injectChaos: (nodeId: string, type: ChaosType, durationMs?: number, magnitude?: number) => void
+  destroyWorker: () => void
 }
 
 export const useSimStore = create<SimState>((set, get) => ({
@@ -48,7 +54,6 @@ export const useSimStore = create<SimState>((set, get) => ({
   history: [],
   nodeSnapshots: {},
   edgeSnapshots: {},
-  worker: null,
 
   setDuration: (ms) =>
     set((s) => ({ trafficConfig: { ...s.trafficConfig, durationMs: ms } })),
@@ -65,13 +70,12 @@ export const useSimStore = create<SimState>((set, get) => ({
     })),
 
   setSpeed: (s) => {
-    get().worker?.postMessage({ type: 'SET_SPEED', multiplier: s } satisfies WorkerInbound)
+    workerManager.worker?.postMessage({ type: 'SET_SPEED', multiplier: s } satisfies WorkerInbound)
     set({ speed: s })
   },
 
   startSimulation: () => {
-    const { worker: prev, trafficConfig, speed } = get()
-    if (prev) { prev.postMessage({ type: 'STOP' } satisfies WorkerInbound); prev.terminate() }
+    const { trafficConfig, speed } = get()
 
     const { nodes, edges } = useArchitectureStore.getState()
     if (nodes.length === 0) return
@@ -96,41 +100,48 @@ export const useSimStore = create<SimState>((set, get) => ({
       })),
     }
 
-    const worker = new Worker(new URL('@/sim/worker.ts', import.meta.url), { type: 'module' })
+    const isNew = !workerManager.worker
+    const worker = workerManager.getOrCreate()
 
-    worker.onmessage = (e: MessageEvent<WorkerOutbound>) => {
-      const msg = e.data
-      if (msg.type === 'TICK') {
-        const { snapshot } = msg
-        set((s) => ({
-          currentSnapshot: snapshot,
-          nodeSnapshots: mergeSnapshotMap(s.nodeSnapshots, snapshot.nodes),
-          edgeSnapshots: mergeSnapshotMap(s.edgeSnapshots, snapshot.edges),
-          history: [...s.history.slice(-(MAX_HISTORY - 1)), snapshot],
-        }))
-      } else if (msg.type === 'COMPLETE') {
-        set({ status: 'complete' })
-        // Evaluate against active challenge if one is loaded
-        const { activeChallenge, setEvalResult } = useChallengeStore.getState()
-        if (activeChallenge) {
-          const { history, nodeSnapshots } = get()
-          const componentCount = Object.keys(nodeSnapshots).length
-          const result = evaluateChallenge(activeChallenge, history, componentCount)
-          setEvalResult(result)
-          // Persist completion (fire-and-forget — UI already has the result)
-          const { nodes, edges } = useArchitectureStore.getState()
-          recordCompletion(activeChallenge.id, result, nodes, edges).catch(console.error)
+    if (isNew) {
+      worker.onmessage = (e: MessageEvent<WorkerOutbound>) => {
+        const msg = e.data
+        if (msg.type === 'TICK') {
+          const { snapshot } = msg
+          set((s) => ({
+            currentSnapshot: snapshot,
+            nodeSnapshots: mergeSnapshotMap(s.nodeSnapshots, snapshot.nodes),
+            edgeSnapshots: mergeSnapshotMap(s.edgeSnapshots, snapshot.edges),
+            history: [...s.history.slice(-(MAX_HISTORY - 1)), snapshot],
+          }))
+        } else if (msg.type === 'COMPLETE') {
+          set({ status: 'complete' })
+          // Evaluate against active challenge if one is loaded
+          const { activeChallenge, setEvalResult } = useChallengeStore.getState()
+          if (activeChallenge) {
+            const { history, nodeSnapshots } = get()
+            const componentCount = Object.keys(nodeSnapshots).length
+            const result = evaluateChallenge(activeChallenge, history, componentCount)
+            setEvalResult(result)
+            // Persist completion (fire-and-forget — UI already has the result)
+            const { nodes: completionNodes, edges: completionEdges } = useArchitectureStore.getState()
+            recordCompletion(activeChallenge.id, result, completionNodes, completionEdges).catch(console.error)
+          }
+        } else if (msg.type === 'ERROR') {
+          console.error('Sim worker error:', msg.message)
+          set({ status: 'idle' })
         }
-      } else if (msg.type === 'ERROR') {
-        console.error('Sim worker error:', msg.message)
+      }
+
+      worker.onerror = (err) => {
+        console.error('Sim worker crashed:', err)
+        workerManager.dispose()
         set({ status: 'idle' })
       }
     }
 
-    worker.onerror = (err) => {
-      console.error('Sim worker crashed:', err)
-      set({ status: 'idle', worker: null })
-    }
+    // Stop any running engine before starting a new one
+    worker.postMessage({ type: 'STOP' } satisfies WorkerInbound)
 
     const { activeChallenge } = useChallengeStore.getState()
     worker.postMessage({
@@ -141,29 +152,35 @@ export const useSimStore = create<SimState>((set, get) => ({
       chaosSchedule: activeChallenge?.chaosSchedule ?? [],
     } satisfies WorkerInbound)
 
-    set({ worker, status: 'running', history: [], currentSnapshot: null, nodeSnapshots: {}, edgeSnapshots: {} })
+    set({ status: 'running', history: [], currentSnapshot: null, nodeSnapshots: {}, edgeSnapshots: {} })
   },
 
   pauseSimulation: () => {
-    get().worker?.postMessage({ type: 'PAUSE' } satisfies WorkerInbound)
+    workerManager.worker?.postMessage({ type: 'PAUSE' } satisfies WorkerInbound)
     set({ status: 'paused' })
   },
 
   resumeSimulation: () => {
-    get().worker?.postMessage({ type: 'RESUME' } satisfies WorkerInbound)
+    workerManager.worker?.postMessage({ type: 'RESUME' } satisfies WorkerInbound)
     set({ status: 'running' })
   },
 
   stopSimulation: () => {
-    const { worker } = get()
-    if (worker) { worker.postMessage({ type: 'STOP' } satisfies WorkerInbound); worker.terminate() }
-    set({ status: 'idle', worker: null, currentSnapshot: null, history: [], nodeSnapshots: {}, edgeSnapshots: {} })
+    // Send STOP to the engine but keep the worker alive for reuse
+    workerManager.worker?.postMessage({ type: 'STOP' } satisfies WorkerInbound)
+    set({ status: 'idle', currentSnapshot: null, history: [], nodeSnapshots: {}, edgeSnapshots: {} })
   },
 
   injectChaos: (nodeId, type, durationMs = 15_000, magnitude = 5) => {
-    const { worker, currentSnapshot } = get()
-    if (!worker || !currentSnapshot) return
+    const { currentSnapshot } = get()
+    if (!workerManager.worker || !currentSnapshot) return
     const event = makeChaosEvent(nodeId, type, currentSnapshot.simTimeMs, durationMs, magnitude)
-    worker.postMessage({ type: 'INJECT_CHAOS', event } satisfies WorkerInbound)
+    workerManager.worker.postMessage({ type: 'INJECT_CHAOS', event } satisfies WorkerInbound)
+  },
+
+  destroyWorker: () => {
+    workerManager.worker?.postMessage({ type: 'STOP' } satisfies WorkerInbound)
+    workerManager.dispose()
+    set({ status: 'idle', currentSnapshot: null, history: [], nodeSnapshots: {}, edgeSnapshots: {} })
   },
 }))
