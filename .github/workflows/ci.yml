@@ -7,6 +7,29 @@ on:
     branches: [main]
 
 jobs:
+  migrate:
+    name: DB Migrations
+    runs-on: ubuntu-latest
+    # Only run on pushes to main (not on PRs — avoids migrating from feature branches)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm db:migrate
+
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
