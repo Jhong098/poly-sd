@@ -1,11 +1,12 @@
 import Link from 'next/link'
-import { CheckCircle2, Play, RotateCcw, Trophy } from 'lucide-react'
+import { CheckCircle2, Lock, Play, RotateCcw, Trophy } from 'lucide-react'
 import { auth } from '@clerk/nextjs/server'
 import { CHALLENGES } from '@/lib/challenges/definitions'
 import { getMyCompletions } from '@/lib/actions/completions'
 import { getOrCreateProfile } from '@/lib/actions/profile'
 import { getChallengeDrafts } from '@/lib/actions/drafts'
 import { computeLevel } from '@/lib/xp'
+import { computeUnlockedTiers } from '@/lib/campaign/tierUnlock'
 import { SiteNav } from '@/components/nav/SiteNav'
 import type { Challenge } from '@/lib/challenges/types'
 import type { CompletionRow } from '@/lib/actions/completions'
@@ -23,11 +24,37 @@ function ChallengeCard({
   challenge,
   completion,
   hasDraft,
+  isLocked,
 }: {
   challenge: Challenge
   completion: CompletionRow | undefined
   hasDraft: boolean
+  isLocked: boolean
 }) {
+  if (isLocked) {
+    return (
+      <div data-testid="challenge-card-locked" className="group relative flex flex-col gap-3 p-5 border border-edge-dim bg-raised opacity-40 cursor-not-allowed select-none">
+        <div className="flex items-start gap-2">
+          <div className="flex-1">
+            <span className="text-[10px] font-bold px-1.5 py-0.5 tracking-wider uppercase bg-surface text-ink-3">
+              {challenge.id}
+            </span>
+            <h3 className="mt-1.5 text-[14px] font-bold text-ink-3">{challenge.title}</h3>
+          </div>
+          <Lock size={13} className="text-ink-3 flex-shrink-0 mt-5" />
+        </div>
+        <p className="text-[11px] text-ink-3 leading-relaxed line-clamp-2">{challenge.narrative}</p>
+        <div className="flex gap-3 text-[10px]">
+          <span className="text-ink-3">p99 ≤ <span className="font-bold text-ink-3">{challenge.slaTargets.p99LatencyMs}ms</span></span>
+          <span className="text-edge-strong">·</span>
+          <span className="text-ink-3">err ≤ <span className="font-bold text-ink-3">{(challenge.slaTargets.errorRate * 100).toFixed(1)}%</span></span>
+          <span className="text-edge-strong">·</span>
+          <span className="text-ink-3">budget <span className="font-bold text-ink-3">${challenge.budgetPerHour.toFixed(2)}/hr</span></span>
+        </div>
+      </div>
+    )
+  }
+
   const tierColors: Record<number, { badge: string; hover: string }> = {
     0: { badge: 'bg-surface text-ink-3',       hover: 'hover:border-edge-strong' },
     1: { badge: 'bg-cyan/10 text-cyan',         hover: 'hover:border-cyan/50'    },
@@ -193,6 +220,8 @@ export default async function CampaignPage() {
   const level = profile ? computeLevel(profile.xp) : null
   const totalPassed = completions.filter((c) => c.passed).length
 
+  const unlockedTiers = computeUnlockedTiers(CHALLENGES, completionMap)
+
   return (
     <div className="h-full flex flex-col overflow-hidden bg-base text-ink">
       <SiteNav />
@@ -218,16 +247,18 @@ export default async function CampaignPage() {
             const challenges = CHALLENGES.filter((c) => c.tier === tier.id).sort((a, b) => a.order - b.order)
             if (challenges.length === 0) return null
             const tierPassed = challenges.filter((c) => completionMap.get(c.id)?.passed).length
+            const tierUnlocked = unlockedTiers.has(tier.id)
 
             return (
-              <section key={tier.id}>
+              <section key={tier.id} data-testid={`tier-section-${tier.id}`}>
                 <div className="flex items-center gap-3 mb-4">
-                  <h2 className={`text-[11px] font-bold uppercase tracking-widest ${tier.color}`}>
+                  <h2 className={`text-[11px] font-bold uppercase tracking-widest ${tierUnlocked ? tier.color : 'text-ink-3'}`}>
                     {tier.label}
                   </h2>
+                  {!tierUnlocked && <Lock size={11} className="text-ink-3" />}
                   <div className="flex-1 h-px bg-edge-dim" />
-                  <span className="text-[10px] text-ink-3 tracking-wider">
-                    {tierPassed}/{challenges.length} completed
+                  <span data-testid="tier-status" className="text-[10px] text-ink-3 tracking-wider">
+                    {tierUnlocked ? `${tierPassed}/${challenges.length} completed` : 'locked'}
                   </span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -237,6 +268,7 @@ export default async function CampaignPage() {
                       challenge={c}
                       completion={completionMap.get(c.id)}
                       hasDraft={draftMap.get(c.id) ?? false}
+                      isLocked={!tierUnlocked}
                     />
                   ))}
                 </div>
