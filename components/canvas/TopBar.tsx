@@ -190,6 +190,18 @@ function TrafficPopover({ onClose }: { onClose: () => void }) {
 
 const MAX_SAVE_SLOTS = 3
 
+// Dev/test hook: allows E2E tests to inject mock server actions via window.__mockArchitectureActions
+type MockActions = {
+  list?: typeof listArchitectures
+  save?: typeof saveArchitecture
+  delete?: typeof deleteArchitecture
+}
+function getMockActions(): MockActions {
+  if (process.env.NODE_ENV === 'production' || typeof window === 'undefined') return {}
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return ((window as any).__mockArchitectureActions as MockActions) ?? {}
+}
+
 function SaveDialog({ onClose }: { onClose: () => void }) {
   const nodes = useArchitectureStore((s) => s.nodes)
   const edges = useArchitectureStore((s) => s.edges)
@@ -201,18 +213,24 @@ function SaveDialog({ onClose }: { onClose: () => void }) {
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
+  const mock = getMockActions()
+  const listFn  = mock.list   ?? listArchitectures
+  const saveFn  = mock.save   ?? saveArchitecture
+  const deleteFn = mock.delete ?? deleteArchitecture
+
   useEffect(() => {
-    listArchitectures().then((data) => {
+    listFn().then((data) => {
       setSaves(data.slice(0, MAX_SAVE_SLOTS))
       setFetching(false)
     })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   function handleSaveNew() {
     if (!newName.trim()) return
     startTransition(async () => {
-      await saveArchitecture(newName.trim(), nodes, edges)
-      const updated = await listArchitectures()
+      await saveFn(newName.trim(), nodes, edges)
+      const updated = await listFn()
       setSaves(updated.slice(0, MAX_SAVE_SLOTS))
       setAddingNew(false)
       setNewName('')
@@ -222,8 +240,8 @@ function SaveDialog({ onClose }: { onClose: () => void }) {
   function handleOverwrite(arch: SavedArchitecture) {
     setPendingId(arch.id)
     startTransition(async () => {
-      await saveArchitecture(arch.name, nodes, edges, arch.id)
-      const updated = await listArchitectures()
+      await saveFn(arch.name, nodes, edges, arch.id)
+      const updated = await listFn()
       setSaves(updated.slice(0, MAX_SAVE_SLOTS))
       setPendingId(null)
     })
@@ -232,7 +250,7 @@ function SaveDialog({ onClose }: { onClose: () => void }) {
   function handleDelete(id: string) {
     setPendingId(id)
     startTransition(async () => {
-      await deleteArchitecture(id)
+      await deleteFn(id)
       setSaves((prev) => prev.filter((s) => s.id !== id))
       setPendingId(null)
     })
@@ -247,7 +265,7 @@ function SaveDialog({ onClose }: { onClose: () => void }) {
   const hasNodes = nodes.length > 0
 
   return (
-    <div className="absolute top-full right-0 mt-1 z-50 w-80 bg-raised border border-edge shadow-2xl p-4">
+    <div data-testid="saves-panel" className="absolute top-full right-0 mt-1 z-50 w-80 bg-raised border border-edge shadow-2xl p-4">
       <div className="flex items-center justify-between mb-3">
         <p className="text-[11px] font-bold tracking-widest uppercase text-cyan">// Saves ({saves.length}/{MAX_SAVE_SLOTS})</p>
         <button onClick={onClose} className="text-ink-3 hover:text-ink-2"><X size={14} /></button>
@@ -258,7 +276,7 @@ function SaveDialog({ onClose }: { onClose: () => void }) {
       ) : (
         <div className="space-y-2">
           {saves.map((arch) => (
-            <div key={arch.id} className="bg-surface border border-edge p-2.5">
+            <div key={arch.id} data-testid="save-slot" className="bg-surface border border-edge p-2.5">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[12px] text-ink font-medium truncate mr-2">{arch.name}</span>
                 <span className="text-[10px] text-ink-off flex-shrink-0">
@@ -267,6 +285,7 @@ function SaveDialog({ onClose }: { onClose: () => void }) {
               </div>
               <div className="flex items-center gap-1">
                 <button
+                  data-testid="save-slot-load"
                   onClick={() => handleLoad(arch)}
                   className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-cyan hover:bg-cyan/90 text-base transition-colors"
                 >
@@ -274,6 +293,7 @@ function SaveDialog({ onClose }: { onClose: () => void }) {
                 </button>
                 {hasNodes && (
                   <button
+                    data-testid="save-slot-overwrite"
                     onClick={() => handleOverwrite(arch)}
                     disabled={isPending && pendingId === arch.id}
                     title="Overwrite with current canvas"
@@ -283,6 +303,7 @@ function SaveDialog({ onClose }: { onClose: () => void }) {
                   </button>
                 )}
                 <button
+                  data-testid="save-slot-delete"
                   onClick={() => handleDelete(arch.id)}
                   disabled={isPending && pendingId === arch.id}
                   className="ml-auto flex items-center justify-center w-6 h-6 border border-edge bg-raised hover:bg-overlay text-ink-3 hover:text-err disabled:opacity-50 transition-colors"
@@ -300,6 +321,7 @@ function SaveDialog({ onClose }: { onClose: () => void }) {
           {addingNew ? (
             <div className="bg-surface border border-edge p-2.5">
               <input
+                data-testid="saves-name-input"
                 autoFocus
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
@@ -309,6 +331,7 @@ function SaveDialog({ onClose }: { onClose: () => void }) {
               />
               <div className="flex gap-1">
                 <button
+                  data-testid="saves-confirm-button"
                   onClick={handleSaveNew}
                   disabled={isPending || !newName.trim()}
                   className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-cyan hover:bg-cyan/90 disabled:bg-surface disabled:text-ink-3 text-base transition-colors"
@@ -325,13 +348,14 @@ function SaveDialog({ onClose }: { onClose: () => void }) {
             </div>
           ) : canAddNew && hasNodes ? (
             <button
+              data-testid="saves-add-button"
               onClick={() => setAddingNew(true)}
               className="w-full flex items-center justify-center gap-1.5 px-3 py-2 border border-dashed border-edge bg-raised hover:bg-overlay text-ink-3 hover:text-ink-2 text-[10px] font-bold uppercase tracking-wider transition-colors"
             >
               <Plus size={11} /> Save current canvas
             </button>
           ) : !canAddNew ? (
-            <p className="text-[10px] text-ink-3 text-center py-1">Max 3 saves — delete one to add</p>
+            <p data-testid="saves-max-message" className="text-[10px] text-ink-3 text-center py-1">Max 3 saves — delete one to add</p>
           ) : null}
         </div>
       )}
@@ -350,7 +374,13 @@ export function TopBar() {
   const [canPublish, setCanPublish] = useState(false)
   const [publishSnap, setPublishSnap] = useState<{ edges: import('@/lib/store/architectureStore').ComponentEdge[]; simP99: number; simCost: number } | null>(null)
 
-  const { isSignedIn } = useAuth()
+  const { isSignedIn: clerkSignedIn } = useAuth()
+  // Dev/test: E2E tests can set window.__E2E_SIGNED_IN to show the saves UI without real auth
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const isSignedInForSaves = process.env.NODE_ENV !== 'production' && typeof window !== 'undefined' && '__E2E_SIGNED_IN' in window
+    ? Boolean((window as any).__E2E_SIGNED_IN)
+    : clerkSignedIn
+  const isSignedIn = clerkSignedIn
   const nodes = useArchitectureStore((s) => s.nodes)
   const { activeChallenge, evalResult } = useChallengeStore()
   const status = useSimStore((s) => s.status)
@@ -584,9 +614,10 @@ export function TopBar() {
           )
         )}
 
-        {isSignedIn && (
+        {isSignedInForSaves && (
           <div className="relative">
             <button
+              data-testid="saves-button"
               onClick={() => setShowSave((v) => !v)}
               className="flex items-center gap-1.5 px-2.5 py-1.5 border border-edge bg-raised hover:bg-overlay text-ink-3 hover:text-ink-2 text-[11px] font-bold uppercase tracking-wider transition-colors"
             >
