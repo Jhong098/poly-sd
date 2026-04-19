@@ -1,8 +1,13 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { ThreeBackground } from '@/components/landing/ThreeBackground'
 import { SiteNav } from '@/components/nav/SiteNav'
+
+const ThreeBackground = dynamic(
+  () => import('@/components/landing/ThreeBackground').then(m => m.ThreeBackground),
+  { ssr: false }
+)
 import styles from './landing.module.css'
 
 const TICKER_ITEMS = [

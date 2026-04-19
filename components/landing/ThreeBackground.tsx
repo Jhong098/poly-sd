@@ -1,19 +1,42 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import * as THREE from 'three'
+import {
+  WebGLRenderer,
+  Scene,
+  PerspectiveCamera,
+  GridHelper,
+  BufferGeometry,
+  BufferAttribute,
+  Points,
+  PointsMaterial,
+  AdditiveBlending,
+  BoxGeometry,
+  Mesh,
+  MeshBasicMaterial,
+  Group,
+  Object3D,
+  Color,
+  Vector3,
+  Line,
+  LineBasicMaterial,
+  QuadraticBezierCurve3,
+  AmbientLight,
+} from 'three'
 
 export function ThreeBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
     const canvas = canvasRef.current
     if (!canvas) return
 
     let animId = 0
     let disposed = false
 
-    const renderer = new THREE.WebGLRenderer({
+    const renderer = new WebGLRenderer({
       canvas,
       antialias: true,
       alpha: true,
@@ -22,8 +45,8 @@ export function ThreeBackground() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     renderer.setClearColor(0x000000, 0)
 
-    const s = new THREE.Scene()
-    const cam = new THREE.PerspectiveCamera(48, window.innerWidth / window.innerHeight, 0.1, 300)
+    const s = new Scene()
+    const cam = new PerspectiveCamera(48, window.innerWidth / window.innerHeight, 0.1, 300)
     cam.position.set(-2, 20, 16)
     cam.lookAt(-2, 0, 0)
 
@@ -37,34 +60,34 @@ export function ThreeBackground() {
     window.addEventListener('resize', resize)
     resize()
 
-    // dot grid
-    const grid = new THREE.GridHelper(60, 60, 0x1b2742, 0x111b2e)
-    ;(grid.material as THREE.Material).opacity = 0.5
-    ;(grid.material as THREE.Material).transparent = true
+    // dot grid — single Points geometry instead of 961 sphere meshes
+    const grid = new GridHelper(60, 60, 0x1b2742, 0x111b2e)
+    ;(grid.material as InstanceType<typeof LineBasicMaterial>).opacity = 0.5
+    ;(grid.material as InstanceType<typeof LineBasicMaterial>).transparent = true
     s.add(grid)
 
-    const dotGeo = new THREE.SphereGeometry(0.055, 4, 4)
-    const dotMat = new THREE.MeshBasicMaterial({ color: 0x243354 })
-    const dotsInst = new THREE.InstancedMesh(dotGeo, dotMat, 31 * 31)
-    const dd = new THREE.Object3D()
+    const dotCount = 31 * 31
+    const dotPositions = new Float32Array(dotCount * 3)
     let di = 0
     for (let x = -15; x <= 15; x++) {
       for (let z = -15; z <= 15; z++) {
-        dd.position.set(x * 2, 0.01, z * 2)
-        dd.updateMatrix()
-        dotsInst.setMatrixAt(di++, dd.matrix)
+        dotPositions[di++] = x * 2
+        dotPositions[di++] = 0.01
+        dotPositions[di++] = z * 2
       }
     }
-    s.add(dotsInst)
+    const dotGeo = new BufferGeometry()
+    dotGeo.setAttribute('position', new BufferAttribute(dotPositions, 3))
+    s.add(new Points(dotGeo, new PointsMaterial({ color: 0x243354, size: 0.12 })))
 
-    // service node cards
+    // service node cards — MeshBasicMaterial, no lights needed
     type NodeDef = {
       id: string
       pos: [number, number, number]
       color: number
       w: number; h: number; d: number
-      mesh?: THREE.Mesh
-      vec?: THREE.Vector3
+      mesh?: Mesh
+      vec?: Vector3
     }
     const NODE_TYPES: NodeDef[] = [
       { id: 'client', pos: [-14, 0,  1], color: 0xf59e0b, w: 2.2, h: 0.55, d: 1.4 },
@@ -76,20 +99,17 @@ export function ThreeBackground() {
       { id: 'queue',  pos: [  3, 0,  9], color: 0xfb923c, w: 2.0, h: 0.55, d: 1.2 },
     ]
 
-    const nodeGroup = new THREE.Group()
+    const nodeGroup = new Group()
     NODE_TYPES.forEach(n => {
-      const geo = new THREE.BoxGeometry(n.w, n.h, n.d)
-      const mat = new THREE.MeshStandardMaterial({
-        color: 0x0d1322,
-        emissive: new THREE.Color(n.color).multiplyScalar(0.18),
-        metalness: 0.3,
-        roughness: 0.6,
-      })
-      const mesh = new THREE.Mesh(geo, mat)
+      const ec = new Color(n.color)
+      // dark body with color tint via emissive-like mix in basic material
+      const bodyColor = new Color(0x0d1322).lerp(ec, 0.12)
+      const mesh = new Mesh(
+        new BoxGeometry(n.w, n.h, n.d),
+        new MeshBasicMaterial({ color: bodyColor })
+      )
       mesh.position.set(...n.pos)
       mesh.position.y = n.h / 2
-      const ec = new THREE.Color(n.color)
-      const edgeMat = new THREE.MeshBasicMaterial({ color: ec })
       const th = 0.045
       const edgeDefs: [number, number, number, number, number, number][] = [
         [0,              n.h / 2 + th / 2, 0, n.w,           th,            th],
@@ -98,23 +118,18 @@ export function ThreeBackground() {
         [-n.w / 2 - th / 2, 0,             0,  th, n.h + th * 2,  th],
       ]
       edgeDefs.forEach(([ex, ey, ez, ew, eh, ed]) => {
-        const em = new THREE.Mesh(new THREE.BoxGeometry(ew, eh, ed), edgeMat)
+        const em = new Mesh(new BoxGeometry(ew, eh, ed), new MeshBasicMaterial({ color: ec }))
         em.position.set(ex, ey, ez)
         mesh.add(em)
       })
-      const pl = new THREE.PointLight(ec.getHex(), 0.7, 5)
-      pl.position.set(0, 1.5, 0)
-      mesh.add(pl)
       nodeGroup.add(mesh)
       n.mesh = mesh
-      n.vec = new THREE.Vector3(...n.pos).setY(n.h / 2)
+      n.vec = new Vector3(...n.pos).setY(n.h / 2)
     })
     s.add(nodeGroup)
 
-    s.add(new THREE.AmbientLight(0xffffff, 0.25))
-    const dir = new THREE.DirectionalLight(0xffffff, 0.4)
-    dir.position.set(5, 12, 8)
-    s.add(dir)
+    // minimal ambient to keep scene readable (no per-node point lights)
+    s.add(new AmbientLight(0xffffff, 0.5))
 
     // bezier wires + traffic packets
     type ConnDef = { from: string; to: string; color: number; pktColor: number; pktCount: number; spd: number }
@@ -129,27 +144,28 @@ export function ThreeBackground() {
     ]
 
     const nodeMap = Object.fromEntries(NODE_TYPES.map(n => [n.id, n])) as Record<string, NodeDef>
-    const wireGroup = new THREE.Group()
-    const pktGroup  = new THREE.Group()
+    const wireGroup = new Group()
+    const pktGroup  = new Group()
     const allPkts: Array<{
-      curve: THREE.QuadraticBezierCurve3
-      geo: THREE.BufferGeometry
+      curve: QuadraticBezierCurve3
+      geo: BufferGeometry
       state: Array<{ t: number; spd: number }>
     }> = []
 
     CONNECTIONS.forEach(conn => {
       const a = nodeMap[conn.from].vec!
       const b = nodeMap[conn.to].vec!
-      const mid = new THREE.Vector3().addVectors(a, b).multiplyScalar(0.5)
+      const mid = new Vector3().addVectors(a, b).multiplyScalar(0.5)
       mid.y += 1.4
-      const curve = new THREE.QuadraticBezierCurve3(a.clone(), mid, b.clone())
-      const lg = new THREE.BufferGeometry().setFromPoints(curve.getPoints(50))
-      wireGroup.add(new THREE.Line(lg, new THREE.LineBasicMaterial({ color: conn.color, transparent: true, opacity: 0.38 })))
-      const pGeo = new THREE.BufferGeometry()
-      pGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(conn.pktCount * 3), 3))
-      pktGroup.add(new THREE.Points(pGeo, new THREE.PointsMaterial({
+      const curve = new QuadraticBezierCurve3(a.clone(), mid, b.clone())
+      // 20 segments instead of 50 — visually identical at this scale
+      const lg = new BufferGeometry().setFromPoints(curve.getPoints(20))
+      wireGroup.add(new Line(lg, new LineBasicMaterial({ color: conn.color, transparent: true, opacity: 0.38 })))
+      const pGeo = new BufferGeometry()
+      pGeo.setAttribute('position', new BufferAttribute(new Float32Array(conn.pktCount * 3), 3))
+      pktGroup.add(new Points(pGeo, new PointsMaterial({
         color: conn.pktColor, size: 0.6, transparent: true, opacity: 1,
-        blending: THREE.AdditiveBlending, depthWrite: false,
+        blending: AdditiveBlending, depthWrite: false,
       })))
       allPkts.push({
         curve,
@@ -177,7 +193,7 @@ export function ThreeBackground() {
         n.mesh!.scale.set(sc, sc, sc)
       })
       allPkts.forEach(({ curve, geo, state }) => {
-        const pa = geo.getAttribute('position') as THREE.BufferAttribute
+        const pa = geo.getAttribute('position') as BufferAttribute
         state.forEach((p, i) => {
           p.t += dt * p.spd * 2
           if (p.t > 1) p.t -= 1
@@ -193,22 +209,29 @@ export function ThreeBackground() {
     const animate = () => {
       if (disposed) return
       animId = requestAnimationFrame(animate)
+      if (document.hidden) return
       const now = performance.now()
       const dt = Math.min((now - prevTime) / 1000, 0.05)
       prevTime = now
       tick(dt)
       renderer.render(s, cam)
     }
+
+    const onVisibilityChange = () => {
+      if (!document.hidden) prevTime = performance.now()
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
     animate()
 
     return () => {
       disposed = true
       cancelAnimationFrame(animId)
       window.removeEventListener('resize', resize)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
       s.traverse(o => {
-        if ((o as THREE.Mesh).geometry) (o as THREE.Mesh).geometry.dispose?.()
-        const m = (o as THREE.Mesh).material
-        if (m)(Array.isArray(m) ? m : [m]).forEach((x: THREE.Material) => x.dispose?.())
+        if ((o as Mesh).geometry) (o as Mesh).geometry.dispose?.()
+        const m = (o as Mesh).material
+        if (m)(Array.isArray(m) ? m : [m]).forEach((x: { dispose?: () => void }) => x.dispose?.())
       })
       renderer.dispose()
     }
