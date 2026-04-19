@@ -1,12 +1,13 @@
 'use client'
 
+import { memo } from 'react'
 import { type NodeProps } from '@xyflow/react'
 import { Radio } from 'lucide-react'
 import { BaseNode } from './BaseNode'
 import { type ComponentNodeData } from '@/lib/store/architectureStore'
 import { type KafkaConfig, KAFKA_COST_PER_PARTITION_HOUR, KAFKA_MAX_RPS_PER_PARTITION } from '@/lib/components/definitions'
 
-export function KafkaNode(props: NodeProps & { data: ComponentNodeData }) {
+export const KafkaNode = memo(function KafkaNode(props: NodeProps & { data: ComponentNodeData }) {
   const config = props.data.config as KafkaConfig
   const maxRps = config.partitions * KAFKA_MAX_RPS_PER_PARTITION
   const costPerHour = config.partitions * KAFKA_COST_PER_PARTITION_HOUR
@@ -23,4 +24,4 @@ export function KafkaNode(props: NodeProps & { data: ComponentNodeData }) {
       ]}
     />
   )
-}
+})

@@ -1,12 +1,13 @@
 'use client'
 
+import { memo } from 'react'
 import { type NodeProps } from '@xyflow/react'
 import { Archive } from 'lucide-react'
 import { BaseNode } from './BaseNode'
 import { type ComponentNodeData } from '@/lib/store/architectureStore'
 import { type ObjectStorageConfig, OBJECT_STORAGE_COST_PER_HOUR } from '@/lib/components/definitions'
 
-export function ObjectStorageNode(props: NodeProps & { data: ComponentNodeData }) {
+export const ObjectStorageNode = memo(function ObjectStorageNode(props: NodeProps & { data: ComponentNodeData }) {
   const config = props.data.config as ObjectStorageConfig
   const costPerHour = config.replication === 'cross-region'
     ? OBJECT_STORAGE_COST_PER_HOUR * 2
@@ -24,4 +25,4 @@ export function ObjectStorageNode(props: NodeProps & { data: ComponentNodeData }
       ]}
     />
   )
-}
+})

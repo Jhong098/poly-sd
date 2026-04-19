@@ -1,12 +1,13 @@
 'use client'
 
+import { memo } from 'react'
 import { type NodeProps } from '@xyflow/react'
 import { Layers } from 'lucide-react'
 import { BaseNode } from './BaseNode'
 import { type ComponentNodeData } from '@/lib/store/architectureStore'
 import { type NoSqlConfig, NOSQL_RCU_COST_PER_HOUR, NOSQL_WCU_COST_PER_HOUR, NOSQL_ON_DEMAND_COST_PER_RPS_HOUR } from '@/lib/components/definitions'
 
-export function NoSqlNode(props: NodeProps & { data: ComponentNodeData }) {
+export const NoSqlNode = memo(function NoSqlNode(props: NodeProps & { data: ComponentNodeData }) {
   const config = props.data.config as NoSqlConfig
   const isOnDemand = config.capacityMode === 'on-demand'
   const costPerHour = isOnDemand
@@ -25,4 +26,4 @@ export function NoSqlNode(props: NodeProps & { data: ComponentNodeData }) {
       ]}
     />
   )
-}
+})

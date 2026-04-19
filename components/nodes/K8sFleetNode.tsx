@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import { type NodeProps } from '@xyflow/react'
 import { Layers } from 'lucide-react'
 import { BaseNode } from './BaseNode'
@@ -7,7 +8,7 @@ import { type ComponentNodeData } from '@/lib/store/architectureStore'
 import { type K8sFleetConfig, K8S_INSTANCES } from '@/lib/components/definitions'
 import { useSimStore } from '@/lib/store/simStore'
 
-export function K8sFleetNode(props: NodeProps & { data: ComponentNodeData }) {
+export const K8sFleetNode = memo(function K8sFleetNode(props: NodeProps & { data: ComponentNodeData }) {
   const config = props.data.config as K8sFleetConfig
   const inst = K8S_INSTANCES[config.instanceType]
   const simSnap = useSimStore((s) => s.nodeSnapshots[props.id])
@@ -27,4 +28,4 @@ export function K8sFleetNode(props: NodeProps & { data: ComponentNodeData }) {
       ]}
     />
   )
-}
+})

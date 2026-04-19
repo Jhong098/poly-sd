@@ -56,7 +56,7 @@ export function AnimatedEdge({
         <EdgeLabelRenderer>
           <button
             onClick={(e) => { e.stopPropagation(); removeEdge(id) }}
-            style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`, pointerEvents: 'all' }}
+            style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`, pointerEvents: 'all', zIndex: 10 }}
             className="absolute nodrag nopan flex items-center justify-center w-5 h-5 rounded-full bg-surface border border-red-500/60 text-red-400 hover:bg-red-900/40 hover:text-red-300 transition-colors"
           >
             <X size={10} strokeWidth={2.5} />

@@ -1,12 +1,13 @@
 'use client'
 
+import { memo } from 'react'
 import { type NodeProps } from '@xyflow/react'
 import { Server } from 'lucide-react'
 import { BaseNode } from './BaseNode'
 import { type ComponentNodeData } from '@/lib/store/architectureStore'
 import { type ServerConfig, SERVER_INSTANCES } from '@/lib/components/definitions'
 
-export function ServerNode(props: NodeProps & { data: ComponentNodeData }) {
+export const ServerNode = memo(function ServerNode(props: NodeProps & { data: ComponentNodeData }) {
   const config = props.data.config as ServerConfig
   const instance = SERVER_INSTANCES[config.instanceType]
   const totalMaxRps = instance.maxRps * config.instanceCount
@@ -24,4 +25,4 @@ export function ServerNode(props: NodeProps & { data: ComponentNodeData }) {
       ]}
     />
   )
-}
+})

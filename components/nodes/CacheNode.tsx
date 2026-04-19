@@ -1,12 +1,13 @@
 'use client'
 
+import { memo } from 'react'
 import { type NodeProps } from '@xyflow/react'
 import { Zap } from 'lucide-react'
 import { BaseNode } from './BaseNode'
 import { type ComponentNodeData } from '@/lib/store/architectureStore'
 import { type CacheConfig, CACHE_INSTANCES } from '@/lib/components/definitions'
 
-export function CacheNode(props: NodeProps & { data: ComponentNodeData }) {
+export const CacheNode = memo(function CacheNode(props: NodeProps & { data: ComponentNodeData }) {
   const config = props.data.config as CacheConfig
   const instance = CACHE_INSTANCES[config.instanceType]
 
@@ -22,4 +23,4 @@ export function CacheNode(props: NodeProps & { data: ComponentNodeData }) {
       ]}
     />
   )
-}
+})

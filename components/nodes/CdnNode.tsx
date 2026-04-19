@@ -1,12 +1,13 @@
 'use client'
 
+import { memo } from 'react'
 import { type NodeProps } from '@xyflow/react'
 import { Globe } from 'lucide-react'
 import { BaseNode } from './BaseNode'
 import { type ComponentNodeData } from '@/lib/store/architectureStore'
 import { type CdnConfig, CDN_COST_PER_REGION_HOUR } from '@/lib/components/definitions'
 
-export function CdnNode(props: NodeProps & { data: ComponentNodeData }) {
+export const CdnNode = memo(function CdnNode(props: NodeProps & { data: ComponentNodeData }) {
   const config = props.data.config as CdnConfig
   const costPerHour = config.regions * CDN_COST_PER_REGION_HOUR
 
@@ -22,4 +23,4 @@ export function CdnNode(props: NodeProps & { data: ComponentNodeData }) {
       ]}
     />
   )
-}
+})

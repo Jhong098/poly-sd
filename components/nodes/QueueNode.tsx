@@ -1,12 +1,13 @@
 'use client'
 
+import { memo } from 'react'
 import { type NodeProps } from '@xyflow/react'
 import { List } from 'lucide-react'
 import { BaseNode } from './BaseNode'
 import { type ComponentNodeData } from '@/lib/store/architectureStore'
 import { type QueueConfig, QUEUE_COST_PER_HOUR } from '@/lib/components/definitions'
 
-export function QueueNode(props: NodeProps & { data: ComponentNodeData }) {
+export const QueueNode = memo(function QueueNode(props: NodeProps & { data: ComponentNodeData }) {
   const config = props.data.config as QueueConfig
 
   return (
@@ -20,4 +21,4 @@ export function QueueNode(props: NodeProps & { data: ComponentNodeData }) {
       ]}
     />
   )
-}
+})

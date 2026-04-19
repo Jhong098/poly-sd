@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import { type NodeProps } from '@xyflow/react'
 import { Users } from 'lucide-react'
 import { BaseNode } from './BaseNode'
@@ -9,7 +10,7 @@ import { useSimStore } from '@/lib/store/simStore'
 
 const PRESET_LABEL: Record<string, string> = { steady: 'Steady', spike: 'Spike', ramp: 'Ramp' }
 
-export function ClientNode(props: NodeProps & { data: ComponentNodeData }) {
+export const ClientNode = memo(function ClientNode(props: NodeProps & { data: ComponentNodeData }) {
   const cfg = props.data.config as ClientConfig
   const simSnap = useSimStore((s) => s.nodeSnapshots[props.id])
   const currentRps = simSnap?.outputRps
@@ -33,4 +34,4 @@ export function ClientNode(props: NodeProps & { data: ComponentNodeData }) {
       hideLiveMetrics
     />
   )
-}
+})

@@ -1,12 +1,13 @@
 'use client'
 
+import { memo } from 'react'
 import { type NodeProps } from '@xyflow/react'
 import { Shield } from 'lucide-react'
 import { BaseNode } from './BaseNode'
 import { type ComponentNodeData } from '@/lib/store/architectureStore'
 import { type ApiGatewayConfig, GATEWAY_COST_PER_HOUR } from '@/lib/components/definitions'
 
-export function ApiGatewayNode(props: NodeProps & { data: ComponentNodeData }) {
+export const ApiGatewayNode = memo(function ApiGatewayNode(props: NodeProps & { data: ComponentNodeData }) {
   const config = props.data.config as ApiGatewayConfig
 
   return (
@@ -21,4 +22,4 @@ export function ApiGatewayNode(props: NodeProps & { data: ComponentNodeData }) {
       ]}
     />
   )
-}
+})
