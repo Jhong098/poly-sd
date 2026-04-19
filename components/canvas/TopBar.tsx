@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition, useEffect } from 'react'
-import { Play, Pause, Square, LayoutGrid, ChevronDown, Plus, X, Save, Check, ChevronLeft, Share2, Upload, Download, Trash2 } from 'lucide-react'
+import { Play, Pause, Square, LayoutGrid, ChevronDown, Plus, X, Save, Check, ChevronLeft, Share2, Download, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { UserButton, SignInButton, useAuth } from '@clerk/nextjs'
 import { useSimStore } from '@/lib/store/simStore'
@@ -12,9 +12,6 @@ import { createReplay } from '@/lib/actions/replays'
 import { presetToWaypoints } from '@/sim/types'
 import type { TrafficPreset } from '@/lib/components/definitions'
 import type { EvalResult } from '@/lib/challenges/types'
-import { PublishWizard } from '@/components/challenge/PublishWizard'
-import { checkCanPublish } from '@/lib/actions/community-challenges'
-import { TUTORIAL_CHALLENGE_IDS } from '@/lib/config'
 
 const SPEED_OPTIONS = [1, 5, 10] as const
 
@@ -370,9 +367,6 @@ export function TopBar() {
   const [showSave, setShowSave] = useState(false)
   const [shareState, setShareState] = useState<'idle' | 'sharing' | 'copied' | 'error'>('idle')
   const [, startShareTransition] = useTransition()
-  const [showPublish, setShowPublish] = useState(false)
-  const [canPublish, setCanPublish] = useState(false)
-  const [publishSnap, setPublishSnap] = useState<{ edges: import('@/lib/store/architectureStore').ComponentEdge[]; simP99: number; simCost: number } | null>(null)
 
   const { isSignedIn: clerkSignedIn } = useAuth()
   // Dev/test: E2E tests can set window.__E2E_SIGNED_IN to show the saves UI without real auth
@@ -391,11 +385,6 @@ export function TopBar() {
   const pauseSimulation = useSimStore((s) => s.pauseSimulation)
   const resumeSimulation = useSimStore((s) => s.resumeSimulation)
   const stopSimulation = useSimStore((s) => s.stopSimulation)
-
-  useEffect(() => {
-    if (!isSignedIn || activeChallenge) return
-    checkCanPublish().then(setCanPublish)
-  }, [isSignedIn, activeChallenge])
 
   function handleShare() {
     setShareState('sharing')
@@ -430,19 +419,6 @@ export function TopBar() {
       setShareState('copied')
       setTimeout(() => setShareState('idle'), 2500)
     })
-  }
-
-  function openPublishWizard() {
-    // Capture snapshot data at click time — no render-time subscription to history/edges needed
-    const { history } = useSimStore.getState()
-    const { edges } = useArchitectureStore.getState()
-    const snap = history.last() ?? null
-    setPublishSnap({
-      edges,
-      simP99: snap?.systemP99LatencyMs ?? 0,
-      simCost: snap?.systemCostPerHour ?? 0,
-    })
-    setShowPublish(true)
   }
 
   const hasClients = nodes.some((n) => n.data.componentType === 'client')
@@ -596,24 +572,6 @@ export function TopBar() {
           </button>
         )}
 
-        {isSignedIn && !activeChallenge && status === 'complete' && (
-          canPublish ? (
-            <button
-              onClick={openPublishWizard}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 border border-edge bg-raised hover:bg-overlay text-ink-3 hover:text-ink-2 text-[11px] font-bold uppercase tracking-wider transition-colors"
-            >
-              <Upload size={12} /> Publish
-            </button>
-          ) : (
-            <span
-              title={`Complete all ${TUTORIAL_CHALLENGE_IDS.length} tutorial levels (T-0–T-3) to publish challenges`}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 border border-edge-dim text-ink-off text-[11px] font-bold uppercase tracking-wider cursor-not-allowed"
-            >
-              <Upload size={12} /> Publish
-            </span>
-          )
-        )}
-
         {isSignedInForSaves && (
           <div className="relative">
             <button
@@ -637,19 +595,6 @@ export function TopBar() {
           </SignInButton>
         )}
       </div>
-      {showPublish && publishSnap && (
-        <PublishWizard
-          nodes={nodes}
-          edges={publishSnap.edges}
-          trafficConfig={trafficConfig}
-          simP99={publishSnap.simP99}
-          simCost={publishSnap.simCost}
-          onClose={() => setShowPublish(false)}
-          onPublished={() => {
-            setShowPublish(false)
-          }}
-        />
-      )}
     </header>
   )
 }
