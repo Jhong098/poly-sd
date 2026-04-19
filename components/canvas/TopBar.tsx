@@ -1,13 +1,13 @@
 'use client'
 
 import { useState, useTransition, useEffect } from 'react'
-import { Play, Pause, Square, LayoutGrid, ChevronDown, Plus, X, Save, Check, ChevronLeft, Share2, Upload } from 'lucide-react'
+import { Play, Pause, Square, LayoutGrid, ChevronDown, Plus, X, Save, Check, ChevronLeft, Share2, Upload, Download, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { UserButton, SignInButton, useAuth } from '@clerk/nextjs'
 import { useSimStore } from '@/lib/store/simStore'
 import { useArchitectureStore } from '@/lib/store/architectureStore'
 import { useChallengeStore } from '@/lib/store/challengeStore'
-import { saveArchitecture } from '@/lib/actions/architectures'
+import { saveArchitecture, listArchitectures, deleteArchitecture, type SavedArchitecture } from '@/lib/actions/architectures'
 import { createReplay } from '@/lib/actions/replays'
 import { presetToWaypoints } from '@/sim/types'
 import type { TrafficPreset } from '@/lib/components/definitions'
@@ -188,41 +188,153 @@ function TrafficPopover({ onClose }: { onClose: () => void }) {
 
 // ── Save dialog ───────────────────────────────────────────────────────────────
 
+const MAX_SAVE_SLOTS = 3
+
 function SaveDialog({ onClose }: { onClose: () => void }) {
-  const { nodes, edges } = useArchitectureStore()
-  const [name, setName] = useState('My Architecture')
-  const [saved, setSaved] = useState(false)
+  const nodes = useArchitectureStore((s) => s.nodes)
+  const edges = useArchitectureStore((s) => s.edges)
+  const loadDraft = useArchitectureStore((s) => s.loadDraft)
+  const [saves, setSaves] = useState<SavedArchitecture[]>([])
+  const [fetching, setFetching] = useState(true)
+  const [addingNew, setAddingNew] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [pendingId, setPendingId] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
-  function handleSave() {
+  useEffect(() => {
+    listArchitectures().then((data) => {
+      setSaves(data.slice(0, MAX_SAVE_SLOTS))
+      setFetching(false)
+    })
+  }, [])
+
+  function handleSaveNew() {
+    if (!newName.trim()) return
     startTransition(async () => {
-      await saveArchitecture(name, nodes, edges)
-      setSaved(true)
-      setTimeout(onClose, 800)
+      await saveArchitecture(newName.trim(), nodes, edges)
+      const updated = await listArchitectures()
+      setSaves(updated.slice(0, MAX_SAVE_SLOTS))
+      setAddingNew(false)
+      setNewName('')
     })
   }
 
+  function handleOverwrite(arch: SavedArchitecture) {
+    setPendingId(arch.id)
+    startTransition(async () => {
+      await saveArchitecture(arch.name, nodes, edges, arch.id)
+      const updated = await listArchitectures()
+      setSaves(updated.slice(0, MAX_SAVE_SLOTS))
+      setPendingId(null)
+    })
+  }
+
+  function handleDelete(id: string) {
+    setPendingId(id)
+    startTransition(async () => {
+      await deleteArchitecture(id)
+      setSaves((prev) => prev.filter((s) => s.id !== id))
+      setPendingId(null)
+    })
+  }
+
+  function handleLoad(arch: SavedArchitecture) {
+    loadDraft(arch.nodes, arch.edges)
+    onClose()
+  }
+
+  const canAddNew = saves.length < MAX_SAVE_SLOTS
+  const hasNodes = nodes.length > 0
+
   return (
-    <div className="absolute top-full right-0 mt-1 z-50 w-72 bg-raised border border-edge shadow-2xl p-4">
+    <div className="absolute top-full right-0 mt-1 z-50 w-80 bg-raised border border-edge shadow-2xl p-4">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-[11px] font-bold tracking-widest uppercase text-cyan">// Save</p>
+        <p className="text-[11px] font-bold tracking-widest uppercase text-cyan">// Saves ({saves.length}/{MAX_SAVE_SLOTS})</p>
         <button onClick={onClose} className="text-ink-3 hover:text-ink-2"><X size={14} /></button>
       </div>
-      <input
-        autoFocus
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-        placeholder="Architecture name"
-        className="w-full bg-surface border border-edge px-3 py-2 text-[13px] text-ink focus:outline-none focus:border-edge-strong mb-3 placeholder:text-ink-off"
-      />
-      <button
-        onClick={handleSave}
-        disabled={isPending || !name.trim()}
-        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-cyan hover:bg-cyan/90 disabled:bg-surface disabled:text-ink-3 text-base text-[11px] font-bold uppercase tracking-wider transition-colors"
-      >
-        {saved ? <><Check size={13} /> Saved</> : isPending ? 'Saving…' : <><Save size={13} /> Save</>}
-      </button>
+
+      {fetching ? (
+        <p className="text-[11px] text-ink-3">Loading…</p>
+      ) : (
+        <div className="space-y-2">
+          {saves.map((arch) => (
+            <div key={arch.id} className="bg-surface border border-edge p-2.5">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[12px] text-ink font-medium truncate mr-2">{arch.name}</span>
+                <span className="text-[10px] text-ink-off flex-shrink-0">
+                  {new Date(arch.updated_at).toLocaleDateString()}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => handleLoad(arch)}
+                  className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-cyan hover:bg-cyan/90 text-base transition-colors"
+                >
+                  <Download size={10} /> Load
+                </button>
+                {hasNodes && (
+                  <button
+                    onClick={() => handleOverwrite(arch)}
+                    disabled={isPending && pendingId === arch.id}
+                    title="Overwrite with current canvas"
+                    className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider border border-edge bg-raised hover:bg-overlay text-ink-3 hover:text-ink-2 disabled:opacity-50 transition-colors"
+                  >
+                    {isPending && pendingId === arch.id ? '…' : <><Save size={10} /> Overwrite</>}
+                  </button>
+                )}
+                <button
+                  onClick={() => handleDelete(arch.id)}
+                  disabled={isPending && pendingId === arch.id}
+                  className="ml-auto flex items-center justify-center w-6 h-6 border border-edge bg-raised hover:bg-overlay text-ink-3 hover:text-err disabled:opacity-50 transition-colors"
+                >
+                  <Trash2 size={10} />
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {saves.length === 0 && !addingNew && (
+            <p className="text-[11px] text-ink-3 py-1">No saves yet.</p>
+          )}
+
+          {addingNew ? (
+            <div className="bg-surface border border-edge p-2.5">
+              <input
+                autoFocus
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSaveNew(); if (e.key === 'Escape') { setAddingNew(false); setNewName('') } }}
+                placeholder="Architecture name"
+                className="w-full bg-raised border border-edge px-2 py-1.5 text-[12px] text-ink focus:outline-none focus:border-edge-strong mb-2 placeholder:text-ink-off"
+              />
+              <div className="flex gap-1">
+                <button
+                  onClick={handleSaveNew}
+                  disabled={isPending || !newName.trim()}
+                  className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-cyan hover:bg-cyan/90 disabled:bg-surface disabled:text-ink-3 text-base transition-colors"
+                >
+                  {isPending ? '…' : <><Check size={10} /> Save</>}
+                </button>
+                <button
+                  onClick={() => { setAddingNew(false); setNewName('') }}
+                  className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider border border-edge bg-raised hover:bg-overlay text-ink-3 hover:text-ink-2 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : canAddNew && hasNodes ? (
+            <button
+              onClick={() => setAddingNew(true)}
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 border border-dashed border-edge bg-raised hover:bg-overlay text-ink-3 hover:text-ink-2 text-[10px] font-bold uppercase tracking-wider transition-colors"
+            >
+              <Plus size={11} /> Save current canvas
+            </button>
+          ) : !canAddNew ? (
+            <p className="text-[10px] text-ink-3 text-center py-1">Max 3 saves — delete one to add</p>
+          ) : null}
+        </div>
+      )}
     </div>
   )
 }
@@ -472,13 +584,13 @@ export function TopBar() {
           )
         )}
 
-        {isSignedIn && nodes.length > 0 && (
+        {isSignedIn && (
           <div className="relative">
             <button
               onClick={() => setShowSave((v) => !v)}
               className="flex items-center gap-1.5 px-2.5 py-1.5 border border-edge bg-raised hover:bg-overlay text-ink-3 hover:text-ink-2 text-[11px] font-bold uppercase tracking-wider transition-colors"
             >
-              <Save size={12} /> Save
+              <Save size={12} /> Saves
             </button>
             {showSave && <SaveDialog onClose={() => setShowSave(false)} />}
           </div>
