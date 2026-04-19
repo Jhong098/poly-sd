@@ -64,8 +64,19 @@ export type WorkerInbound =
   | { type: 'SET_SPEED'; multiplier: number }
   | { type: 'INJECT_CHAOS'; event: ChaosEvent }
 
+export type SimDelta = {
+  simTimeMs: number
+  ingressRps: number
+  systemP99LatencyMs: number
+  systemErrorRate: number
+  systemCostPerHour: number
+  changedNodes: NodeSnapshot[]
+  changedEdges: EdgeSnapshot[]
+}
+
 export type WorkerOutbound =
   | { type: 'TICK'; snapshot: SimSnapshot }
+  | { type: 'TICK_DELTA'; delta: SimDelta }
   | { type: 'COMPLETE' }
   | { type: 'ERROR'; message: string }
 

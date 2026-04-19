@@ -2,6 +2,7 @@
 
 import { create } from 'zustand'
 import type { SimSnapshot, TrafficConfig, TrafficWaypoint, WorkerInbound, WorkerOutbound, ChaosEvent, ChaosType } from '@/sim/types'
+import { applyDelta } from '@/sim/delta'
 import { makeChaosEvent } from '@/sim/chaos'
 import { DEFAULT_TRAFFIC, presetToWaypoints } from '@/sim/types'
 import type { TrafficPreset } from '@/lib/components/definitions'
@@ -115,6 +116,17 @@ export const useSimStore = create<SimState>((set, get) => ({
             edgeSnapshots: mergeSnapshotMap(s.edgeSnapshots, snapshot.edges),
             history: s.history.push(snapshot),
           }))
+        } else if (msg.type === 'TICK_DELTA') {
+          set((s) => {
+            if (!s.currentSnapshot) return {}
+            const snapshot = applyDelta(s.currentSnapshot, msg.delta)
+            return {
+              currentSnapshot: snapshot,
+              nodeSnapshots: mergeSnapshotMap(s.nodeSnapshots, snapshot.nodes),
+              edgeSnapshots: mergeSnapshotMap(s.edgeSnapshots, snapshot.edges),
+              history: s.history.push(snapshot),
+            }
+          })
         } else if (msg.type === 'COMPLETE') {
           set({ status: 'complete' })
           // Evaluate against active challenge if one is loaded
