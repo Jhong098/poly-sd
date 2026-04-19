@@ -59,14 +59,17 @@ test('sitemap.xml contains the homepage URL', async ({ request }) => {
   expect(body).not.toContain('<loc></loc>')
 })
 
-test('landing page shows canvas preview with node labels', async ({ page }) => {
+test('landing page shows hero headline and mode buttons', async ({ page }) => {
   await page.goto('/')
-  await expect(page.locator('text=Load Balancer').first()).toBeVisible()
-  await expect(page.locator('text=Your architecture, live')).toBeVisible()
+  await expect(page.locator('text=Route traffic').first()).toBeVisible()
+  await expect(page.locator('text=on purpose').first()).toBeVisible()
+  await expect(page.locator('a[href="/campaign"]').first()).toBeVisible()
+  await expect(page.locator('a[href="/sandbox"]').first()).toBeVisible()
+  await expect(page.locator('a[href="/community"]').first()).toBeVisible()
 })
 
-test('landing page shows distributed systems concept chips', async ({ page }) => {
+test('landing page ticker shows distributed systems concepts', async ({ page }) => {
   await page.goto('/')
-  await expect(page.locator('text=Message Queues')).toBeVisible()
-  await expect(page.locator('text=Circuit Breakers')).toBeVisible()
+  await expect(page.locator('text=Circuit breakers').first()).toBeVisible()
+  await expect(page.locator('text=Chaos mode').first()).toBeVisible()
 })
