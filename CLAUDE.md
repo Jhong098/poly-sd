@@ -1,5 +1,9 @@
 # Poly-SD — Claude Context
 
+## Package manager
+
+Always use **pnpm** for all package installation and script execution. Never use `npm install`, `npm ci`, or `npm run` — use `pnpm install`, `pnpm run`, etc.
+
 ## What this project is
 
 A browser-based visual sandbox game that teaches distributed systems design through simulation. Players drag-and-drop cloud components (load balancers, databases, caches, queues, etc.) onto a canvas, connect them, configure properties, then run a simulation that models traffic flow, latency, queue saturation, and failures. Challenges have explicit win conditions (TPS, p99 latency, error rate, cost budget). Inspired by the Poly Bridge game.
