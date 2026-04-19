@@ -66,7 +66,7 @@ export default async function CommunityPage({
           {challenges.length === 0 ? (
             <div className="p-8 border border-edge-dim bg-raised text-center">
               <p className="text-[13px] text-ink-3">
-                No community challenges yet. Complete 10 campaign levels to publish the first one.
+                No community challenges yet. Be the first — complete the tutorial to unlock challenge creation.
               </p>
             </div>
           ) : (
