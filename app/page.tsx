@@ -1,13 +1,6 @@
-'use client'
-
-import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { SiteNav } from '@/components/nav/SiteNav'
-
-const ThreeBackground = dynamic(
-  () => import('@/components/landing/ThreeBackground').then(m => m.ThreeBackground),
-  { ssr: false }
-)
+import { ThreeBackgroundLoader } from '@/components/landing/ThreeBackgroundLoader'
 import styles from './landing.module.css'
 
 const TICKER_ITEMS = [
@@ -41,7 +34,7 @@ function Ticker() {
 export default function LandingPage() {
   return (
     <div className={styles.root}>
-      <ThreeBackground />
+      <ThreeBackgroundLoader />
       <div className={styles.scrim} />
       <div className={styles.grain} />
 
