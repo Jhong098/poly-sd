@@ -3,14 +3,20 @@
 import { use, useEffect, useRef, useState } from 'react'
 import { notFound, useSearchParams } from 'next/navigation'
 import { useAuth } from '@clerk/nextjs'
+import dynamic from 'next/dynamic'
 import { CHALLENGE_MAP } from '@/lib/challenges/definitions'
 import { useChallengeStore } from '@/lib/store/challengeStore'
 import { useArchitectureStore } from '@/lib/store/architectureStore'
 import { useSimStore } from '@/lib/store/simStore'
-import { ChallengeLayout } from '@/components/canvas/ChallengeLayout'
+
 import { getDraft } from '@/lib/actions/drafts'
 import { readLocalDraft, clearLocalDraft } from '@/lib/draft'
 import type { DraftRow } from '@/lib/actions/drafts'
+
+const ChallengeLayout = dynamic(
+  () => import('@/components/canvas/ChallengeLayout').then(m => ({ default: m.ChallengeLayout })),
+  { ssr: false }
+)
 
 export default function PlayPage({ params }: { params: Promise<{ levelId: string }> }) {
   const { levelId } = use(params)
