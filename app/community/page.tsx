@@ -28,11 +28,19 @@ export default async function CommunityPage({
       <div className="flex-1 overflow-y-auto">
         {/* Sub-header */}
         <header className="border-b border-edge-dim px-8 py-5">
-          <div className="max-w-3xl mx-auto">
-            <h1 className="text-[15px] font-bold text-ink">Community Challenges</h1>
-            <p className="text-[12px] text-ink-3 mt-1">
-              Player-created challenges rated by the community.
-            </p>
+          <div className="max-w-3xl mx-auto flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-[15px] font-bold text-ink">Community Challenges</h1>
+              <p className="text-[12px] text-ink-3 mt-1">
+                Player-created challenges rated by the community.
+              </p>
+            </div>
+            <Link
+              href="/community/create"
+              className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-cyan hover:bg-cyan/90 text-base text-[11px] font-bold uppercase tracking-wider transition-colors"
+            >
+              <span>+</span> Create
+            </Link>
           </div>
         </header>
 
