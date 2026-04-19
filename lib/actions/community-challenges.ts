@@ -76,23 +76,7 @@ function rowToChallenge(row: CommunityRow): Challenge {
   }
 }
 
-// ── checkCanPublish ───────────────────────────────────────────────────────────
-
-/** Returns true if the current user has passed all tutorial levels. */
-export async function checkCanPublish(): Promise<boolean> {
-  const { userId } = await auth()
-  if (!userId) return false
-
-  const db = createAdminClient()
-  const { count } = await db
-    .from('challenge_completions')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .in('challenge_id', TUTORIAL_CHALLENGE_IDS)
-    .eq('passed', true)
-
-  return (count ?? 0) >= TUTORIAL_CHALLENGE_IDS.length
-}
+// ── getTutorialProgress ───────────────────────────────────────────────────────
 
 /** Returns how many tutorial levels the current user has passed. */
 export async function getTutorialProgress(): Promise<{ passed: number; total: number }> {
@@ -108,6 +92,14 @@ export async function getTutorialProgress(): Promise<{ passed: number; total: nu
     .eq('passed', true)
 
   return { passed: count ?? 0, total: TUTORIAL_CHALLENGE_IDS.length }
+}
+
+// ── checkCanPublish ───────────────────────────────────────────────────────────
+
+/** Returns true if the current user has passed all tutorial levels. */
+export async function checkCanPublish(): Promise<boolean> {
+  const { passed, total } = await getTutorialProgress()
+  return passed >= total
 }
 
 // ── publishCommunityChallenge ─────────────────────────────────────────────────
