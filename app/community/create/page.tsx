@@ -73,7 +73,7 @@ export default async function CommunityCreatePage() {
             <p className="text-[11px] text-ink-3">
               Tutorial levels: {TUTORIAL_CHALLENGE_IDS.map((id, i) => (
                 <span key={id}>
-                  <span className={i < passed ? 'text-ok' : 'text-ink-off'}>{id}</span>
+                  <span className={i < passed ? 'text-ok' : 'text-ink-3'}>{id}</span>
                   {i < TUTORIAL_CHALLENGE_IDS.length - 1 ? ', ' : ''}
                 </span>
               ))}
