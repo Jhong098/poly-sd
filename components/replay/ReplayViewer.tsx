@@ -6,45 +6,7 @@ import { Trophy, XCircle, CheckCircle2, ArrowLeft, ChevronRight, Share2, Check }
 import type { ReplayRow } from '@/lib/actions/replays'
 import type { Challenge } from '@/lib/challenges/types'
 import type { ComponentNode, ComponentEdge } from '@/lib/store/architectureStore'
-import { ClientNode }       from '@/components/nodes/ClientNode'
-import { ServerNode }       from '@/components/nodes/ServerNode'
-import { DatabaseNode }     from '@/components/nodes/DatabaseNode'
-import { CacheNode }        from '@/components/nodes/CacheNode'
-import { LoadBalancerNode } from '@/components/nodes/LoadBalancerNode'
-import { QueueNode }        from '@/components/nodes/QueueNode'
-import { ApiGatewayNode }   from '@/components/nodes/ApiGatewayNode'
-import { K8sFleetNode }     from '@/components/nodes/K8sFleetNode'
-import { KafkaNode }        from '@/components/nodes/KafkaNode'
-import { CdnNode }           from '@/components/nodes/CdnNode'
-import { NoSqlNode }         from '@/components/nodes/NoSqlNode'
-import { ObjectStorageNode } from '@/components/nodes/ObjectStorageNode'
-import { AnimatedEdge }     from '@/components/canvas/edges/AnimatedEdge'
-
-const NODE_TYPES = {
-  client:          ClientNode,
-  server:          ServerNode,
-  database:        DatabaseNode,
-  cache:           CacheNode,
-  'load-balancer': LoadBalancerNode,
-  queue:           QueueNode,
-  'api-gateway':   ApiGatewayNode,
-  'k8s-fleet':     K8sFleetNode,
-  kafka:            KafkaNode,
-  cdn:              CdnNode,
-  nosql:            NoSqlNode,
-  'object-storage': ObjectStorageNode,
-}
-
-const EDGE_TYPES = { default: AnimatedEdge }
-
-function nodeColor(node: ComponentNode): string {
-  const map: Record<string, string> = {
-    client: '#00e5ff', server: '#00bfa5', database: '#a78bfa',
-    cache: '#fbbf24', 'load-balancer': '#38bdf8', queue: '#fb923c',
-    nosql: '#e879f9', 'object-storage': '#93c5fd',
-  }
-  return map[node.data.componentType] ?? '#0d3d4e'
-}
+import { NODE_TYPES, EDGE_TYPES, nodeColor } from '@/lib/nodeTypes'
 
 function ScoreBar({ label, value, color }: { label: string; value: number; color: string }) {
   return (
