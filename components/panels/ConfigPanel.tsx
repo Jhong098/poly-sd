@@ -33,7 +33,7 @@ import {
   OBJECT_STORAGE_COST_PER_HOUR,
   COMPONENT_META,
 } from '@/lib/components/definitions'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Trash2 } from 'lucide-react'
 
 // ── Shared primitives ────────────────────────────────────────────────────────
 
@@ -444,7 +444,7 @@ function ObjectStorageConfigEditor({ config, patch }: { config: ObjectStorageCon
 // ── Edge config panel ────────────────────────────────────────────────────────
 
 function EdgeConfigPanel({ edgeId }: { edgeId: string }) {
-  const { nodes, edges, updateEdgeSplitWeight } = useArchitectureStore()
+  const { nodes, edges, updateEdgeSplitWeight, removeEdge } = useArchitectureStore()
   const edgeSnap = useSimStore((s) => s.edgeSnapshots[edgeId])
   const edge = edges.find((e) => e.id === edgeId)
   if (!edge) return null
@@ -507,6 +507,14 @@ function EdgeConfigPanel({ edgeId }: { edgeId: string }) {
             )}
           </>
         )}
+        <Divider />
+        <button
+          onClick={() => removeEdge(edgeId)}
+          className="flex items-center gap-2 w-full px-3 py-2 text-[12px] text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded transition-colors"
+        >
+          <Trash2 size={13} />
+          Remove connection
+        </button>
       </div>
     </div>
   )

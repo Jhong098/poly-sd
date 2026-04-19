@@ -2,10 +2,13 @@
 
 import {
   BaseEdge,
+  EdgeLabelRenderer,
   getBezierPath,
   type EdgeProps,
 } from '@xyflow/react'
+import { X } from 'lucide-react'
 import { useSimStore } from '@/lib/store/simStore'
+import { useArchitectureStore } from '@/lib/store/architectureStore'
 
 export function AnimatedEdge({
   id,
@@ -14,8 +17,10 @@ export function AnimatedEdge({
   sourcePosition, targetPosition,
   style,
   markerEnd,
+  selected,
 }: EdgeProps) {
-  const [edgePath] = getBezierPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition })
+  const [edgePath, labelX, labelY] = getBezierPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition })
+  const removeEdge = useArchitectureStore((s) => s.removeEdge)
   const simStatus = useSimStore((s) => s.status)
   const snap = useSimStore((s) => s.edgeSnapshots[id])
 
@@ -46,6 +51,18 @@ export function AnimatedEdge({
         style={{ stroke: edgeColor, strokeWidth: 2, ...style }}
         markerEnd={markerEnd}
       />
+
+      {selected && (
+        <EdgeLabelRenderer>
+          <button
+            onClick={(e) => { e.stopPropagation(); removeEdge(id) }}
+            style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`, pointerEvents: 'all' }}
+            className="absolute nodrag nopan flex items-center justify-center w-5 h-5 rounded-full bg-surface border border-red-500/60 text-red-400 hover:bg-red-900/40 hover:text-red-300 transition-colors"
+          >
+            <X size={10} strokeWidth={2.5} />
+          </button>
+        </EdgeLabelRenderer>
+      )}
 
       {Array.from({ length: packetCount }).map((_, i) => {
         const dur = 1.0 + i * 0.25

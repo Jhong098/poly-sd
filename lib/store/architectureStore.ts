@@ -61,6 +61,7 @@ type ArchitectureState = {
   updateNodeConfig: (nodeId: string, patch: Partial<ComponentConfig>) => void
   updateNodeLabel: (nodeId: string, label: string) => void
   updateEdgeSplitWeight: (edgeId: string, weight: number) => void
+  removeEdge: (edgeId: string) => void
   initFromStarterGraph: (nodes: StarterNode[], edges: StarterEdge[]) => void
   loadDraft: (nodes: ComponentNode[], edges: ComponentEdge[]) => void
   clearCanvas: () => void
@@ -134,6 +135,13 @@ export const useArchitectureStore = create<ArchitectureState>((set, get) => ({
       edges: get().edges.map((e) =>
         e.id === edgeId ? { ...e, data: { ...e.data, splitWeight: Math.max(0.1, weight) } } : e,
       ),
+    })
+  },
+
+  removeEdge: (edgeId) => {
+    set({
+      edges: get().edges.filter((e) => e.id !== edgeId),
+      selectedEdgeId: get().selectedEdgeId === edgeId ? null : get().selectedEdgeId,
     })
   },
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ReactFlow,
   Background,
@@ -91,6 +91,20 @@ export function GameCanvas() {
   const isRunning = simStatus === 'running' || simStatus === 'paused'
   const [chaosMenu, setChaosMenu] = useState<ChaosMenuState>(null)
 
+  // Expose helpers for e2e tests (dev only)
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'production') {
+      ;(window as any).__polySDOnConnect = onConnect
+      ;(window as any).__polySDSelectEdge = (edgeId: string) => {
+        const state = useArchitectureStore.getState()
+        useArchitectureStore.setState({
+          edges: state.edges.map((e) => ({ ...e, selected: e.id === edgeId })),
+          selectedEdgeId: edgeId,
+        })
+      }
+    }
+  }, [onConnect])
+
   const onDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
@@ -137,7 +151,7 @@ export function GameCanvas() {
         onNodeContextMenu={onNodeContextMenu}
         onDragOver={onDragOver}
         onDrop={onDrop}
-        deleteKeyCode="Delete"
+        deleteKeyCode={['Delete', 'Backspace']}
         fitView
         fitViewOptions={{ padding: 0.3 }}
         minZoom={0.2}
