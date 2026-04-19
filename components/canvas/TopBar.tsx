@@ -14,7 +14,7 @@ import type { TrafficPreset } from '@/lib/components/definitions'
 import type { EvalResult } from '@/lib/challenges/types'
 import { PublishWizard } from '@/components/challenge/PublishWizard'
 import { checkCanPublish } from '@/lib/actions/community-challenges'
-import { COMMUNITY_PUBLISH_MIN_COMPLETIONS } from '@/lib/config'
+import { TUTORIAL_CHALLENGE_IDS } from '@/lib/config'
 
 const SPEED_OPTIONS = [1, 5, 10] as const
 
@@ -606,7 +606,7 @@ export function TopBar() {
             </button>
           ) : (
             <span
-              title={`Complete ${COMMUNITY_PUBLISH_MIN_COMPLETIONS} campaign levels to publish challenges`}
+              title={`Complete all ${TUTORIAL_CHALLENGE_IDS.length} tutorial levels (T-0–T-3) to publish challenges`}
               className="flex items-center gap-1.5 px-2.5 py-1.5 border border-edge-dim text-ink-off text-[11px] font-bold uppercase tracking-wider cursor-not-allowed"
             >
               <Upload size={12} /> Publish

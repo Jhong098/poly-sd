@@ -2,7 +2,7 @@
 
 import { auth } from '@clerk/nextjs/server'
 import { createAdminClient } from '@/lib/supabase/server'
-import { COMMUNITY_PUBLISH_MIN_COMPLETIONS } from '@/lib/config'
+import { TUTORIAL_CHALLENGE_IDS } from '@/lib/config'
 import type { Challenge } from '@/lib/challenges/types'
 import type { ComponentType } from '@/lib/components/definitions'
 import type { ComponentNode, ComponentEdge } from '@/lib/store/architectureStore'
@@ -78,7 +78,7 @@ function rowToChallenge(row: CommunityRow): Challenge {
 
 // ── checkCanPublish ───────────────────────────────────────────────────────────
 
-/** Returns true if the current user has enough passed completions to publish. */
+/** Returns true if the current user has passed all tutorial levels. */
 export async function checkCanPublish(): Promise<boolean> {
   const { userId } = await auth()
   if (!userId) return false
@@ -88,9 +88,26 @@ export async function checkCanPublish(): Promise<boolean> {
     .from('challenge_completions')
     .select('id', { count: 'exact', head: true })
     .eq('user_id', userId)
+    .in('challenge_id', TUTORIAL_CHALLENGE_IDS)
     .eq('passed', true)
 
-  return (count ?? 0) >= COMMUNITY_PUBLISH_MIN_COMPLETIONS
+  return (count ?? 0) >= TUTORIAL_CHALLENGE_IDS.length
+}
+
+/** Returns how many tutorial levels the current user has passed. */
+export async function getTutorialProgress(): Promise<{ passed: number; total: number }> {
+  const { userId } = await auth()
+  if (!userId) return { passed: 0, total: TUTORIAL_CHALLENGE_IDS.length }
+
+  const db = createAdminClient()
+  const { count } = await db
+    .from('challenge_completions')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .in('challenge_id', TUTORIAL_CHALLENGE_IDS)
+    .eq('passed', true)
+
+  return { passed: count ?? 0, total: TUTORIAL_CHALLENGE_IDS.length }
 }
 
 // ── publishCommunityChallenge ─────────────────────────────────────────────────
