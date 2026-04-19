@@ -368,6 +368,7 @@ export function CreateTopBar() {
           onClose={() => setShowPublish(false)}
           onPublished={(id) => {
             setShowPublish(false)
+            // Full navigation resets canvas Zustand store state cleanly
             window.location.href = `/community/${id}`
           }}
         />
