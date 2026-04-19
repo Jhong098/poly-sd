@@ -212,7 +212,7 @@ export default async function CampaignPage() {
       </div>
 
       {/* Challenge tiers */}
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto" style={{ scrollbarGutter: 'stable' }}>
         <div className="max-w-4xl mx-auto px-8 py-8 space-y-10">
           {TIERS.map((tier) => {
             const challenges = CHALLENGES.filter((c) => c.tier === tier.id).sort((a, b) => a.order - b.order)
