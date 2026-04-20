@@ -4,6 +4,7 @@ import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 const isProtected = createRouteMatcher([
   '/play/((?!T-).*)',   // /play/[levelId] — only Tier 1+ (not /play/T-*)
   '/profile(.*)',
+  '/community/create',
 ])
 
 // Tutorial levels (T-0 through T-3) are open to guests

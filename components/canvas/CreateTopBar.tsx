@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useSimStore } from '@/lib/store/simStore'
 import { useArchitectureStore } from '@/lib/store/architectureStore'
 import { PublishWizard } from '@/components/challenge/PublishWizard'
+import type { ComponentEdge } from '@/lib/store/architectureStore'
 import type { TrafficPreset } from '@/lib/components/definitions'
 
 const SPEED_OPTIONS = [1, 5, 10] as const
@@ -184,7 +185,7 @@ export function CreateTopBar() {
   const [showTraffic, setShowTraffic] = useState(false)
   const [showPublish, setShowPublish] = useState(false)
   const [publishSnap, setPublishSnap] = useState<{
-    edges: import('@/lib/store/architectureStore').ComponentEdge[]
+    edges: ComponentEdge[]
     simP99: number
     simCost: number
   } | null>(null)

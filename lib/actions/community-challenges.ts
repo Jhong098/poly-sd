@@ -112,7 +112,7 @@ export async function publishCommunityChallenge(
   if (!userId) return { error: 'Not authenticated' }
 
   const canPublish = await checkCanPublish()
-  if (!canPublish) return { error: 'Not enough completed challenges to publish' }
+  if (!canPublish) return { error: 'Complete all tutorial levels (T-0–T-3) before publishing.' }
 
   const db = createAdminClient()
 
