@@ -11,7 +11,7 @@ export default async function CommunityCreatePage() {
   if (!userId) redirect('/sign-in')
 
   const { passed, total } = await getTutorialProgress()
-  const eligible = passed >= total
+  const eligible = process.env.NODE_ENV === 'development' || passed >= total
 
   if (!eligible) {
     return (
