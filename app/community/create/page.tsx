@@ -1,22 +1,10 @@
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
-import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { SiteNav } from '@/components/nav/SiteNav'
 import { getTutorialProgress } from '@/lib/actions/community-challenges'
 import { TUTORIAL_CHALLENGE_IDS } from '@/lib/config'
-
-const CreateChallengeLayout = dynamic(
-  () => import('@/components/canvas/CreateChallengeLayout').then((m) => ({ default: m.CreateChallengeLayout })),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex items-center justify-center h-full bg-base">
-        <div className="w-5 h-5 border-2 border-gray-600 border-t-gray-300 rounded-full animate-spin" />
-      </div>
-    ),
-  }
-)
+import { CreateCanvasClient } from './CreateCanvasClient'
 
 export default async function CommunityCreatePage() {
   const { userId } = await auth()
@@ -84,9 +72,5 @@ export default async function CommunityCreatePage() {
     )
   }
 
-  return (
-    <div className="h-full flex flex-col overflow-hidden bg-base text-ink">
-      <CreateChallengeLayout />
-    </div>
-  )
+  return <CreateCanvasClient />
 }
