@@ -5,6 +5,7 @@ import React from 'react'
 import { CheckCircle2, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { publishCommunityChallenge } from '@/lib/actions/community-challenges'
 import type { ComponentNode, ComponentEdge } from '@/lib/store/architectureStore'
+import type { ChallengeSetupData } from '@/components/challenge/ChallengeSetupForm'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -16,6 +17,7 @@ type Props = {
   simCost: number
   onClose: () => void
   onPublished: (id: string) => void
+  initialData?: ChallengeSetupData
 }
 
 const TIER_LABELS: Record<number, string> = {
@@ -366,15 +368,16 @@ export function PublishWizard({
   simCost,
   onClose,
   onPublished,
+  initialData,
 }: Props) {
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(initialData ? 2 : 1)
   const [published, setPublished] = useState(false)
   const [isPending, startTransition] = useTransition()
 
   // Step 1
-  const [title, setTitle] = useState('')
-  const [narrative, setNarrative] = useState('')
-  const [objective, setObjective] = useState('')
+  const [title, setTitle] = useState(initialData?.title ?? '')
+  const [narrative, setNarrative] = useState(initialData?.narrative ?? '')
+  const [objective, setObjective] = useState(initialData?.objective ?? '')
 
   // Step 2
   const [p99Target, setP99Target] = useState(() => defaultP99(simP99))
@@ -382,8 +385,8 @@ export function PublishWizard({
   const [budget, setBudget] = useState(() => defaultBudget(simCost))
 
   // Step 3
-  const [tier, setTier] = useState(3)
-  const [hints, setHints] = useState<[string, string, string]>(['', '', ''])
+  const [tier, setTier] = useState(initialData?.tier ?? 3)
+  const [hints, setHints] = useState<[string, string, string]>(initialData?.hints ?? ['', '', ''])
 
   function handleHintChange(idx: 0 | 1 | 2, value: string) {
     const next: [string, string, string] = [...hints] as [string, string, string]
@@ -402,10 +405,12 @@ export function PublishWizard({
   }
 
   function handleNext() {
+    if (initialData && step === 2) { setStep(4); return }
     if (step < 4) setStep((s) => (s + 1) as 1 | 2 | 3 | 4)
   }
 
   function handleBack() {
+    if (initialData && step === 4) { setStep(2); return }
     if (step > 1) setStep((s) => (s - 1) as 1 | 2 | 3 | 4)
   }
 
@@ -457,7 +462,10 @@ export function PublishWizard({
             <p className="text-[16px] font-bold text-ink">Publish Challenge</p>
             {!published && (
               <p className="text-[11px] text-ink-3">
-                Step {step} of 4 — {stepTitles[step]}
+                {initialData
+                  ? `Step ${step === 2 ? 1 : 2} of 2 — ${stepTitles[step]}`
+                  : `Step ${step} of 4 — ${stepTitles[step]}`
+                }
               </p>
             )}
           </div>
@@ -531,10 +539,10 @@ export function PublishWizard({
           <div className="px-6 py-4 border-t border-edge-dim flex items-center justify-between">
             {/* Left: Back / Cancel */}
             <button
-              onClick={step === 1 ? onClose : handleBack}
+              onClick={(initialData ? step === 2 : step === 1) ? onClose : handleBack}
               className="flex items-center gap-1 px-3 py-2 border border-edge bg-surface hover:bg-overlay text-ink-2 text-[11px] font-bold uppercase tracking-wider transition-colors"
             >
-              {step === 1 ? (
+              {(initialData ? step === 2 : step === 1) ? (
                 'Cancel'
               ) : (
                 <>
