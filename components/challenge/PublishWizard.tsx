@@ -235,6 +235,7 @@ function StepConstraints({
         {([0, 1, 2] as const).map((idx) => (
           <input
             key={idx}
+            aria-label={`Hint ${idx + 1}`}
             className={inputCls}
             placeholder={`Hint ${idx + 1}`}
             value={hints[idx]}
@@ -379,7 +380,7 @@ export function PublishWizard({
   const [narrative, setNarrative] = useState(initialData?.narrative ?? '')
   const [objective, setObjective] = useState(initialData?.objective ?? '')
 
-  // Step 2
+  // Step 2 — always derived from sim props; ChallengeSetupData does not carry SLA fields
   const [p99Target, setP99Target] = useState(() => defaultP99(simP99))
   const [errorRateTarget, setErrorRateTarget] = useState(1)
   const [budget, setBudget] = useState(() => defaultBudget(simCost))
@@ -450,6 +451,8 @@ export function PublishWizard({
     4: 'Preview & Publish',
   }
 
+  const isFirstStep = initialData ? step === 2 : step === 1
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-base/80 overflow-y-auto py-8">
       <div
@@ -463,7 +466,7 @@ export function PublishWizard({
             {!published && (
               <p className="text-[11px] text-ink-3">
                 {initialData
-                  ? `Step ${step === 2 ? 1 : 2} of 2 — ${stepTitles[step]}`
+                  ? `Step ${step === 4 ? 2 : 1} of 2 — ${stepTitles[step]}`
                   : `Step ${step} of 4 — ${stepTitles[step]}`
                 }
               </p>
@@ -539,16 +542,10 @@ export function PublishWizard({
           <div className="px-6 py-4 border-t border-edge-dim flex items-center justify-between">
             {/* Left: Back / Cancel */}
             <button
-              onClick={(initialData ? step === 2 : step === 1) ? onClose : handleBack}
+              onClick={isFirstStep ? onClose : handleBack}
               className="flex items-center gap-1 px-3 py-2 border border-edge bg-surface hover:bg-overlay text-ink-2 text-[11px] font-bold uppercase tracking-wider transition-colors"
             >
-              {(initialData ? step === 2 : step === 1) ? (
-                'Cancel'
-              ) : (
-                <>
-                  <ChevronLeft size={13} /> Back
-                </>
-              )}
+              {isFirstStep ? 'Cancel' : <><ChevronLeft size={13} /> Back</>}
             </button>
 
             {/* Right: Next / Publish */}
