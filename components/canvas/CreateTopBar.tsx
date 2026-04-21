@@ -8,6 +8,7 @@ import { useArchitectureStore } from '@/lib/store/architectureStore'
 import { PublishWizard } from '@/components/challenge/PublishWizard'
 import type { ComponentEdge } from '@/lib/store/architectureStore'
 import type { TrafficPreset } from '@/lib/components/definitions'
+import type { ChallengeSetupData } from '@/components/challenge/ChallengeSetupForm'
 
 const SPEED_OPTIONS = [1, 5, 10] as const
 
@@ -181,7 +182,7 @@ function TrafficPopover({ onClose }: { onClose: () => void }) {
 
 // ── CreateTopBar ──────────────────────────────────────────────────────────────
 
-export function CreateTopBar() {
+export function CreateTopBar({ setupData }: { setupData: ChallengeSetupData }) {
   const [showTraffic, setShowTraffic] = useState(false)
   const [showPublish, setShowPublish] = useState(false)
   const [publishSnap, setPublishSnap] = useState<{
@@ -366,6 +367,7 @@ export function CreateTopBar() {
           trafficConfig={trafficConfig}
           simP99={publishSnap.simP99}
           simCost={publishSnap.simCost}
+          initialData={setupData}
           onClose={() => setShowPublish(false)}
           onPublished={(id) => {
             setShowPublish(false)
