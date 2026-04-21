@@ -52,7 +52,7 @@ export function ChallengeSetupForm({ onComplete }: Props) {
       narrative: narrative.trim(),
       objective: objective.trim(),
       tier,
-      hints,
+      hints: hints.map((h) => h.trim()) as [string, string, string],
     })
   }
 
@@ -77,10 +77,11 @@ export function ChallengeSetupForm({ onComplete }: Props) {
             <p className="text-[10px] font-bold uppercase tracking-widest text-cyan">// Identity</p>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-bold text-ink-2 uppercase tracking-wider">
+              <label htmlFor="setup-title" className="text-[11px] font-bold text-ink-2 uppercase tracking-wider">
                 Title <span className="text-err">*</span>
               </label>
               <input
+                id="setup-title"
                 className={inputCls}
                 placeholder="Give your challenge a name"
                 value={title}
@@ -90,10 +91,11 @@ export function ChallengeSetupForm({ onComplete }: Props) {
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-bold text-ink-2 uppercase tracking-wider">
+              <label htmlFor="setup-narrative" className="text-[11px] font-bold text-ink-2 uppercase tracking-wider">
                 Story Framing <span className="text-err">*</span>
               </label>
               <textarea
+                id="setup-narrative"
                 className={`${inputCls} resize-none`}
                 rows={3}
                 placeholder="Set the scene — what situation is the player stepping into?"
@@ -103,10 +105,11 @@ export function ChallengeSetupForm({ onComplete }: Props) {
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-bold text-ink-2 uppercase tracking-wider">
+              <label htmlFor="setup-objective" className="text-[11px] font-bold text-ink-2 uppercase tracking-wider">
                 Objective <span className="text-err">*</span>
               </label>
               <textarea
+                id="setup-objective"
                 className={`${inputCls} resize-none`}
                 rows={3}
                 placeholder="What must the player achieve to pass this challenge?"
@@ -147,6 +150,7 @@ export function ChallengeSetupForm({ onComplete }: Props) {
               {([0, 1, 2] as const).map((idx) => (
                 <input
                   key={idx}
+                  aria-label={`Hint ${idx + 1}`}
                   className={inputCls}
                   placeholder={`Hint ${idx + 1}`}
                   value={hints[idx]}
@@ -160,7 +164,7 @@ export function ChallengeSetupForm({ onComplete }: Props) {
           <button
             onClick={handleSubmit}
             disabled={!canSubmit}
-            className="flex items-center gap-2 px-5 py-2.5 bg-cyan hover:bg-cyan/90 disabled:opacity-40 disabled:cursor-not-allowed text-base text-[12px] font-bold uppercase tracking-wider transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 bg-cyan hover:bg-cyan/90 disabled:opacity-40 disabled:cursor-not-allowed text-base text-[11px] font-bold uppercase tracking-wider transition-colors"
           >
             Start Building <ArrowRight size={13} />
           </button>
