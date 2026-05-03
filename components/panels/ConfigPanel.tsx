@@ -522,11 +522,12 @@ function EdgeConfigPanel({ edgeId }: { edgeId: string }) {
 
 // ── Main panel ───────────────────────────────────────────────────────────────
 
-export function ConfigPanel() {
+export function ConfigPanel({ variant = 'panel' }: { variant?: 'panel' | 'content' } = {}) {
   const selectedNodeId = useArchitectureStore((s) => s.selectedNodeId)
   const selectedEdgeId = useArchitectureStore((s) => s.selectedEdgeId)
   const updateNodeConfig = useArchitectureStore((s) => s.updateNodeConfig)
   const updateNodeLabel = useArchitectureStore((s) => s.updateNodeLabel)
+  const removeNode = useArchitectureStore((s) => s.removeNode)
   // useShallow: ignore position changes — only re-render when the selected
   // node's data (config/label) changes, not when the user drags it.
   const selectedNode = useArchitectureStore(
@@ -538,6 +539,7 @@ export function ConfigPanel() {
   )
 
   if (selectedEdgeId && !selectedNodeId) {
+    if (variant === 'content') return <div className="overflow-y-auto flex-1"><EdgeConfigPanel edgeId={selectedEdgeId} /></div>
     return (
       <aside data-testid="config-panel" className="w-64 flex-shrink-0 h-full bg-raised border-l border-edge hidden md:block overflow-y-auto">
         <EdgeConfigPanel edgeId={selectedEdgeId} />
@@ -546,6 +548,7 @@ export function ConfigPanel() {
   }
 
   if (!selectedNode) {
+    if (variant === 'content') return null
     return (
       <aside data-testid="config-panel" className="w-64 flex-shrink-0 h-full bg-raised border-l border-edge hidden md:flex flex-col items-center justify-center">
         <div className="text-center px-6">
@@ -561,32 +564,51 @@ export function ConfigPanel() {
   const meta = COMPONENT_META[data.componentType]
   function patch(p: Partial<typeof data.config>) { updateNodeConfig(nodeId, p) }
 
-  return (
-    <aside data-testid="config-panel" className="w-64 flex-shrink-0 h-full bg-raised border-l border-edge hidden md:flex flex-col overflow-y-auto">
+  const editorSwitch = (
+    <>
+      {data.componentType === 'client'        && <ClientConfigEditor       config={data.config as ClientConfig}       patch={patch} />}
+      {data.componentType === 'server'        && <ServerConfigEditor       config={data.config as ServerConfig}       patch={patch} />}
+      {data.componentType === 'database'      && <DatabaseConfigEditor     config={data.config as DatabaseConfig}     patch={patch} />}
+      {data.componentType === 'cache'         && <CacheConfigEditor        config={data.config as CacheConfig}        patch={patch} />}
+      {data.componentType === 'load-balancer' && <LoadBalancerConfigEditor config={data.config as LoadBalancerConfig} patch={patch} />}
+      {data.componentType === 'queue'         && <QueueConfigEditor        config={data.config as QueueConfig}        patch={patch} />}
+      {data.componentType === 'api-gateway'   && <ApiGatewayConfigEditor   config={data.config as ApiGatewayConfig}   patch={patch} />}
+      {data.componentType === 'k8s-fleet'     && <K8sFleetConfigEditor     config={data.config as K8sFleetConfig}     patch={patch} />}
+      {data.componentType === 'kafka'          && <KafkaConfigEditor         config={data.config as KafkaConfig}         patch={patch} />}
+      {data.componentType === 'cdn'            && <CdnConfigEditor           config={data.config as CdnConfig}           patch={patch} />}
+      {data.componentType === 'nosql'          && <NoSqlConfigEditor         config={data.config as NoSqlConfig}         patch={patch} />}
+      {data.componentType === 'object-storage' && <ObjectStorageConfigEditor config={data.config as ObjectStorageConfig} patch={patch} />}
+    </>
+  )
+
+  const nodeConfigBody = (
+    <>
       <div className="px-4 pt-4 pb-3 border-b border-edge-dim">
         <p className="text-[10px] font-bold text-cyan uppercase tracking-widest">// {meta.label}</p>
         <input value={data.label} onChange={(e) => updateNodeLabel(selectedNode.id, e.target.value)}
           className="mt-1 w-full bg-transparent text-[14px] font-semibold text-ink focus:outline-none border-b border-transparent focus:border-edge-strong pb-0.5" />
       </div>
-
       <div className="px-4 py-4 flex-1">
-        {data.componentType === 'client'        && <ClientConfigEditor       config={data.config as ClientConfig}       patch={patch} />}
-        {data.componentType === 'server'        && <ServerConfigEditor       config={data.config as ServerConfig}       patch={patch} />}
-        {data.componentType === 'database'      && <DatabaseConfigEditor     config={data.config as DatabaseConfig}     patch={patch} />}
-        {data.componentType === 'cache'         && <CacheConfigEditor        config={data.config as CacheConfig}        patch={patch} />}
-        {data.componentType === 'load-balancer' && <LoadBalancerConfigEditor config={data.config as LoadBalancerConfig} patch={patch} />}
-        {data.componentType === 'queue'         && <QueueConfigEditor        config={data.config as QueueConfig}        patch={patch} />}
-        {data.componentType === 'api-gateway'   && <ApiGatewayConfigEditor   config={data.config as ApiGatewayConfig}   patch={patch} />}
-        {data.componentType === 'k8s-fleet'     && <K8sFleetConfigEditor     config={data.config as K8sFleetConfig}     patch={patch} />}
-        {data.componentType === 'kafka'          && <KafkaConfigEditor         config={data.config as KafkaConfig}         patch={patch} />}
-        {data.componentType === 'cdn'            && <CdnConfigEditor           config={data.config as CdnConfig}           patch={patch} />}
-        {data.componentType === 'nosql'          && <NoSqlConfigEditor         config={data.config as NoSqlConfig}         patch={patch} />}
-        {data.componentType === 'object-storage' && <ObjectStorageConfigEditor config={data.config as ObjectStorageConfig} patch={patch} />}
+        {editorSwitch}
       </div>
-
       <div className="px-4 py-3 border-t border-edge-dim">
         <p className="text-[10px] text-ink-3">{meta.description}</p>
       </div>
+      <div className="px-4 py-3 border-t border-edge-dim">
+        <button onClick={() => removeNode(nodeId)} className="flex items-center gap-1.5 text-[11px] text-err hover:text-err/80 transition-colors">
+          <Trash2 size={12} /> Delete node
+        </button>
+      </div>
+    </>
+  )
+
+  if (variant === 'content') {
+    return <div className="flex flex-col overflow-y-auto flex-1">{nodeConfigBody}</div>
+  }
+
+  return (
+    <aside data-testid="config-panel" className="w-64 flex-shrink-0 h-full bg-raised border-l border-edge hidden md:flex flex-col overflow-y-auto">
+      {nodeConfigBody}
     </aside>
   )
 }
