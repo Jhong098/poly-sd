@@ -147,7 +147,7 @@ export function ChallengeBriefPanel() {
   const passedBudget  = costPerHour !== undefined && costPerHour <= activeChallenge.budgetPerHour
 
   return (
-    <aside className="w-64 flex-shrink-0 h-full bg-raised border-r border-edge flex flex-col overflow-y-auto">
+    <aside className="w-64 flex-shrink-0 h-full bg-raised border-r border-edge hidden md:flex flex-col overflow-y-auto">
       {/* Header */}
       <div className="px-4 pt-4 pb-3 border-b border-edge-dim">
         <div className="flex items-center gap-1.5 mb-1">

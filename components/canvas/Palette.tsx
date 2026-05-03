@@ -32,11 +32,11 @@ const TIER3_ITEMS: PaletteItem[] = [
 
 // Maps accentColor → design system color variable
 const TYPE_COLOR_VAR: Record<string, string> = {
-  sky:     'var(--color-node-client)',
-  emerald: 'var(--color-node-server)',
+  amber:   'var(--color-node-client)',
+  blue:    'var(--color-node-server)',
   violet:  'var(--color-node-db)',
-  amber:   'var(--color-node-cache)',
-  blue:    'var(--color-node-lb)',
+  emerald: 'var(--color-node-cache)',
+  sky:     'var(--color-node-lb)',
   orange:  'var(--color-node-queue)',
   pink:    'var(--color-node-gateway)',
   indigo:  'var(--color-node-k8s)',

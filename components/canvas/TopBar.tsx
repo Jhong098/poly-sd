@@ -554,7 +554,7 @@ export function TopBar() {
         )}
 
         {nodes.length === 0 && status === 'idle' && (
-          <span className="text-[10px] text-ink-3 tracking-wider">// drag a Client onto the canvas</span>
+          <span className="hidden md:inline text-[10px] text-ink-3 tracking-wider">// drag a Client onto the canvas</span>
         )}
 
         {status === 'complete' && (
