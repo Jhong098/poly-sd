@@ -70,12 +70,7 @@ export async function recordCompletion(
   const xpGained = isFirstPass ? xpForCompletion(tier, result.scores.total) : 0
   if (xpGained <= 0) return
 
-  // Fetch current XP then update
-  const { data: prof } = await db.from('profiles').select('xp').eq('id', userId).single()
-  const currentXp = (prof as { xp: number } | null)?.xp ?? 0
-  await db.from('profiles')
-    .update({ xp: currentXp + xpGained, updated_at: new Date().toISOString() })
-    .eq('id', userId)
+  await db.rpc('increment_xp', { user_id_input: userId, amount: xpGained })
 }
 
 export type LeaderboardEntry = {

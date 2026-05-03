@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { ReactFlowProvider } from '@xyflow/react'
 import { TopBar }             from './TopBar'
@@ -14,18 +13,15 @@ import { ConceptPrimerModal } from '@/components/overlays/ConceptPrimerModal'
 import { TutorialCallout }   from '@/components/overlays/TutorialCallout'
 import { MobileToolbar }     from './MobileToolbar'
 import { MobileConfigPanel } from './MobileConfigPanel'
+import { DraftSaver }        from './DraftSaver'
 import { useChallengeStore }  from '@/lib/store/challengeStore'
 import { useArchitectureStore } from '@/lib/store/architectureStore'
-import { writeLocalDraft } from '@/lib/draft'
 import type { ComponentType } from '@/lib/components/definitions'
 
 export function ChallengeLayout() {
   const activeChallenge = useChallengeStore((s) => s.activeChallenge)
   const allowedTypes = activeChallenge?.allowedComponents ?? 'all'
   const { userId } = useAuth()
-  const nodes = useArchitectureStore((s) => s.nodes)
-  const edges = useArchitectureStore((s) => s.edges)
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Compute palette pulse: show pulse if the Tutorial-specified component hasn't been placed yet
   const guidedType = activeChallenge?.guidedPulseComponent
@@ -33,18 +29,6 @@ export function ChallengeLayout() {
     guidedType ? s.nodes.some((n) => n.data.componentType === guidedType) : true
   )
   const pulseType = (!hasPlacedGuided && guidedType) ? guidedType : undefined
-
-  useEffect(() => {
-    if (!activeChallenge || !userId) return
-    const challengeId = activeChallenge.id
-    if (timerRef.current) clearTimeout(timerRef.current)
-    timerRef.current = setTimeout(() => {
-      writeLocalDraft(userId, challengeId, nodes, edges)
-    }, 1500)
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current)
-    }
-  }, [nodes, edges, activeChallenge?.id, userId])
 
   return (
     <ReactFlowProvider>
@@ -71,6 +55,9 @@ export function ChallengeLayout() {
         <MobileConfigPanel />
       </div>
       <ResultsModal />
+      {activeChallenge && userId && (
+        <DraftSaver challengeId={activeChallenge.id} userId={userId} />
+      )}
     </ReactFlowProvider>
   )
 }
