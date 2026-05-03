@@ -8,15 +8,13 @@ const {
   mockGetOrCreateProfile,
   mockCompletionSingle,
   mockUpsert,
-  mockProfileSingle,
-  mockUpdateEq,
+  mockRpc,
 } = vi.hoisted(() => ({
   mockAuth: vi.fn(),
   mockGetOrCreateProfile: vi.fn(),
   mockCompletionSingle: vi.fn(),
   mockUpsert: vi.fn(),
-  mockProfileSingle: vi.fn(),
-  mockUpdateEq: vi.fn(),
+  mockRpc: vi.fn(),
 }))
 
 // ── Module mocks ───────────────────────────────────────────────────────────────
@@ -28,23 +26,15 @@ vi.mock('@/lib/challenges/definitions', () => ({
 }))
 vi.mock('@/lib/supabase/server', () => ({
   createAdminClient: () => {
-    // Each table needs a fluent chain. Methods return `this` so they can be
-    // chained arbitrarily; leaf methods resolve with the configured values.
     const completionsChain: Record<string, unknown> = {
       select: () => completionsChain,
       eq: () => completionsChain,
       single: mockCompletionSingle,
       upsert: mockUpsert,
     }
-    const profileChain: Record<string, unknown> = {
-      select: () => profileChain,
-      eq: () => profileChain,
-      single: mockProfileSingle,
-      update: () => ({ eq: mockUpdateEq }),
-    }
     return {
-      from: (table: string) =>
-        table === 'profiles' ? profileChain : completionsChain,
+      from: () => completionsChain,
+      rpc: mockRpc,
     }
   },
 }))
@@ -72,8 +62,7 @@ describe('recordCompletion — fail then succeed (issue #1)', () => {
     mockAuth.mockResolvedValue({ userId: 'user-123' })
     mockGetOrCreateProfile.mockResolvedValue(undefined)
     mockUpsert.mockResolvedValue({ error: null })
-    mockUpdateEq.mockResolvedValue({ error: null })
-    mockProfileSingle.mockResolvedValue({ data: { xp: 0 } })
+    mockRpc.mockResolvedValue({ error: null })
   })
 
   it('persists successful attempt even when prior failure had a higher score', async () => {
@@ -127,15 +116,29 @@ describe('recordCompletion — fail then succeed (issue #1)', () => {
     expect(payload.score).toBe(80)
   })
 
-  it('awards XP on first pass after a prior failure', async () => {
+  it('awards XP atomically via increment_xp RPC on first pass', async () => {
     mockCompletionSingle.mockResolvedValue({
       data: { id: 'row-1', score: 80, passed: false },
     })
 
     await recordCompletion('ch-1', makeResult(true, 75), [], [])
 
-    // XP should have been updated (tier 1, score 75 → 75 base + 15 bonus = 90)
-    expect(mockUpdateEq).toHaveBeenCalledOnce()
+    expect(mockRpc).toHaveBeenCalledOnce()
+    expect(mockRpc).toHaveBeenCalledWith('increment_xp', {
+      user_id_input: 'user-123',
+      amount: expect.any(Number),
+    })
+  })
+
+  it('does not call increment_xp when re-passing a challenge (no XP for repeat pass)', async () => {
+    mockCompletionSingle.mockResolvedValue({
+      data: { id: 'row-1', score: 60, passed: true },
+    })
+
+    await recordCompletion('ch-1', makeResult(true, 80), [], [])
+
+    expect(mockUpsert).toHaveBeenCalledOnce()
+    expect(mockRpc).not.toHaveBeenCalled()
   })
 
   it('does not persist for guest users (no userId)', async () => {
