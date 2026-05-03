@@ -446,10 +446,10 @@ export function TopBar() {
         </Link>
       </div>
 
-      <div className="h-4 w-px bg-edge" />
+      <div className="hidden md:block h-4 w-px bg-edge" />
 
       {/* Traffic summary + editor trigger */}
-      <div className="relative">
+      <div className="relative hidden md:block">
         <button
           onClick={() => setShowTraffic((v) => !v)}
           disabled={isActive}
@@ -474,7 +474,7 @@ export function TopBar() {
         )}
       </div>
 
-      <div className="h-4 w-px bg-edge" />
+      <div className="hidden md:block h-4 w-px bg-edge" />
 
       {/* Playback */}
       <div className="flex items-center gap-1.5">
@@ -517,7 +517,7 @@ export function TopBar() {
       </div>
 
       {/* Speed */}
-      <div className="flex items-center gap-1.5">
+      <div className="hidden md:flex items-center gap-1.5">
         <span className="text-[10px] text-ink-3 uppercase tracking-widest">Speed</span>
         <div className="flex border border-edge">
           {SPEED_OPTIONS.map((s) => (
