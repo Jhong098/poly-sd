@@ -99,7 +99,7 @@ export function BaseNode({ id, data, selected, icon, stats, hideLiveMetrics }: B
       data-testid={`node-${data.componentType}`}
       className={`
         relative group w-52 border border-edge bg-surface
-        transition-all duration-200
+        transition-[border-color,opacity] duration-200
         ${selected ? 'border-edge-strong' : ''}
         ${status === 'failed' ? 'opacity-60' : ''}
       `}
