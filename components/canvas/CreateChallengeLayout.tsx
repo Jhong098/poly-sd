@@ -3,11 +3,13 @@
 import { useState } from 'react'
 import { ReactFlowProvider } from '@xyflow/react'
 import { ChallengeSetupForm, type ChallengeSetupData } from '@/components/challenge/ChallengeSetupForm'
-import { CreateTopBar }  from './CreateTopBar'
-import { Palette }       from './Palette'
-import { GameCanvas }    from './GameCanvas'
+import { CreateTopBar } from './CreateTopBar'
+import { Palette } from './Palette'
+import { GameCanvas } from './GameCanvas'
 import { ConfigPanel }   from '@/components/panels/ConfigPanel'
 import { MetricsPanel }  from '@/components/panels/MetricsPanel'
+import { MobileToolbar }     from './MobileToolbar'
+import { MobileConfigPanel } from './MobileConfigPanel'
 
 export function CreateChallengeLayout() {
   const [setupData, setSetupData] = useState<ChallengeSetupData | null>(null)
@@ -24,10 +26,12 @@ export function CreateChallengeLayout() {
           <Palette />
           <main className="flex-1 relative overflow-hidden">
             <GameCanvas />
+            <MobileToolbar />
           </main>
           <ConfigPanel />
         </div>
         <MetricsPanel />
+        <MobileConfigPanel />
       </div>
     </ReactFlowProvider>
   )

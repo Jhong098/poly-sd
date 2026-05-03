@@ -12,6 +12,8 @@ import { ChallengeBriefPanel }from '@/components/panels/ChallengeBriefPanel'
 import { ResultsModal }       from '@/components/overlays/ResultsModal'
 import { ConceptPrimerModal } from '@/components/overlays/ConceptPrimerModal'
 import { TutorialCallout }   from '@/components/overlays/TutorialCallout'
+import { MobileToolbar }     from './MobileToolbar'
+import { MobileConfigPanel } from './MobileConfigPanel'
 import { useChallengeStore }  from '@/lib/store/challengeStore'
 import { useArchitectureStore } from '@/lib/store/architectureStore'
 import { writeLocalDraft } from '@/lib/draft'
@@ -61,10 +63,12 @@ export function ChallengeLayout() {
           <main className="flex-1 relative overflow-hidden">
             <GameCanvas />
             <TutorialCallout />
+            <MobileToolbar allowedTypes={allowedTypes as ComponentType[] | 'all'} />
           </main>
           <ConfigPanel />
         </div>
         <MetricsPanel />
+        <MobileConfigPanel />
       </div>
       <ResultsModal />
     </ReactFlowProvider>

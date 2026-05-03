@@ -6,6 +6,8 @@ import { Palette }     from './Palette'
 import { GameCanvas }  from './GameCanvas'
 import { ConfigPanel } from '@/components/panels/ConfigPanel'
 import { MetricsPanel }from '@/components/panels/MetricsPanel'
+import { MobileToolbar }     from './MobileToolbar'
+import { MobileConfigPanel } from './MobileConfigPanel'
 
 export function SandboxLayout() {
   return (
@@ -16,10 +18,12 @@ export function SandboxLayout() {
           <Palette />
           <main className="flex-1 relative overflow-hidden">
             <GameCanvas />
+            <MobileToolbar />
           </main>
           <ConfigPanel />
         </div>
         <MetricsPanel />
+        <MobileConfigPanel />
       </div>
     </ReactFlowProvider>
   )
