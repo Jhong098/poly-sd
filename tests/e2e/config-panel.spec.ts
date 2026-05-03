@@ -22,15 +22,17 @@ test.describe('Config panel', () => {
 
   test('config panel opens when a node is clicked', async ({ page }) => {
     await page.locator('[data-testid="node-server"]').click()
-    // The config panel is always rendered; clicking a node shows the instanceCount input
-    await expect(page.locator('[data-testid="config-instanceCount"]')).toBeVisible({ timeout: 3_000 })
+    // Scope to the desktop sidebar to avoid ambiguity with MobileConfigPanel
+    const panel = page.locator('[data-testid="config-panel"]')
+    await expect(panel.locator('[data-testid="config-instanceCount"]')).toBeVisible({ timeout: 3_000 })
   })
 
   test('changing instanceCount updates the config panel', async ({ page }) => {
     await page.locator('[data-testid="node-server"]').click()
-    await page.waitForSelector('[data-testid="config-instanceCount"]')
+    const panel = page.locator('[data-testid="config-panel"]')
+    await panel.waitFor()
 
-    const input = page.locator('[data-testid="config-instanceCount"]')
+    const input = panel.locator('[data-testid="config-instanceCount"]')
     await input.fill('3')
     await input.press('Tab')
 
@@ -39,9 +41,10 @@ test.describe('Config panel', () => {
 
   test('config persists after clicking away and back', async ({ page }) => {
     await page.locator('[data-testid="node-server"]').click()
-    await page.waitForSelector('[data-testid="config-instanceCount"]')
+    const panel = page.locator('[data-testid="config-panel"]')
+    await panel.waitFor()
 
-    const input = page.locator('[data-testid="config-instanceCount"]')
+    const input = panel.locator('[data-testid="config-instanceCount"]')
     await input.fill('3')
     await input.press('Tab')
 
@@ -50,12 +53,12 @@ test.describe('Config panel', () => {
     // guaranteed to be empty canvas. The default center click lands on the node because
     // fitView centers the single node in the viewport.
     await page.locator('.react-flow__pane').click({ position: { x: 10, y: 10 } })
-    await expect(page.locator('[data-testid="config-instanceCount"]')).not.toBeVisible({ timeout: 3_000 })
+    await expect(panel.locator('[data-testid="config-instanceCount"]')).not.toBeVisible({ timeout: 3_000 })
 
     // Click the node again
     await page.locator('[data-testid="node-server"]').click()
-    await page.waitForSelector('[data-testid="config-instanceCount"]')
+    await panel.waitFor()
 
-    await expect(page.locator('[data-testid="config-instanceCount"]')).toHaveValue('3')
+    await expect(panel.locator('[data-testid="config-instanceCount"]')).toHaveValue('3')
   })
 })
