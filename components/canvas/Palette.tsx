@@ -96,7 +96,7 @@ export function Palette({
   })).filter((tier) => tier.items.length > 0)
 
   return (
-    <aside className="w-52 flex-shrink-0 h-full bg-raised border-r border-edge flex flex-col overflow-y-auto">
+    <aside className="w-52 flex-shrink-0 h-full bg-raised border-r border-edge hidden md:flex flex-col overflow-y-auto">
       <div className="px-4 pt-4 pb-3 border-b border-edge-dim">
         <p className="text-[10px] font-bold text-cyan uppercase tracking-widest">// Components</p>
         <p className="text-[10px] text-ink-3 mt-0.5">Drag onto canvas</p>

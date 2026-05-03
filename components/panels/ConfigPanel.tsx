@@ -539,7 +539,7 @@ export function ConfigPanel() {
 
   if (selectedEdgeId && !selectedNodeId) {
     return (
-      <aside data-testid="config-panel" className="w-64 flex-shrink-0 h-full bg-raised border-l border-edge overflow-y-auto">
+      <aside data-testid="config-panel" className="w-64 flex-shrink-0 h-full bg-raised border-l border-edge hidden md:block overflow-y-auto">
         <EdgeConfigPanel edgeId={selectedEdgeId} />
       </aside>
     )
@@ -547,7 +547,7 @@ export function ConfigPanel() {
 
   if (!selectedNode) {
     return (
-      <aside data-testid="config-panel" className="w-64 flex-shrink-0 h-full bg-raised border-l border-edge flex flex-col items-center justify-center">
+      <aside data-testid="config-panel" className="w-64 flex-shrink-0 h-full bg-raised border-l border-edge hidden md:flex flex-col items-center justify-center">
         <div className="text-center px-6">
           <p className="text-[10px] text-ink-3 uppercase tracking-widest mb-1">// Config</p>
           <p className="text-[11px] text-ink-3">Select a node or connection</p>
@@ -562,7 +562,7 @@ export function ConfigPanel() {
   function patch(p: Partial<typeof data.config>) { updateNodeConfig(nodeId, p) }
 
   return (
-    <aside data-testid="config-panel" className="w-64 flex-shrink-0 h-full bg-raised border-l border-edge flex flex-col overflow-y-auto">
+    <aside data-testid="config-panel" className="w-64 flex-shrink-0 h-full bg-raised border-l border-edge hidden md:flex flex-col overflow-y-auto">
       <div className="px-4 pt-4 pb-3 border-b border-edge-dim">
         <p className="text-[10px] font-bold text-cyan uppercase tracking-widest">// {meta.label}</p>
         <input value={data.label} onChange={(e) => updateNodeLabel(selectedNode.id, e.target.value)}
