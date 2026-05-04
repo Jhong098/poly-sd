@@ -193,3 +193,29 @@ describe('resolveGraph — system aggregates', () => {
     expect(snap.systemCostPerHour).toBeCloseTo(0.0416 * 2, 4)
   })
 })
+
+describe('resolveGraph — unrouted client nodes', () => {
+  it('blends dropped client traffic into systemErrorRate', () => {
+    // A client with no outgoing edges: all its output RPS is dropped.
+    const graph: SimGraph = {
+      nodes: [clientNode('cl1', 100)],
+      edges: [],
+    }
+    const clientRpsMap = { cl1: 100 }
+    const snap = resolveGraph(graph, emptyState(graph), 0, 0, clientRpsMap)
+    // All ingress is unrouted → systemErrorRate should be 1 (100%)
+    expect(snap.systemErrorRate).toBe(1)
+  })
+
+  it('partial unrouted traffic blends proportionally into systemErrorRate', () => {
+    // cl1 → srv (routed), cl2 has no edges (unrouted)
+    const graph: SimGraph = {
+      nodes: [clientNode('cl1', 100), clientNode('cl2', 100), serverNode('srv')],
+      edges: [edge('e1', 'cl1', 'srv')],
+    }
+    const clientRpsMap = { cl1: 100, cl2: 100 }
+    const snap = resolveGraph(graph, emptyState(graph), 0, 0, clientRpsMap)
+    // 100 / 200 ingress is unrouted → systemErrorRate ≥ 0.5
+    expect(snap.systemErrorRate).toBeGreaterThanOrEqual(0.5)
+  })
+})
