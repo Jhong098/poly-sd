@@ -65,7 +65,7 @@ export default async function ProfilePage() {
 
         <main className="max-w-3xl mx-auto px-8 py-8 space-y-8">
           {/* XP progress */}
-          <section className="bg-raised border border-edge-dim p-5">
+          <section data-testid="profile-xp-section" className="bg-raised border border-edge-dim p-5">
             <div className="flex justify-between items-end mb-3">
               <div>
                 <p className="text-[10px] font-bold text-ink-3 uppercase tracking-widest">Experience</p>
@@ -89,7 +89,7 @@ export default async function ProfilePage() {
           </section>
 
           {/* Stats */}
-          <section className="grid grid-cols-3 gap-3">
+          <section data-testid="profile-stats" className="grid grid-cols-3 gap-3">
             {[
               { label: 'Completed',  value: completions.filter((c) => c.passed).length },
               { label: 'Attempted',  value: completions.length },
@@ -163,10 +163,10 @@ export default async function ProfilePage() {
           )}
 
           {/* Completion history */}
-          <section>
+          <section data-testid="profile-history">
             <h2 className="text-[11px] font-bold text-ink-3 uppercase tracking-widest mb-3">History</h2>
             {completions.length === 0 ? (
-              <div className="p-6 border border-edge-dim bg-raised text-center">
+              <div data-testid="profile-history-empty" className="p-6 border border-edge-dim bg-raised text-center">
                 <p className="text-[12px] text-ink-3">No completions yet. Head to Campaign to start playing.</p>
                 <Link href="/campaign" className="mt-3 inline-block text-[12px] text-cyan hover:text-cyan/80 transition-colors">
                   Go to Campaign →

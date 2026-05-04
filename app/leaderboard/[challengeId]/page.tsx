@@ -38,7 +38,7 @@ export default async function LeaderboardPage({
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <Trophy size={13} className="text-yellow-400" />
-            <h1 className="text-[11px] font-bold uppercase tracking-widest text-ink">
+            <h1 data-testid="leaderboard-title" className="text-[11px] font-bold uppercase tracking-widest text-ink">
               Leaderboard — {challenge.title}
             </h1>
           </div>
@@ -49,7 +49,7 @@ export default async function LeaderboardPage({
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-2xl mx-auto px-8 py-8">
           {entries.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <div data-testid="leaderboard-empty" className="flex flex-col items-center justify-center py-20 gap-3">
               <Trophy size={32} className="text-ink-3 opacity-40" />
               <p className="text-[12px] text-ink-3">No completions yet. Be the first to clear this challenge!</p>
               <Link
@@ -60,7 +60,7 @@ export default async function LeaderboardPage({
               </Link>
             </div>
           ) : (
-            <table className="w-full border-collapse">
+            <table data-testid="leaderboard-table" className="w-full border-collapse">
               <thead>
                 <tr className="border-b border-edge-dim">
                   <th className="text-left text-[10px] font-bold uppercase tracking-widest text-ink-3 pb-2 w-12">#</th>
