@@ -302,3 +302,73 @@ export async function incrementPassCount(uuid: string): Promise<void> {
   const db = createAdminClient()
   await db.rpc('increment_community_pass', { challenge_id: uuid })
 }
+
+// ── getMyAuthoredChallenges ───────────────────────────────────────────────────
+
+export type MyChallengeSummary = {
+  id: string
+  title: string
+  tier: number
+  attempt_count: number
+  pass_count: number
+  upvote_count: number
+  status: 'draft' | 'published'
+  published_at: string | null
+}
+
+/** Returns all challenges authored by the current user, newest first. */
+export async function getMyAuthoredChallenges(): Promise<MyChallengeSummary[]> {
+  const { userId } = await auth()
+  if (!userId) return []
+
+  const db = createAdminClient()
+  const { data, error } = await db
+    .from('community_challenges')
+    .select('id, title, tier, attempt_count, pass_count, upvote_count, status, published_at')
+    .eq('author_id', userId)
+    .order('published_at', { ascending: false })
+
+  if (error || !data) return []
+
+  type AuthoredRow = {
+    id: string
+    title: string
+    tier: number
+    attempt_count: number
+    pass_count: number
+    upvote_count: number
+    status: 'draft' | 'published'
+    published_at: string | null
+  }
+  return (data as AuthoredRow[]).map((r) => ({
+    id: r.id,
+    title: r.title,
+    tier: r.tier,
+    attempt_count: r.attempt_count,
+    pass_count: r.pass_count,
+    upvote_count: r.upvote_count,
+    status: r.status,
+    published_at: r.published_at,
+  }))
+}
+
+// ── getCommunityChallengeTitles ───────────────────────────────────────────────
+
+/** Returns a UUID→title map for the given community challenge UUIDs. */
+export async function getCommunityChallengeTitles(
+  uuids: string[],
+): Promise<Record<string, string>> {
+  if (uuids.length === 0) return {}
+
+  const db = createAdminClient()
+  const { data, error } = await db
+    .from('community_challenges')
+    .select('id, title')
+    .in('id', uuids)
+
+  if (error || !data) return {}
+
+  return Object.fromEntries(
+    (data as { id: string; title: string }[]).map((r) => [r.id, r.title]),
+  )
+}
