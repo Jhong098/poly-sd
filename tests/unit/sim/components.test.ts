@@ -388,3 +388,36 @@ describe('computeClient', () => {
     expect(snap.status).toBe('idle')
   })
 })
+
+// ── computeNode — default / unknown type ──────────────────────────────────────
+
+describe('computeNode — unknown component type', () => {
+  it('returns an idle snapshot for unrecognised component types', () => {
+    const unknown = node('u1', 'client', {}) // use valid SimNode but cast type
+    const patched = { ...unknown, componentType: 'unknown-future-type' } as unknown as SimNode
+    const snap = computeNode(patched, 100, STATE)
+    expect(snap.id).toBe('u1')
+    expect(snap.outputRps).toBe(0)
+    expect(snap.status).toBe('idle')
+  })
+})
+
+// ── computeNode — overloaded database (rho > 1) ───────────────────────────────
+
+describe('computeNode — overloaded database', () => {
+  const dbNode = node<DatabaseConfig>('db1', 'database', {
+    instanceType: 'db.t3.medium',
+    maxConnections: 10,   // maxRps = 10 * 5 * 1 = 50
+    readReplicas: 0,
+    multiAz: false,
+  })
+
+  it('caps outputRps at maxRps * 0.999 and has errorRate > 0 when overloaded', () => {
+    const snap = computeNode(dbNode, 200, STATE)  // rho = 200/50 = 4 → overloaded
+    expect(snap.errorRate).toBeGreaterThan(0)
+    expect(snap.outputRps).toBeLessThan(200)
+    // outputRps = maxRps * 0.999 = 50 * 0.999 = 49.95
+    expect(snap.outputRps).toBeCloseTo(49.95, 1)
+    expect(snap.status).toBe('saturated')
+  })
+})

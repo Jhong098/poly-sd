@@ -130,3 +130,20 @@ describe('sampleClientPreset', () => {
     })
   })
 })
+
+// ── sampleTraffic (TrafficConfig wrapper) ─────────────────────────────────────
+
+import { sampleTraffic } from '@/sim/traffic'
+import type { TrafficConfig } from '@/sim/types'
+
+describe('sampleTraffic', () => {
+  it('delegates to sampleWaypoints and interpolates correctly', () => {
+    const config: TrafficConfig = {
+      durationMs: 60_000,
+      waypoints: [{ timeMs: 0, rps: 100 }, { timeMs: 60_000, rps: 200 }],
+    }
+    expect(sampleTraffic(config, 30_000)).toBeCloseTo(150, 5)
+    expect(sampleTraffic(config, 0)).toBe(100)
+    expect(sampleTraffic(config, 60_000)).toBe(200)
+  })
+})
