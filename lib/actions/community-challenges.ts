@@ -175,7 +175,8 @@ export async function getCommunityFeed(
   page = 0,
   pageSize = 20,
 ): Promise<CommunityChallengeSummary[]> {
-  const db = createAdminClient()
+  let db: ReturnType<typeof createAdminClient>
+  try { db = createAdminClient() } catch { return [] }
 
   let query = db
     .from('community_challenges')

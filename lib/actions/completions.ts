@@ -82,7 +82,8 @@ export type LeaderboardEntry = {
 
 /** Fetch top 25 passed completions for a challenge (public leaderboard). */
 export async function getLeaderboard(challengeId: string): Promise<LeaderboardEntry[]> {
-  const db = createAdminClient()
+  let db: ReturnType<typeof createAdminClient>
+  try { db = createAdminClient() } catch { return [] }
   const { data } = await db
     .from('challenge_completions')
     .select('score, completed_at, profiles(username)')

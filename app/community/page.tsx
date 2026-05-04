@@ -50,6 +50,7 @@ export default async function CommunityPage({
             {tabs.map(({ id, label }) => (
               <Link
                 key={id}
+                data-testid={`community-tab-${id}`}
                 href={`/community?tab=${id}`}
                 className={`px-4 py-2 text-[12px] font-bold uppercase tracking-wider transition-colors border-b-2 -mb-px
                   ${tab === id
@@ -64,13 +65,13 @@ export default async function CommunityPage({
 
           {/* Challenge list */}
           {challenges.length === 0 ? (
-            <div className="p-8 border border-edge-dim bg-raised text-center">
+            <div data-testid="community-empty-state" className="p-8 border border-edge-dim bg-raised text-center">
               <p className="text-[13px] text-ink-3">
                 No community challenges yet. Be the first — complete the tutorial to unlock challenge creation.
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div data-testid="community-feed" className="space-y-3">
               {challenges.map((c) => {
                 const passRate =
                   c.attempt_count > 0
@@ -80,6 +81,7 @@ export default async function CommunityPage({
                 return (
                   <div
                     key={c.id}
+                    data-testid="community-challenge-card"
                     className="flex gap-4 p-4 border border-edge-dim bg-raised hover:bg-overlay transition-colors"
                   >
                     {/* Tier badge */}
