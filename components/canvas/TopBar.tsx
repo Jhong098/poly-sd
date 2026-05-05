@@ -369,11 +369,9 @@ export function TopBar() {
   const [, startShareTransition] = useTransition()
 
   const { isSignedIn: clerkSignedIn } = useAuth()
-  // Dev/test: E2E tests can set window.__E2E_SIGNED_IN to show the saves UI without real auth
+  // E2E tests (canary or dev) can set window.__E2E_SIGNED_IN via addInitScript to show the saves UI without real auth
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const isSignedInForSaves = process.env.NODE_ENV !== 'production' && typeof window !== 'undefined' && '__E2E_SIGNED_IN' in window
-    ? Boolean((window as any).__E2E_SIGNED_IN)
-    : clerkSignedIn
+  const isSignedInForSaves = (typeof window !== 'undefined' && Boolean((window as any).__E2E_SIGNED_IN)) || clerkSignedIn
   const isSignedIn = clerkSignedIn
   const nodes = useArchitectureStore((s) => s.nodes)
   const { activeChallenge, evalResult } = useChallengeStore()

@@ -183,8 +183,10 @@ export const useArchitectureStore = create<ArchitectureState>((set, get) => ({
   },
 }))
 
-// Expose store for E2E tests (dev only — tree-shaken in production builds)
-if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+// Expose store for E2E tests. Activated when addInitScript sets window.__E2E_SIGNED_IN,
+// which works even against the production deployment (canary tests).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+if (typeof window !== 'undefined' && (process.env.NODE_ENV !== 'production' || (window as any).__E2E_SIGNED_IN)) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ;(window as any).__architectureStore = useArchitectureStore
 }

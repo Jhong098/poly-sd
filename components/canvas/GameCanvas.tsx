@@ -44,9 +44,10 @@ export function GameCanvas() {
   const isRunning = simStatus === 'running' || simStatus === 'paused'
   const [chaosMenu, setChaosMenu] = useState<ChaosMenuState>(null)
 
-  // Expose helpers for e2e tests (dev only)
+  // Expose helpers for e2e tests. Active in dev and in canary runs (window.__E2E_SIGNED_IN set by addInitScript).
   useEffect(() => {
-    if (process.env.NODE_ENV !== 'production') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (process.env.NODE_ENV !== 'production' || (window as any).__E2E_SIGNED_IN) {
       ;(window as any).__polySDOnConnect = onConnect
       ;(window as any).__polySDSelectEdge = (edgeId: string) => {
         const state = useArchitectureStore.getState()
