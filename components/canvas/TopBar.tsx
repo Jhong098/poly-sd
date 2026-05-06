@@ -194,7 +194,7 @@ type MockActions = {
   delete?: typeof deleteArchitecture
 }
 function getMockActions(): MockActions {
-  if (process.env.NODE_ENV === 'production' || typeof window === 'undefined') return {}
+  if (typeof window === 'undefined') return {}
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return ((window as any).__mockArchitectureActions as MockActions) ?? {}
 }

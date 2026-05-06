@@ -114,6 +114,8 @@ test.describe('FailureDebrief', () => {
   test('does not appear when a Tutorial sim passes', async ({ page }) => {
     test.setTimeout(120_000)
 
+    // Enable dev helpers in production (canary) runs
+    await page.addInitScript(() => { ;(window as any).__E2E_SIGNED_IN = true })
     await page.goto('/play/T-0')
     await page.waitForSelector('.react-flow__renderer', { timeout: 10_000 })
     await dismissPrimerIfVisible(page)

@@ -33,6 +33,8 @@ test.describe('Challenge flow', () => {
   test('passes T-0 with a Server node connected to the starter Client', async ({ page }) => {
     test.setTimeout(120_000)
 
+    // Enable dev helpers in production (canary) runs
+    await page.addInitScript(() => { ;(window as any).__E2E_SIGNED_IN = true })
     await page.goto('/play/T-0')
     await page.waitForSelector('.react-flow__renderer', { timeout: 10_000 })
 

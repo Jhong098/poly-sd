@@ -40,6 +40,8 @@ async function selectFirstEdge(page: Page) {
 
 test.describe('Edge removal', () => {
   test.beforeEach(async ({ page }) => {
+    // Enable dev helpers in production (canary) runs
+    await page.addInitScript(() => { ;(window as any).__E2E_SIGNED_IN = true })
     await page.goto('/sandbox')
     await page.waitForSelector('.react-flow__renderer', { timeout: 10_000 })
 
