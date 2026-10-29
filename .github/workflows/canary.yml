@@ -8,7 +8,9 @@ on:
 jobs:
   canary:
     name: Production E2E Canary
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest rolled to 26.04, which Playwright 1.59 cannot install
+    # browsers on. Revisit when bumping @playwright/test.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 

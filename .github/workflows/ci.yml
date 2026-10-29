@@ -51,7 +51,10 @@ jobs:
 
   e2e-tests:
     name: E2E Tests
-    runs-on: ubuntu-latest
+    # Pinned for the same reason as the canary: ubuntu-latest rolled to 26.04,
+    # which Playwright 1.59 cannot install browsers on. The unit-tests job needs
+    # no pin — it installs no browsers. Revisit when bumping @playwright/test.
+    runs-on: ubuntu-24.04
     # E2E tests require env secrets — set vars.E2E_ENABLED = 'true' in repo settings to enable
     if: vars.E2E_ENABLED == 'true'
     env:
